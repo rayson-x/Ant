@@ -26,6 +26,14 @@ class Connector{
         $this->config = $config;
     }
 
+    /* 支持直接使用PDO函数 */
+    public function __call($method, array $args) {
+        return $args
+            ? call_user_func_array([$this->connect(), $method], $args)
+            : $this->connect()->$method();
+    }
+
+
     /* 连接数据库 */
     public function connect()
     {
@@ -97,49 +105,9 @@ class Connector{
         return $stat->rowCount();
     }
 
-    /* 只负责预处理,不返回执行结果 */
-    protected function execute($sql,$bind = [])
-    {
-        $stat = $sql instanceof \PDOStatement
-            ? $sql
-            : $this->connect()->prepare($sql);
-
-        $stat->execute($bind);
-
-        return $stat;
-    }
-
-    public function quote(){
-        $this->connect()->quote();
-    }
-
-    /* 事务操作 */
-    public function begin()
-    {
-        $this->connect()->beginTransaction();
-    }
-
-    public function rollback()
-    {
-        $this->connect()->rollBack();
-    }
-
-    public function commit()
-    {
-        $this->connect()->commit();
-    }
-
-    public function inTransaction()
-    {
-        $this->connect()->inTransaction();
-    }
-
-    /* 获取sql生成器实例 */
-    public function getBuilder($table = 'database')
-    {
-        if(!($this->builder[$table] instanceof SqlBuilder)){
-            $this->builder[$table] = new SqlBuilder($this);
-        }
+    public function quote($str){
+        var_dump($str);
+        return $this->connect()->quote($str);
     }
 
     /* 获取配置信息 */
@@ -151,6 +119,14 @@ class Connector{
         return isset($this->config[$key])
                 ? $this->config[$key]
                 : false;
+    }
+
+    public function table($table)
+    {
+        if(!($this->builder[$table] instanceof SqlBuilder)){
+            $this->builder[$table] = new SqlBuilder($this,$table);
+        }
+        return $this->builder[$table];
     }
 
     /* 使用日志 */
@@ -165,6 +141,19 @@ class Connector{
         }
     }
 
+    /* 只负责预处理,不返回执行结果 */
+    public function execute($sql,$bind = [])
+    {
+        $stat = $sql instanceof \PDOStatement
+            ? $sql
+            : $this->connect()->prepare($sql);
+
+        echo $stat;
+        $stat->execute($bind);
+
+        return $stat;
+    }
+
 
     /* 序列化时断开连接 */
     public function __sleep()
@@ -172,10 +161,9 @@ class Connector{
         $this->disconnect();
     }
 
-    public function __call($method,array $args)
+    public function __destruct()
     {
-        //使用查询生成器前必须指定表名
-        $this->getBuilder();
-        return call_user_func_array([$this->builder['database'],$method],$args);
+        $this->disconnect();
     }
+
 }

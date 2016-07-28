@@ -17,5 +17,5 @@ $config = [
 
 
 $pdo = new Ant\Database\Connector\Mysql($config);
+$pdo->table('demo')->where(['name'=>'in','score'=>'>'],[['aulun','alex','ajax'],'60'])->get();
 
-show($pdo->exec('update info set name = "adsgasdgha" where user_id=39'));

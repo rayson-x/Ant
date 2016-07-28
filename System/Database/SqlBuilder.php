@@ -1,5 +1,7 @@
 <?php
 namespace Ant\Database;
+
+use Ant\Exception;
 //查询表达式生成器
 class SqlBuilder{
     //连接器实例
@@ -42,35 +44,69 @@ class SqlBuilder{
     }
 
     public function getTable(){
-
+        return $this->as ? $this->table." as ".$this->as : $this->table;
     }
 
 
     /**
      * @param $where
      * @param null $params
-     * @param $expr
+     * @param string $expr
+     * @return $this
+     * @throws Exception
      *
-     * 支持的语法类型
-     * where( "$field > $value" )
-     * where( [$field => $value] )
-     * where( "$field = ?",$value )
+     * @example
+     * 支持的语法类型,待添加,闭包嵌套
+     * // select * from foobar where foo>123
+     * where( 'foo > 123' )
+     *
+     * // select * from foobar where foo = 123
+     * where( ['foo' => '123'] )
+     *
+     * // select * from foobar where foo in (a,b,c) and bar <> asd
+     * where(['foo'=>'in','bar'=>'<>'],[['a','b','c'],'asd'])
+     *
+     * // select * from foobar foo = 123 AND bar = 456
+     * where( 'foo = ? AND bar = ?',123 456 )
      */
     public function where($where,$params = null,$expr = 'AND')
     {
+        //因为执行语句为预处理方式，所以要保证条件最后格式必须为 'foo = ?','123'
         $params = $params === null
             ? []
             : is_array($params) ? $params : array_slice(func_get_args(), 1);
 
-        if(is_array($where) && $params === []){
-            foreach($where as $key => $value){
-                $this->where[] = ["$key = ?",$value];
+        if(is_array($where)){
+            //将条件表达式进行匹配
+            if($params === []){
+                foreach($where as $key => $value){
+                    $this->where[] = ["$key = ?",[$value],$expr];
+                }
+            }else{
+                /* 本来想用foreach结果发现有点麻烦，于是为了装逼就写了这个简短的遍历 */
+                while(list($key,$value) = each($where)){
+                    if(!current($params)) throw new Exception('参数不足');
+                    $param = !is_array(current($params))
+                           ? current($params)
+                           : implode(' , ',current($params));//添加分号，测试中，最后是否在此添加功能，由逻辑复杂程度决定
+
+                    if('IN' === strtoupper($value)){
+                        $this->where[] = [sprintf('%s IN (%s)', $key, $param),[]];
+                    }else{
+                        $this->where[] = ["$key $value ?",[$param]];
+                    }
+                    next($params);
+                }
             }
         }else{
-            $this->where[] = [$where,$params];
+            $this->where[] = [$where,$params,$expr];
         }
 
         return $this;
+    }
+
+    public function orWhere(){
+
     }
 
     public function whereIn()
@@ -78,7 +114,20 @@ class SqlBuilder{
 
     }
 
+    public function whereNotIn()
+    {
+
+    }
+
+    public function whereExists()
+    {
+
+    }
+
     /**
+     * @param $expressions
+     * @return $this
+     *
      * @param $expressions
      *
      * 支持的语法
@@ -169,7 +218,9 @@ class SqlBuilder{
 
     public function get()
     {
+        list($sql,$params) = $this->compile();
 
+        $this->connector->execute($sql,$params);
     }
 
     public function update()
@@ -190,7 +241,13 @@ class SqlBuilder{
     /* 编译sql语句 */
     public function compile()
     {
+        $sql = 'SELECT * FROM '.$this->connector->quote($this->getTable());
 
+        list($where,$params) = $this->compileWhere();
+        if($where){
+            $sql .= ' WHERE '.$where;
+        }
+        return [$sql,$params];
     }
 
     /**

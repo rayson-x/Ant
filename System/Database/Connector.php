@@ -105,9 +105,43 @@ class Connector{
         return $stat->rowCount();
     }
 
-    public function quote($str){
-        var_dump($str);
-        return $this->connect()->quote($str);
+    public function quote($value) {
+        if (is_array($value)) {
+            return array_map([$this, 'quote'], $value);
+        }
+
+        if ($value instanceof Expression) {
+            return $value;
+        }
+
+        if (is_numeric($value)) {
+            return $value;
+        }
+
+        if ($value === null) {
+            return 'NULL';
+        }
+
+        return $this->connect()->quote($value);
+    }
+
+    public function quoteIdentifier($identifier) {
+        if (is_array($identifier)) {
+            return array_map([$this, 'quoteIdentifier'], $identifier);
+        }
+
+        if ($identifier instanceof Expression) {
+            return $identifier;
+        }
+
+        $identifier = str_replace(['"', "'", ';', '`'], '', $identifier);
+
+        $result = [];
+        foreach (explode('.', $identifier) as $s) {
+            $result[] = '`'.$s.'`';
+        }
+
+        return new Expression(implode('.', $result));
     }
 
     /* 获取配置信息 */
@@ -148,7 +182,6 @@ class Connector{
             ? $sql
             : $this->connect()->prepare($sql);
 
-        echo $stat;
         $stat->execute($bind);
 
         return $stat;

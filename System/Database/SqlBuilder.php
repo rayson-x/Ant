@@ -83,12 +83,13 @@ class SqlBuilder{
                     $this->where[] = ["$key = ?",[$value],$expr];
                 }
             }else{
-                /* 本来想用foreach结果发现有点麻烦，于是为了装逼就写了这个简短的遍历 */
                 while(list($key,$value) = each($where)){
                     if(!current($params)) throw new Exception('参数不足');
-                    $param = !is_array(current($params))
-                           ? current($params)
-                           : implode(' , ',current($params));//添加分号，测试中，最后是否在此添加功能，由逻辑复杂程度决定
+                    $param = $this->connector->quote(current($params));
+
+                    $param = !is_array($param)
+                           ? $param
+                           : implode(' , ',$param);//添加分号，测试中，最后是否在此添加功能，由逻辑复杂程度决定
 
                     if('IN' === strtoupper($value)){
                         $this->where[] = [sprintf('%s IN (%s)', $key, $param),[]];
@@ -220,7 +221,9 @@ class SqlBuilder{
     {
         list($sql,$params) = $this->compile();
 
-        $this->connector->execute($sql,$params);
+        $stat = $this->connector->execute($sql,$params);
+
+        show($stat->getAll());
     }
 
     public function update()
@@ -241,7 +244,7 @@ class SqlBuilder{
     /* 编译sql语句 */
     public function compile()
     {
-        $sql = 'SELECT * FROM '.$this->connector->quote($this->getTable());
+        $sql = 'SELECT * FROM '.$this->connector->quoteIdentifier($this->getTable());
 
         list($where,$params) = $this->compileWhere();
         if($where){

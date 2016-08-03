@@ -1,4 +1,5 @@
 <?php
+
 namespace Ant\Database;
 
 class Expression

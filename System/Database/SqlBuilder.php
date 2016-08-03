@@ -17,9 +17,9 @@ class SqlBuilder{
     //联合查询
     protected $join = [];
     //分组条件
-    protected $groupBy;
+    protected $groupBy = [];
     //排序条件
-    protected $orderBy;
+    protected $orderBy = [];
     //单次查询数量
     protected $limit = 0;
     //语句参数
@@ -51,59 +51,31 @@ class SqlBuilder{
     /**
      * @param $where
      * @param null $params
-     * @param string $expr
-     * @return $this
+     * @return SqlBuilder
      * @throws Exception
      *
      * @example
      * 支持的语法类型,待添加,闭包嵌套
-     * // select * from foobar where foo>123
-     * where( 'foo > 123' )
+     * // select * from `student` where `age` > '18'
+     * where( 'age > 18' )
      *
-     * // select * from foobar where foo = 123
-     * where( ['foo' => '123'] )
+     * // select * from `student` where `score` = '80'
+     * where( ['score' => '80'] )
      *
-     * // select * from foobar where foo in (a,b,c) and bar <> asd
-     * where(['foo'=>'in','bar'=>'<>'],[['a','b','c'],'asd'])
+     * // select * from `student` where `score` > '80' and `age` > '18'
+     * where( '`score` > ? and `age` > ? ', 80 , 18 )
      *
-     * // select * from foobar foo = 123 AND bar = 456
-     * where( 'foo = ? AND bar = ?',123 456 )
+     * // select * from `student` where `name` in ('alex','ben','annie') and `age` <> '18'
+     * where( [ 'name'=>'in' , 'age'=>'<>' ] , [ [ 'alex','ben','annie' ] , '18' ] )
      */
-    public function where($where,$params = null,$expr = 'AND')
+    public function where($where,$params = null)
     {
         //因为执行语句为预处理方式，所以要保证条件最后格式必须为 'foo = ?','123'
-        $params = $params === null
+        $params = ($params === null)
             ? []
-            : is_array($params) ? $params : array_slice(func_get_args(), 1);
+            : ( is_array($params) ? $params : array_slice(func_get_args(),1) );
 
-        if(is_array($where)){
-            //将条件表达式进行匹配
-            if($params === []){
-                foreach($where as $key => $value){
-                    $this->where[] = ["$key = ?",[$value],$expr];
-                }
-            }else{
-                while(list($key,$value) = each($where)){
-                    if(!current($params)) throw new Exception('参数不足');
-                    $param = $this->connector->quote(current($params));
-
-                    $param = !is_array($param)
-                           ? $param
-                           : implode(' , ',$param);//添加分号，测试中，最后是否在此添加功能，由逻辑复杂程度决定
-
-                    if('IN' === strtoupper($value)){
-                        $this->where[] = [sprintf('%s IN (%s)', $key, $param),[]];
-                    }else{
-                        $this->where[] = ["$key $value ?",[$param]];
-                    }
-                    next($params);
-                }
-            }
-        }else{
-            $this->where[] = [$where,$params,$expr];
-        }
-
-        return $this;
+        return $this->parseWhereExp($where,$params, 'AND');
     }
 
     public function orWhere(){
@@ -133,36 +105,34 @@ class SqlBuilder{
      *
      * 支持的语法
      * order('foo,name,baz desc');
-     * order('foe','name','baz asc');
      * order('foo','name','baz','desc');
      * order(['foo'=>'desc','asd'=>'asc']);
      */
     public function order($expressions)
     {
+        //获取条件
         $expressions = is_array($expressions) ? $expressions : func_get_args();
         $orderBy = [];
-        while(list($key,$expression) = each($expressions)){
+        foreach($expressions as $key => $expression){
             if (is_numeric($key)) {
-                $column = $expression;
+                if(array_search(strtoupper($expression),['ASC','DESC']) !== false){
+                    $orderBy[] = array_pop($orderBy).$expression;
+                    continue;
+                }
+                //加上引号
+                $column = $this->connector->quoteIdentifier($expression);
                 $sort = 'ASC';
             } else {
-                $column = $key;
+                $column = $this->connector->quoteIdentifier($key);
                 $sort = $expression;
             }
 
             $sort = (strtoupper($sort) === 'DESC') ? 'DESC' : '';
-            $orderBy[] = $sort ? $column.' '.$sort : $column;
 
-            if(!current($expressions)){
-                if(array_search(strtoupper(trim(end($orderBy))),['ASC','DESC'])){
-                    $sort = strtoupper(trim(array_pop($orderBy)));
-                    $orderBy[] = array_pop($orderBy).' '.$sort;
-                }
-                break;
-            }
+            $orderBy[] = $column.' '.$sort;
         }
 
-        array_push($this->orderBy,$orderBy);
+        $this->orderBy = array_merge($this->orderBy,$orderBy);
         return $this;
     }
 
@@ -221,9 +191,7 @@ class SqlBuilder{
     {
         list($sql,$params) = $this->compile();
 
-        $stat = $this->connector->execute($sql,$params);
-
-        show($stat->getAll());
+        return $this->connector->execute($sql,$params);
     }
 
     public function update()
@@ -247,9 +215,14 @@ class SqlBuilder{
         $sql = 'SELECT * FROM '.$this->connector->quoteIdentifier($this->getTable());
 
         list($where,$params) = $this->compileWhere();
-        if($where){
+
+        if($where)
             $sql .= ' WHERE '.$where;
-        }
+
+
+        if ($this->orderBy)
+            $sql .= ' ORDER BY '.implode(', ', $this->orderBy);
+
         return [$sql,$params];
     }
 
@@ -270,9 +243,52 @@ class SqlBuilder{
     }
 
     /**
+     * 解析where条件
+     * @param $where
+     * @param $params
+     * @param $expr
+     * @return $this
+     * @throws Exception
+     */
+    protected function parseWhereExp($where,$params,$expr){
+        if(is_array($where)){
+            //将条件表达式进行匹配
+            if($params === []){
+                foreach($where as $key => $value){
+                    $key = $this->connector->quoteIdentifier($key);
+                    //添加到条件数组,等待执行
+                    $this->where[$expr][] = ["$key = ?",[$value]];
+                }
+            }else{
+                while(list($field,$logic) = each($where)){
+                    //预处理语句数量跟参数数量是否匹配
+                    if(!current($params)) throw new Exception('参数不足');
+                    //添加引号
+                    $field = $this->connector->quoteIdentifier($field);
+                    $param = $this->connector->quote(current($params));
+
+                    //将数组参数转为为字符串
+                    $param = !is_array($param)
+                        ? $param
+                        : implode(' , ',$param);
+
+                    $logic = strtoupper($logic);
+                    $this->where[$expr][] = ["$field $logic ( $param )",[]];
+
+                    next($params);
+                }
+            }
+        }else{
+            $this->where[$expr][] = [$where,$params];
+        }
+
+        return $this;
+    }
+
+    /**
      * 把查询条件参数编译为where子句.
      *
-     * @return
+     * @return array
      * array(
      *     (string),    // where 子句
      *     (array),     // 查询参数
@@ -284,16 +300,30 @@ class SqlBuilder{
             return ['',[]];
         }
 
-        $where = $params = [];
-        foreach($this->where as $condition){
-            list($whereSql , $whereParams) = $condition;
+        $where = null;
+        $params = [];
 
-            $where[] = $whereSql;
-            if($whereParams){
-                $params = array_merge($params, $whereParams);
+        foreach($this->where as $logic => $value){
+            //获取AND跟OR条件,并且将它们拼接为SQL语句
+            $sql = [];
+            $logic = strtoupper($logic);
+
+            foreach($value as $condition){
+                //获取条件
+                list($whereSql , $whereParams) = $condition;
+
+                $sql[] = $whereSql;
+
+                if($whereParams){
+                    $params = array_merge($params, $whereParams);
+                }
             }
+
+            //开始拼接
+            $where === null
+                ? $where = implode(' '.$logic.' ', $sql)
+                : $where = $where.' '.$logic.' '.implode(' '.$logic.' ', $sql);
         }
-        $where = '('.implode(') AND (', $where).')';
 
         return [$where,$params];
     }

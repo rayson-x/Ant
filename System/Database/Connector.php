@@ -105,16 +105,17 @@ class Connector{
         return $stat->rowCount();
     }
 
-    public function quote($value) {
+    public function quote($value)
+    {
         if (is_array($value)) {
-            return array_map([$this, 'quote'], $value);
-        }
+            foreach ($value as $k => $v) {
+                $value[$k] = $this->quote($v);
+            }
 
-        if ($value instanceof Expression) {
             return $value;
         }
 
-        if (is_numeric($value)) {
+        if ($value instanceof Expression) {
             return $value;
         }
 
@@ -125,7 +126,8 @@ class Connector{
         return $this->connect()->quote($value);
     }
 
-    public function quoteIdentifier($identifier) {
+    public function quoteIdentifier($identifier)
+    {
         if (is_array($identifier)) {
             return array_map([$this, 'quoteIdentifier'], $identifier);
         }
@@ -133,12 +135,12 @@ class Connector{
         if ($identifier instanceof Expression) {
             return $identifier;
         }
-
-        $identifier = str_replace(['"', "'", ';', '`'], '', $identifier);
+        $symbol = '`';
+        $identifier = str_replace(['"', "'", ';', $symbol], '', $identifier);
 
         $result = [];
         foreach (explode('.', $identifier) as $s) {
-            $result[] = '`'.$s.'`';
+            $result[] = $symbol.$s.$symbol;
         }
 
         return new Expression(implode('.', $result));

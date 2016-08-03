@@ -214,6 +214,7 @@ class SqlBuilder{
     {
         $sql = 'SELECT * FROM '.$this->connector->quoteIdentifier($this->getTable());
 
+        $mysql = 'SELECT %COLUMN% FROM %TABLE% %JOIN% %%WHERE% %GROUP% %HAVING% %ORDER% %LIMIT% %UNION%';
         list($where,$params) = $this->compileWhere();
 
         if($where)

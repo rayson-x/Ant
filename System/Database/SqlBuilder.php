@@ -20,6 +20,8 @@ class SqlBuilder{
     protected $groupBy = [];
     //排序条件
     protected $orderBy = [];
+    //预处理参数
+    protected $params = [];
     //单次查询数量
     protected $limit = 0;
     //语句参数
@@ -43,10 +45,6 @@ class SqlBuilder{
         $this->connector = null;
     }
 
-    public function getTable(){
-        return $this->as ? $this->table." as ".$this->as : $this->table;
-    }
-
 
     /**
      * @param $where
@@ -55,7 +53,7 @@ class SqlBuilder{
      * @throws Exception
      *
      * @example
-     * 支持的语法类型,待添加,闭包嵌套
+     * 支持的以下语法类型(待添加闭包嵌套)
      * // select * from `student` where `age` > '18'
      * where( 'age > 18' )
      *
@@ -78,18 +76,42 @@ class SqlBuilder{
         return $this->parseWhereExp($where,$params, 'AND');
     }
 
-    public function orWhere(){
+    /**
+     * @param $where
+     * @param null $params
+     * @return SqlBuilder
+     * @throws Exception
+     *
+     * 同上,只不过将条件表达式变为了OR
+     */
+    public function orWhere($where,$params = null){
+        $params = ($params === null)
+            ? []
+            : ( is_array($params) ? $params : array_slice(func_get_args(),1) );
 
+        return $this->parseWhereExp($where,$params, 'OR');
     }
 
-    public function whereIn()
+    /**
+     * @param $field        字段
+     * @param array $param  参数
+     * @return SqlBuilder
+     * @throws Exception
+     */
+    public function whereIn($field,array $param)
     {
-
+        return $this->parseWhereExp([$field=>'IN'],[$param],'AND');
     }
 
-    public function whereNotIn()
+    /**
+     * @param $field
+     * @param array $param
+     * @return SqlBuilder
+     * @throws Exception
+     */
+    public function whereNotIn($field,array $param)
     {
-
+        return $this->parseWhereExp([$field=>'NOT IN'],[$param],'AND');
     }
 
     public function whereExists()
@@ -148,6 +170,8 @@ class SqlBuilder{
     public function alias($as)
     {
         $this->as = $as;
+
+        return $this;
     }
 
     public function select($params)
@@ -189,9 +213,9 @@ class SqlBuilder{
 
     public function get()
     {
-        list($sql,$params) = $this->compile();
+        $sql = $this->compile();
 
-        return $this->connector->execute($sql,$params);
+        return $this->connector->execute($sql,$this->params);
     }
 
     public function update()
@@ -212,19 +236,21 @@ class SqlBuilder{
     /* 编译sql语句 */
     public function compile()
     {
-        $sql = 'SELECT * FROM '.$this->connector->quoteIdentifier($this->getTable());
+        $sql = str_replace(['%COLUMN%',' %TABLE%','%JOIN%','%WHERE%','%GROUP%','%HAVING%','%ORDER%','%LIMIT%','%UNION%'],
+            [
+                $this->compileColumn(),
+                $this->compileTable(),
+                '',
+                $this->compileWhere(),
+                '',
+                '',
+                $this->compileOrder(),
+                '',
+                '',
+            ],
+            'SELECT %COLUMN% FROM  %TABLE%  %JOIN% %WHERE% %GROUP% %HAVING% %ORDER% %LIMIT% %UNION%');
 
-        $mysql = 'SELECT %COLUMN% FROM %TABLE% %JOIN% %%WHERE% %GROUP% %HAVING% %ORDER% %LIMIT% %UNION%';
-        list($where,$params) = $this->compileWhere();
-
-        if($where)
-            $sql .= ' WHERE '.$where;
-
-
-        if ($this->orderBy)
-            $sql .= ' ORDER BY '.implode(', ', $this->orderBy);
-
-        return [$sql,$params];
+        return $sql;
     }
 
     /**
@@ -283,22 +309,36 @@ class SqlBuilder{
             $this->where[$expr][] = [$where,$params];
         }
 
+
         return $this;
+    }
+
+    protected function compileColumn(){
+        if(empty($this->columns)){
+            return ' * ';
+        }
+
+        return implode(',',$this->columns);
+    }
+
+    protected function compileTable(){
+        $table = $this->connector->quoteIdentifier($this->table);
+        if(isset($this->as)){
+            $table = $table.' AS '.$this->connector->quoteIdentifier($this->as);
+        }
+
+        return $table;
     }
 
     /**
      * 把查询条件参数编译为where子句.
      *
-     * @return array
-     * array(
-     *     (string),    // where 子句
-     *     (array),     // 查询参数
-     * )
+     * @return string (where 子句)
      */
     protected function compileWhere()
     {
         if(!$this->where){
-            return ['',[]];
+            return '';
         }
 
         $where = null;
@@ -325,10 +365,14 @@ class SqlBuilder{
                 ? $where = implode(' '.$logic.' ', $sql)
                 : $where = $where.' '.$logic.' '.implode(' '.$logic.' ', $sql);
         }
+        $this->params = $params;
 
-        return [$where,$params];
+        return ' WHERE  '.$where;
     }
 
-
-
+    protected function compileOrder(){
+        return empty($this->orderBy)
+            ? ''
+            : ' ORDER BY '.implode(', ', $this->orderBy);
+    }
 }

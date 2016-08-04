@@ -1,5 +1,4 @@
 <?php
-
 define('EXT','.php');
 include 'System\Autoloader.php';
 
@@ -24,19 +23,36 @@ $config = [
 ];
 
 
-$pdo = new Ant\Database\Connector\Mysql($config);
-$stat = $pdo->table('info')
-//    ->where(['name'=>'in','age'=>'<>'],[['aulun','alex','ajax'],18])
-//    ->where('age >= ?','18')
-//    ->where(['name'=>'ajax','age'=>'18'])
-//    ->order('score','DESC')
-    ->get();
+class IoC{
+    public $callback = [];
 
-show($stat->getAll());
+    public function set($id,\Closure $func){
+        //绑定给匿名函数的一个对象
+        $this->callback[$id] = $func->bindTo($this);
+    }
 
-/*
-* order('foo,name,baz desc');
-* order('foe','name','baz asc');
-* order('foo','name','baz','desc');
-* order(['foo'=>'desc','asd'=>'asc']);
-*/
+    public function get($id){
+        return call_user_func($this->callback[$id]);
+    }
+
+}
+
+
+
+//
+//$pdo = new Ant\Database\Connector\Mysql($config);
+//
+//$stat = $pdo->table('info')
+//    ->whereNotIn('name',['aulun','alex','ajax'])
+//    ->get();
+////    ->select(['a.name','a.sex','a.age'])
+////    ->where(['name'=>'in','age'=>'<>'],[['aulun','alex','ajax'],18])
+////    ->where('age = ?','18')
+////    ->orWhere(['sex'=>'in'],[['woman','man']])
+////    ->where(['name'=>'ajax','age'=>'18'])
+////    ->order('age','DESC')
+////    ->alias('a')
+////    ->get();
+//
+//show($stat->getAll());
+//

@@ -3,33 +3,35 @@ namespace Ant\Traits;
 
 use Ant\Exception;
 
-trait Instance
+// 单例模式
+trait Singleton
 {
-    protected static $instance = null;
+    protected static $__instances__ = array();
 
-    /**
-     * @param array $options
-     * @return static
-     */
-    public static function instance($options = [])
+    protected function __construct()
     {
-        if (is_null(self::$instance)) {
-            self::$instance = new self($options);
-        }
-        return self::$instance;
     }
 
-    // 静态调用
-    public static function __callStatic($method, $params)
+    public function __clone()
     {
-        if (is_null(self::$instance)) {
-            self::$instance = new self();
+        throw new Exception('Cloning '.__CLASS__.' is not allowed');
+    }
+
+    public static function getInstance()
+    {
+        $class = get_called_class();
+
+        if (!isset(static::$__instances__[$class])) {
+            static::$__instances__[$class] = new static();
         }
-        $call = substr($method, 1);
-        if (0 === strpos($method, '_') && is_callable([self::$instance, $call])) {
-            return call_user_func_array([self::$instance, $call], $params);
-        } else {
-            throw new Exception("not exists method:" . $method);
-        }
+
+        return static::$__instances__[$class];
+    }
+
+    public static function resetInstance()
+    {
+        $class = get_called_class();
+        unset(static::$__instances__[$class]);
     }
 }
+

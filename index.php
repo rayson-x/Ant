@@ -1,6 +1,8 @@
 <?php
 define('EXT','.php');
-include 'System\Autoloader.php';
+include 'vendor\autoload.php';
+//\Ant\Autoloader::register();
+//\Ant\Autoloader::addNamespace('Ant\\Database','System'.DIRECTORY_SEPARATOR.'Database');
 
 function show($msg){
     echo "<pre>";
@@ -13,29 +15,13 @@ function debug(){
     echo "</pre>";
     die;
 }
-\Ant\Autoloader::register();
-\Ant\Autoloader::addNamespace('Ant\\Database','System'.DIRECTORY_SEPARATOR.'Database');
+
 
 $config = [
     'dsn'=>'mysql:dbname=test;host=127.0.0.1',
     'user'=>'root',
     'password'=>'123456',
 ];
-
-
-class IoC{
-    public $callback = [];
-
-    public function set($id,\Closure $func){
-        //绑定给匿名函数的一个对象
-        $this->callback[$id] = $func->bindTo($this);
-    }
-
-    public function get($id){
-        return call_user_func($this->callback[$id]);
-    }
-
-}
 
 
 

@@ -1,11 +1,11 @@
 <?php
 namespace Ant\Http;
+
 /**
- * 通过多重继承来补充请求跟响应类所需要的\Psr\Http\Message\MessageInterface函数
  * Class Message
  * @package Ant\Http
  */
-trait Message{
+abstract class Message implements \Psr\Http\Message\MessageInterface{
     /**
      * @var bool 是否保持数据不变性
      */

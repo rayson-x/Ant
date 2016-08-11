@@ -7,35 +7,35 @@ namespace Ant\Http;
  */
 abstract class Message implements \Psr\Http\Message\MessageInterface{
     /**
-     * @var bool ÊÇ·ñ±£³ÖÊı¾İ²»±äĞÔ
+     * @var bool æ˜¯å¦ä¿æŒæ•°æ®ä¸å˜æ€§
      */
     protected $immutability = true;
 
     /**
-     * @var string HTTP°æ±¾ºÅ
+     * @var string HTTPç‰ˆæœ¬å·
      */
     protected $protocolVersion = '1.1';
 
     /**
-     * @var array HTTPÍ·ĞÅÏ¢
+     * @var array HTTPå¤´ä¿¡æ¯
      */
     protected $headers = [];
 
     /**
-     * @var \Psr\Http\Message\StreamInterface bodyĞÅÏ¢
+     * @var \Psr\Http\Message\StreamInterface bodyä¿¡æ¯
      */
     protected $body;
 
     /**
-     * »ñÈ¡HTTPĞ­Òé°æ±¾
+     * è·å–HTTPåè®®ç‰ˆæœ¬
      * @return string
      */
     public function getProtocolVersion(){
-       return $this->protocolVersion;
+        return $this->protocolVersion;
     }
 
     /**
-     * ÉèÖÃHTTPĞ­Òé°æ±¾
+     * è®¾ç½®HTTPåè®®ç‰ˆæœ¬
      * @param $version
      * @return Message
      */
@@ -47,7 +47,7 @@ abstract class Message implements \Psr\Http\Message\MessageInterface{
     }
 
     /**
-     * »ñÈ¡HTTP Header
+     * è·å–HTTP Header
      * @return array
      */
     public function getHeaders(){
@@ -56,7 +56,7 @@ abstract class Message implements \Psr\Http\Message\MessageInterface{
 
 
     /**
-     * ¼ì²éheaderÊÇ·ñ´æÔÚ
+     * æ£€æŸ¥headeræ˜¯å¦å­˜åœ¨
      * @param $name
      * @return bool
      */
@@ -67,7 +67,7 @@ abstract class Message implements \Psr\Http\Message\MessageInterface{
     }
 
     /**
-     * »ñÈ¡Ö¸¶¨header,Îª¿Õ·µ»Ø¿ÕÊı×é
+     * è·å–æŒ‡å®šheader,ä¸ºç©ºè¿”å›ç©ºæ•°ç»„
      * @param $name
      * @return array
      */
@@ -81,7 +81,7 @@ abstract class Message implements \Psr\Http\Message\MessageInterface{
     }
 
     /**
-     * »ñÈ¡Ö¸¶¨headerµÄÖµ,Îª¿Õ·µ»Ø¿Õ×Ö·û´®
+     * è·å–æŒ‡å®šheaderçš„å€¼,ä¸ºç©ºè¿”å›ç©ºå­—ç¬¦ä¸²
      * @param $name
      * @return string
      */
@@ -92,7 +92,7 @@ abstract class Message implements \Psr\Http\Message\MessageInterface{
     }
 
     /**
-     * Ìæ»»Ö®Ç°header
+     * æ›¿æ¢ä¹‹å‰header
      * @param $name
      * @param $value
      * @return Message
@@ -108,7 +108,7 @@ abstract class Message implements \Psr\Http\Message\MessageInterface{
     }
 
     /**
-     * ÏòheaderÌí¼ÓĞÅÏ¢
+     * å‘headeræ·»åŠ ä¿¡æ¯
      * @param $name
      * @param $value
      * @return Message
@@ -124,7 +124,7 @@ abstract class Message implements \Psr\Http\Message\MessageInterface{
     }
 
     /**
-     * Ïú»ÙheaderĞÅÏ¢
+     * é”€æ¯headerä¿¡æ¯
      * @param $name
      * @return $this|Message
      */
@@ -142,7 +142,7 @@ abstract class Message implements \Psr\Http\Message\MessageInterface{
     }
 
     /**
-     * »ñÈ¡body
+     * è·å–body
      * @return \Psr\Http\Message\StreamInterface
      */
     public function getBody(){
@@ -150,7 +150,7 @@ abstract class Message implements \Psr\Http\Message\MessageInterface{
     }
 
     /**
-     * Ìí¼ÓbodyÊı¾İ
+     * æ·»åŠ bodyæ•°æ®
      * @param \Psr\Http\Message\StreamInterface $body
      * @return $this|Message
      */

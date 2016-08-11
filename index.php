@@ -15,7 +15,7 @@ function debug(){
     echo "</pre>";
     die;
 }
-
+//loli
 
 $config = [
     'dsn'=>'mysql:dbname=test;host=127.0.0.1',
@@ -23,20 +23,24 @@ $config = [
     'password'=>'123456',
 ];
 
-//php://temp 是一个类似文件包装器的数据流，允许读写临时数据
 //$stream = fopen('php://temp', 'w+');
 //stream_copy_to_stream(fopen('php://input', 'r'), $stream);
 //rewind($stream);
-$stream = fopen('php://input','r');
-var_dump(stream_get_meta_data($stream));
-fclose($stream);
-//$streams = new Ant\Http\Stream($stream);
-//echo $streams->read(26);
-//echo $streams->tell();
-//$streams->seek(26);
-//$streams->eof();
-//var_dump($streams->eof());
-//echo $stream->getContents();
+try{
+    $stream = fopen('php://input','r');
+    $stream = new Ant\Http\Stream($stream);
+    echo $stream->read(5)."\n";
+    $stream->seek(6,SEEK_CUR);
+    echo $stream->getContents()."\n";
+    echo $stream->tell();
+    var_dump($stream->eof());
+}catch(\InvalidArgumentException $e){
+    echo $e->getMessage();
+}catch (Exception $e){
+    echo $e->getMessage();
+}
+
+
 
 
 //

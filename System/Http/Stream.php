@@ -6,17 +6,27 @@ use \Psr\Http\Message\StreamInterface;
 
 class Stream implements StreamInterface
 {
+    /**
+     * @var resource
+     */
     protected $stream;
 
-    protected $size;
-
+    /**
+     * @var bool æ˜¯å¦å¯ä»¥å®šä½
+     */
     protected $isSeekable = false;
 
+    /**
+     * @var bool æ˜¯å¦å¯è¯»
+     */
     protected $isReadable = false;
 
+    /**
+     * @var bool æ˜¯å¦å¯å†™
+     */
     protected $isWritable = false;
 
-    //¿ÉÓÃĞ´Ä£Ê½
+    //å¯ç”¨å†™æ¨¡å¼
     protected $readMode = [
         'r' => true, 'w+' => true, 'r+' => true, 'x+' => true, 'c+' => true,
         'rb' => true, 'w+b' => true, 'r+b' => true, 'x+b' => true,
@@ -24,7 +34,7 @@ class Stream implements StreamInterface
         'x+t' => true, 'c+t' => true, 'a+' => true,
     ];
 
-    //¿ÉÓÃ¶ÁÄ£Ê½
+    //å¯ç”¨è¯»æ¨¡å¼
     protected $writeMode = [
         'w' => true, 'w+' => true, 'rw' => true, 'r+' => true, 'x+' => true,
         'c+' => true, 'wb' => true, 'w+b' => true, 'r+b' => true,
@@ -32,18 +42,32 @@ class Stream implements StreamInterface
         'x+t' => true, 'c+t' => true, 'a' => true, 'a+' => true,
     ];
 
+    /**
+     * å¤„ç†ä¸€ä¸ªstreamèµ„æº
+     *
+     * Stream constructor.
+     * @param $stream resource åªæ¥å—èµ„æºç±»å‹
+     */
     public function __construct($stream){
+        if(!is_resource($stream)){
+            throw new \InvalidArgumentException(__METHOD__ . ' argument must be a valid PHP resource');
+        }
         $this->stream = $stream;
 
         $meta = $this->getMetadata();
         $mode = $meta['mode'];
         $this->isSeekable = $meta['seekable'];
-        $this->isReadable = $this->readMode[$mode] ? true : false;
-        $this->isWritable = $this->writeMode[$mode] ? true : false;
+        $this->isReadable = isset($this->readMode[$mode]) ? true : false;
+        $this->isWritable = isset($this->writeMode[$mode]) ? true : false;
+    }
+
+    public function __destruct()
+    {
+        $this->close();
     }
 
     /**
-     * ¼ì²éÊÇ·ñÊÇstream
+     * æ£€æŸ¥æ˜¯å¦æ˜¯stream
      *
      * @return bool
      */
@@ -52,25 +76,48 @@ class Stream implements StreamInterface
         return is_resource($this->stream);
     }
 
-    //´ÓÍ·Êä³öÒ»¸öÍêÕûµÄÁ÷
+    /**
+     * Reads all data from the stream into a string, from the beginning to end.
+     *
+     * This method MUST attempt to seek to the beginning of the stream before
+     * reading data and read the stream until the end is reached.
+     *
+     * Warning: This could attempt to load a large amount of data into memory.
+     *
+     * This method MUST NOT raise an exception in order to conform with PHP's
+     * string casting operations.
+     *
+     * @see http://php.net/manual/en/language.oop5.magic.php#object.tostring
+     * @return string
+     */
     public function __toString(){
+        if (!$this->isAttached()) {
+            return '';
+        }
 
+        try {
+            $this->rewind();
+            return $this->getContents();
+        } catch (\RuntimeException $e) {
+            return '';
+        }
     }
 
-    //¹Ø±ÕÁ÷
+    //å…³é—­æµ
     public function close(){
-
+        //TODO
+        fclose($this->stream);
     }
 
-    //·ÖÀëÁ÷
+    //åˆ†ç¦»æµ
     public function detach(){
-
+        //TODO
     }
 
     /**
-     * »ñÈ¡Á÷´óĞ¡
+     * è·å–æµå¤§å°
      *
-     * @return int | null
+     * @return int|null
      */
     public function getSize(){
         if(!$this->isAttached())
@@ -82,31 +129,30 @@ class Stream implements StreamInterface
     }
 
     /**
-     * ·µ»ØÎÄ¼şÖ¸ÕëÎ»ÖÃ
+     * è¿”å›æ–‡ä»¶æŒ‡é’ˆä½ç½®
      *
      * @return int
-     * @throws \Exception
+     * @throws \RuntimeException
      */
     public function tell(){
-        if(!$this->isAttached() || ($position = ftell($this->stream)) === false){
-            throw new \Exception('Unable to get position of stream');
-        }
+        if(($position = ftell($this->stream)) === false)
+            throw new \RuntimeException('Unable to get position of stream');
 
         return $position;
     }
 
     /**
-     * ¼ì²éÊÇ·ñµ½µ½ÁËÎÄ¼ş½áÊøÎ»ÖÃ
+     * æ£€æŸ¥æ˜¯å¦åˆ°åˆ°äº†æ–‡ä»¶ç»“æŸä½ç½®
      *
      * @return bool
      */
     public function eof(){
-        var_dump($this->getMetadata());
-//        return $this->isAttached() ? feof($this->stream) : true;
+        //ä¸¤è€…åªè¦æ»¡è¶³ä¸€ä¸ªæ¡ä»¶,å°±ä¼šè¿”å›true
+        return !$this->isAttached() || feof($this->stream);
     }
 
     /**
-     * ¼ì²éÊÇ·ñ¿ÉÒÔ¶¨Î»
+     * æ£€æŸ¥æ˜¯å¦å¯ä»¥å®šä½
      *
      * @return bool
      */
@@ -114,18 +160,42 @@ class Stream implements StreamInterface
         return $this->isSeekable;
     }
 
-    //ÔÚstreamÖĞ¶¨Î»
+    /**
+     * åœ¨streamä¸­å®šä½
+     * Seek to a position in the stream.
+     *
+     * @link http://www.php.net/manual/en/function.fseek.php
+     * @param int $offset Stream offset
+     * @param int $whence Specifies how the cursor position will be calculated
+     *     based on the seek offset. Valid values are identical to the built-in
+     *     PHP $whence values for `fseek()`.  SEEK_SET: Set position equal to
+     *     offset bytes SEEK_CUR: Set position to current location plus offset
+     *     SEEK_END: Set position to end-of-stream plus offset.
+     * @throws \RuntimeException on failure.
+     */
     public function seek($offset, $whence = SEEK_SET){
-//        fseek($this->stream,$offset,$whence);
-    }
-
-    //µ¹»ØÎÄ¼şÖ¸ÕëµÄÎ»ÖÃ
-    public function rewind(){
-
+        if(!$this->isSeekable() || fseek($this->stream,$offset,$whence) === -1)
+            throw new \RuntimeException('Could not seek in stream');
     }
 
     /**
-     * ¼ì²éÊÇ·ñ¿ÉĞ´
+     * å€’å›æ–‡ä»¶æŒ‡é’ˆçš„ä½ç½®
+     * Seek to the beginning of the stream.
+     *
+     * If the stream is not seekable, this method will raise an exception;
+     * otherwise, it will perform a seek(0).
+     *
+     * @see seek()
+     * @see http://www.php.net/manual/en/function.fseek.php
+     * @throws \RuntimeException on failure.
+     */
+    public function rewind(){
+        if(!$this->isSeekable() || rewind($this->stream) === false)
+            throw new \RuntimeException('Could not rewind in stream');
+    }
+
+    /**
+     * æ£€æŸ¥æ˜¯å¦å¯å†™
      *
      * @return bool
      */
@@ -133,13 +203,13 @@ class Stream implements StreamInterface
         return $this->isWritable;
     }
 
-    //Ğ´Èë×Ö·û´®,·µ»ØĞ´Èë³¤¶È
+    //å†™å…¥å­—ç¬¦ä¸²,è¿”å›å†™å…¥é•¿åº¦
     public function write($string){
-
+        //TODO
     }
 
     /**
-     * ÊÇ·ñ¿É¶Á
+     * æ˜¯å¦å¯è¯»
      *
      * @return bool
      */
@@ -148,26 +218,33 @@ class Stream implements StreamInterface
     }
 
     /**
-     * ¶ÁÈ¡Ö¸¶¨³¤¶ÈÊı¾İÁ÷
+     * è¯»å–æŒ‡å®šé•¿åº¦æ•°æ®æµ
      *
      * @param int $length
      * @return string
+     * @throws \RuntimeException.
      */
     public function read($length){
-        if (!$this->isReadable() || ($data = fread($this->stream, $length)) === false) {
-            throw new RuntimeException('Could not read from stream');
-        }
+        if (!$this->isReadable() || ($data = stream_get_contents($this->stream, $length,$this->tell())) === false)
+            throw new \RuntimeException('Could not read from stream');
 
         return $data;
     }
 
-    //»ñÈ¡Ê£ÓàÊı¾İÁ÷
+    /**
+     * è·å–å‰©ä½™æ•°æ®æµ
+     * Returns the remaining contents in a string
+     *
+     * @return string
+     * @throws \RuntimeException if unable to read. (æ— æ³•è¯»å–ï¼Ÿä¸ºç©ºè¿˜æ˜¯è¯»å–å¤±è´¥ï¼Ÿ)
+     * @throws \RuntimeException
+     */
     public function getContents(){
-//        return stream_get_contents($this->stream,5);
+        return $this->read(-1);
     }
 
     /**
-     * ´Ó·â×°Ğ­ÒéÎÄ¼şÖ¸ÕëÖĞÈ¡µÃ±¨Í·£¯ÔªÊı¾İ
+     * ä»å°è£…åè®®æ–‡ä»¶æŒ‡é’ˆä¸­å–å¾—æŠ¥å¤´ï¼å…ƒæ•°æ®
      *
      * @param null $key
      * @return array|mixed|null

@@ -4,19 +4,19 @@ namespace Ant\Http;
 /**
  * Class Request
  * @package Ant\Http
- * ¿ÉÄÜ¸Ä±äÊµÀıµÄËùÓĞ·½·¨¶¼±ØĞë±£Ö¤ÇëÇóÊµÀı²»ÄÜ±»¸Ä±ä,Ê¹µÃËüÃÇ±£³Öµ±Ç°ÏûÏ¢µÄÄÚ²¿×´Ì¬,²¢·µ»ØÒ»¸ö°üº¬¸Ä±ä×´Ì¬µÄÊµÀı.
+ * å¯èƒ½æ”¹å˜å®ä¾‹çš„æ‰€æœ‰æ–¹æ³•éƒ½å¿…é¡»ä¿è¯è¯·æ±‚å®ä¾‹ä¸èƒ½è¢«æ”¹å˜,ä½¿å¾—å®ƒä»¬ä¿æŒå½“å‰æ¶ˆæ¯çš„å†…éƒ¨çŠ¶æ€,å¹¶è¿”å›ä¸€ä¸ªåŒ…å«æ”¹å˜çŠ¶æ€çš„å®ä¾‹.
  */
 class Request extends Message implements \Psr\Http\Message\ServerRequestInterface{
     /**
-     * @var string ÇëÇó×ÊÔ´
+     * @var string è¯·æ±‚èµ„æº
      */
     protected $requestTarget;
     /**
-     * @var string http ÇëÇó·½Ê½
+     * @var string http è¯·æ±‚æ–¹å¼
      */
     protected $method;
     /**
-     * @var \Psr\Http\Message\UriInterface ÊµÀı
+     * @var \Psr\Http\Message\UriInterface å®ä¾‹
      */
     protected $uri;
     /**
@@ -24,23 +24,23 @@ class Request extends Message implements \Psr\Http\Message\ServerRequestInterfac
      */
     protected $serverParams;
     /**
-     * @var array cookie²ÎÊı
+     * @var array cookieå‚æ•°
      */
     protected $cookieParams;
     /**
-     * @var array ²éÑ¯²ÎÊı
+     * @var array æŸ¥è¯¢å‚æ•°
      */
     protected $queryParams;
     /**
-     * @var array Ã¿Ò»¸öÔªËØ¶¼Îª\Psr\Http\Message\UploadedFileInterface ÊµÀı
+     * @var array æ¯ä¸€ä¸ªå…ƒç´ éƒ½ä¸º\Psr\Http\Message\UploadedFileInterface å®ä¾‹
      */
     protected $uploadFiles;
     /**
-     * @var array|object|null Ö÷Ìå²ÎÊı
+     * @var array|object|null ä¸»ä½“å‚æ•°
      */
     protected $bodyParsers;
     /**
-     * @var array ÊôĞÔ
+     * @var array å±æ€§
      */
     protected $attributes = [];
 
@@ -63,13 +63,13 @@ class Request extends Message implements \Psr\Http\Message\ServerRequestInterfac
     }
 
     /**
-     * @param array $headers                            http Í·ĞÅÏ¢
-     * @param string $method                            http ÇëÇó·½Ê½
+     * @param array $headers                            http å¤´ä¿¡æ¯
+     * @param string $method                            http è¯·æ±‚æ–¹å¼
      * @param \Psr\Http\Message\UriInterface $uri       uri
-     * @param array $server                             ·şÎñÆ÷²ÎÊı
-     * @param array $cookie                             cookie²ÎÊı
-     * @param array $files                              ÉÏ´«ÎÄ¼ş
-     * @param \Psr\Http\Message\StreamInterface $body   httpÇëÇóÄÚÈİ
+     * @param array $server                             æœåŠ¡å™¨å‚æ•°
+     * @param array $cookie                             cookieå‚æ•°
+     * @param array $files                              ä¸Šä¼ æ–‡ä»¶
+     * @param \Psr\Http\Message\StreamInterface $body   httpè¯·æ±‚å†…å®¹
      */
     public function __construct(
         array $headers,
@@ -83,77 +83,77 @@ class Request extends Message implements \Psr\Http\Message\ServerRequestInterfac
 
     }
 
-    //»ñÈ¡ÇëÇóÄ¿±ê(×ÊÔ´)
+    //è·å–è¯·æ±‚ç›®æ ‡(èµ„æº)
     public function getRequestTarget(){
 
     }
 
-    //ÉèÖÃÇëÇó×ÊÔ´,Ğè±£³ÖÊı¾İ²»±äĞÔ
+    //è®¾ç½®è¯·æ±‚èµ„æº,éœ€ä¿æŒæ•°æ®ä¸å˜æ€§
     public function withRequestTarget($requestTarget){
 
     }
 
-    //»ñÈ¡ÇëÇó·½Ê½
+    //è·å–è¯·æ±‚æ–¹å¼
     public function getMethod(){
 
     }
 
-    //ÉèÖÃÇëÇó·½Ê½,Ğè±£³ÖÊı¾İ²»±äĞÔ
+    //è®¾ç½®è¯·æ±‚æ–¹å¼,éœ€ä¿æŒæ•°æ®ä¸å˜æ€§
     public function withMethod($method){
 
     }
 
-    //»ñÈ¡uri,·µ»Ø\Psr\Http\Message\UriInterfaceÊµÀı
+    //è·å–uri,è¿”å›\Psr\Http\Message\UriInterfaceå®ä¾‹
     public function getUri(){
 
     }
 
-    //ÉèÖÃuri,ĞèÒª±£³ÖÊı¾İ²»±äĞÔ
+    //è®¾ç½®uri,éœ€è¦ä¿æŒæ•°æ®ä¸å˜æ€§
     public function withUri(\Psr\Http\Message\UriInterface $uri,$preserveHost = false){
 
     }
 
-    //¼ìË÷·şÎñÆ÷²ÎÊı
+    //æ£€ç´¢æœåŠ¡å™¨å‚æ•°
     public function getServerParams(){
 
     }
 
-    //¼ìË÷Cookie²ÎÊı,·µ»ØArray
+    //æ£€ç´¢Cookieå‚æ•°,è¿”å›Array
     public function getCookieParams(){
 
     }
 
-    //ÉèÖÃcookie²ÎÊı,±£³ÖÊı¾İ²»±ä
+    //è®¾ç½®cookieå‚æ•°,ä¿æŒæ•°æ®ä¸å˜
     public function withCookieParams(array $cookies){
 
     }
 
-    //»ñÈ¡²éÑ¯²ÎÊı(Ò²¾ÍÊÇGET),·µ»ØArray
+    //è·å–æŸ¥è¯¢å‚æ•°(ä¹Ÿå°±æ˜¯GET),è¿”å›Array
     public function getQueryParams(){
         //TODO::parse_str
     }
 
-    //Ìí¼Ó²éÑ¯²ÎÊı,±£³ÖÊı¾İ²»±äĞÔ
+    //æ·»åŠ æŸ¥è¯¢å‚æ•°,ä¿æŒæ•°æ®ä¸å˜æ€§
     public function withQueryParams(array $query){
 
     }
 
-    //»ñÈ¡ÉÏ´«ÎÄ¼şĞÅÏ¢,Ğè·µ»ØÊı×é
+    //è·å–ä¸Šä¼ æ–‡ä»¶ä¿¡æ¯,éœ€è¿”å›æ•°ç»„
     public function getUploadedFiles(){
 
     }
 
-    //Ìí¼ÓÉÏ´«ÎÄ¼şĞÅÏ¢
+    //æ·»åŠ ä¸Šä¼ æ–‡ä»¶ä¿¡æ¯
     public function withUploadedFiles(array $uploadedFiles){
 
     }
 
-    //¼ìË÷ÇëÇóÖ÷ÌåÌá¹©ÈÎºÎ²ÎÊı
+    //æ£€ç´¢è¯·æ±‚ä¸»ä½“æä¾›ä»»ä½•å‚æ•°
     public function getParsedBody(){
 
     }
 
-    //ÊäÈëÊı¾İÖ»ÄÜÎªnull,Êı×é,¶ÔÏó,±£³ÖÊı¾İ²»±äĞÔ
+    //è¾“å…¥æ•°æ®åªèƒ½ä¸ºnull,æ•°ç»„,å¯¹è±¡,ä¿æŒæ•°æ®ä¸å˜æ€§
     public function withParsedBody($data){
 
     }

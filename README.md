@@ -1,16 +1,3 @@
-#Ant
-
-
-通过DB工厂类获取mysql连接实例
-
-通过DB工厂获取查询生成器实例
-		查询生成器获取连接实例，并且变为自身的一个属性
-		生成语句之后通过连接实例执行
-
-DB  	工厂入口,一个配置为一个连接实例
-
-con  	对数据库直接操作
-builder 生成sql语句,并且通过con执行,本身只是生成器
-model   orm对象关系映射,一个model文件对应一个数据表,可以获取数据表所有属性
-
-Collection	处理select数据结果
+Hello, this is a test file. 
+There are three lines here. 
+This is the last line.

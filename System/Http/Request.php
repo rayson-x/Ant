@@ -7,6 +7,81 @@ namespace Ant\Http;
  * 可能改变实例的所有方法都必须保证请求实例不能被改变,使得它们保持当前消息的内部状态,并返回一个包含改变状态的实例.
  */
 class Request extends Message implements \Psr\Http\Message\ServerRequestInterface{
+    /**
+     * @var string 请求资源
+     */
+    protected $requestTarget;
+    /**
+     * @var string http 请求方式
+     */
+    protected $method;
+    /**
+     * @var \Psr\Http\Message\UriInterface 实例
+     */
+    protected $uri;
+    /**
+     * @var array
+     */
+    protected $serverParams;
+    /**
+     * @var array cookie参数
+     */
+    protected $cookieParams;
+    /**
+     * @var array 查询参数
+     */
+    protected $queryParams;
+    /**
+     * @var array 每一个元素都为\Psr\Http\Message\UploadedFileInterface 实例
+     */
+    protected $uploadFiles;
+    /**
+     * @var array|object|null 主体参数
+     */
+    protected $bodyParsers;
+    /**
+     * @var array 属性
+     */
+    protected $attributes = [];
+
+    public function initialize(){
+        $server = $_SERVER;
+        $method = $_SERVER['REQUEST_METHOD'];
+        $uri = '';
+        $cookie = $_COOKIE;
+        $files = '';
+        $body = '';
+
+        $headers = [];
+        foreach ($server as $key => $value) {
+            if (strpos($key, 'HTTP_') === 0) {
+                $key           = strtolower(str_replace('_', '-', substr($key, 5)));
+                $headers[$key] = explode(',', $value);
+            }
+        }
+
+    }
+
+    /**
+     * @param array $headers                            http 头信息
+     * @param string $method                            http 请求方式
+     * @param \Psr\Http\Message\UriInterface $uri       uri
+     * @param array $server                             服务器参数
+     * @param array $cookie                             cookie参数
+     * @param array $files                              上传文件
+     * @param \Psr\Http\Message\StreamInterface $body   http请求内容
+     */
+    public function __construct(
+        array $headers,
+        $method,
+        \Psr\Http\Message\UriInterface $uri,
+        array $server,
+        array $cookie,
+        array $files = [],
+        \Psr\Http\Message\StreamInterface $body
+    ){
+
+    }
 
     //获取请求目标(资源)
     public function getRequestTarget(){
@@ -95,7 +170,7 @@ class Request extends Message implements \Psr\Http\Message\ServerRequestInterfac
      * @return mixed[] Attributes derived from the request.
      */
     public function getAttributes(){
-        
+
     }
 
     /**

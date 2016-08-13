@@ -201,11 +201,15 @@ class Connector{
     /* 只负责预处理,不返回执行结果 */
     public function execute($sql,$bind = [])
     {
-        $stat = $sql instanceof \PDOStatement
-            ? $sql
-            : $this->connect()->prepare($sql);
+        try{
+            $stat = $sql instanceof \PDOStatement
+                ? $sql
+                : ($this->connect()->prepare($sql));
 
-        $stat->execute($bind);
+            $stat->execute($bind);
+        }catch(\PDOException $e){
+            throw new Exception($e->getMessage());
+        }
 
         return $stat;
     }

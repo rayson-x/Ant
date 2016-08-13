@@ -1,12 +1,15 @@
 <?php
 namespace Ant\Http;
 
+use \Psr\Http\Message\ServerRequestInterface;
+use \Psr\Http\Message\UriInterface;
+use \Psr\Http\Message\StreamInterface;
 /**
  * Class Request
  * @package Ant\Http
  * 可能改变实例的所有方法都必须保证请求实例不能被改变,使得它们保持当前消息的内部状态,并返回一个包含改变状态的实例.
  */
-class Request extends Message implements \Psr\Http\Message\ServerRequestInterface{
+class Request extends Message implements ServerRequestInterface{
     /**
      * @var string 请求资源
      */
@@ -74,11 +77,11 @@ class Request extends Message implements \Psr\Http\Message\ServerRequestInterfac
     public function __construct(
         array $headers,
         $method,
-        \Psr\Http\Message\UriInterface $uri,
+        $uri,
         array $server,
         array $cookie,
         array $files = [],
-        \Psr\Http\Message\StreamInterface $body
+        $body
     ){
 
     }

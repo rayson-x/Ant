@@ -15,7 +15,6 @@ function debug(){
     echo "</pre>";
     die;
 }
-//loli
 
 $config = [
     'dsn'=>'mysql:dbname=test;host=127.0.0.1',
@@ -23,86 +22,77 @@ $config = [
     'password'=>'123456',
 ];
 
-//$stream = fopen('php://temp', 'w+');
-//stream_copy_to_stream(fopen('php://input', 'r'), $stream);
-//rewind($stream);
-//try{
-//    $stream = fopen('php://input','r');
-//    $stream = new Ant\Http\Stream($stream);
-//    echo $stream->read(5)."\n";
-//    $stream->seek(1,SEEK_CUR);
-//    echo $stream->getContents()."\n";
-//    var_dump($stream->eof());
-//}catch(\InvalidArgumentException $e){
-//    echo $e->getMessage();
-//}catch (Exception $e){
-//    echo $e->getMessage();
+//show($_SERVER);
+
+//if($_SERVER['REQUEST_METHOD'] == 'POST'){
+//    try{
+//        $stream = fopen('php://input','r');
+//        $stream = new Ant\Http\Stream($stream);
+//        echo $hello = $stream->read(5)."\n";
+//        $stream->seek(1,SEEK_CUR);
+//        $stream->write($hello);
+//        $stream->rewind();
+//        echo $stream->getContents();
+//        var_dump($stream->eof());
+//    }catch(\InvalidArgumentException $e){
+//        echo $e->getMessage();
+//    }catch (Exception $e){
+//        echo $e->getMessage();
+//    }
+//}else{
+//    httpRequest();
 //}
-$abc = function(){
-    echo "this is abc start \n";
-    yield 1;
-    echo "this is abc end \n";
-};
-
-$qwe = function (){
-    echo "this is qwe start \n";
-    yield 2;
-    echo "this is qwe end \n";
-};
-//闭包函数
-$handlers = [$abc,$qwe];
-$stack = [];
-$result = null;
-foreach ($handlers as $handler) {
-    // reset before each loop, only save last handler return value
-    $result = null;
-    $generator = call_user_func_array($handler, []);
-
-    if ($generator instanceof \Generator) {
-        $stack[] = $generator;
-
-        $yield_value = $generator->current();
-    } elseif ($generator !== null) {
-        // return without yield
-        $result = $generator;
-    }
-}
-
-$return = ($result !== null);
-while ($generator = array_pop($stack)) {
-    if ($return) {
-        $generator->send($result);
-    }
-
-    $generator->next();
-
-    // PHP7之前没有Generator::getReturn()
-    if (version_compare(PHP_VERSION, '7.0.0', '<')) {
-        $return = true;
-    }
-
-    if (!$return) {
-        $return = true;
-        $result = $generator->getReturn();
-    }
-}
-
-
-
 //
-//$pdo = new Ant\Database\Connector\Mysql($config);
+//function httpRequest(){
+//    $opts = array(
+//        'http'=>array(
+//            'method' => "POST",
+//            'header' => "Cache-Control: no-cache\r\n".
+//                "Content-type: application/x-www-form-urlencoded\r\n" ,
+//            'content'=> 'hello world',
+//        )
+//    );
 //
-//$stat = $pdo->table('info')
-//    ->whereNotIn('name',['aulun','alex','ajax'])
-//    ->get();
-////    ->select(['a.name','a.sex','a.age'])
-////    ->where(['name'=>'in','age'=>'<>'],[['aulun','alex','ajax'],18])
-////    ->where('age = ?','18')
-////    ->orWhere(['sex'=>'in'],[['woman','man']])
-////    ->where(['name'=>'ajax','age'=>'18'])
-////    ->order('age','DESC')
-////    ->alias('a')
-////    ->get();
+//    $context = stream_context_create($opts);
 //
-//show($stat->getAll());
+//    $fp = fopen('http://127.0.0.1/Ant/index.php','r',false,$context);
+//    fpassthru($fp);
+//    fclose($fp);
+//}
+
+
+//$abc = function(){
+//    echo "this is abc start \n";
+//    yield;
+//    echo "this is abc end \n";
+//};
 //
+//$qwe = function (){
+//    echo "this is qwe start \n";
+//    $a = yield;
+//    echo $a."\n";
+//    echo "this is qwe end \n";
+//};
+//$one = function (){
+//    return 1;
+//};
+//
+//$middleware = new Ant\Middleware;
+//$middleware->middleware([$abc,$qwe,$aas]);
+
+
+//try{
+//    $pdo = new Ant\Database\Connector\Mysql($config);
+//    $stat = $pdo->table('demo')
+//        ->whereNotIn('name',['aulun','alex','ajax'])
+//        ->get();
+//    print_r($stat);
+//}catch(Exception $e){
+//    foreach(explode("\n", $e->getTraceAsString()) as $index => $line ){
+//        echo "{$line} <br>";
+//    }
+//}catch(Error $e){
+//    echo " Error : {$e->getMessage()}";
+//}catch(Throwable $e){
+//    echo " Exception : {$e->getMessage()}";
+//}

@@ -93,7 +93,7 @@ class SqlBuilder{
     }
 
     /**
-     * @param $field        字段
+     * @param string $field 字段
      * @param array $param  参数
      * @return SqlBuilder
      * @throws Exception
@@ -104,7 +104,7 @@ class SqlBuilder{
     }
 
     /**
-     * @param $field
+     * @param string $field
      * @param array $param
      * @return SqlBuilder
      * @throws Exception
@@ -122,8 +122,6 @@ class SqlBuilder{
     /**
      * @param $expressions
      * @return $this
-     *
-     * @param $expressions
      *
      * 支持的语法
      * order('foo,name,baz desc');
@@ -143,7 +141,7 @@ class SqlBuilder{
                 }
                 //加上引号
                 $column = $this->connector->quoteIdentifier($expression);
-                $sort = 'ASC';
+                $sort = '';
             } else {
                 $column = $this->connector->quoteIdentifier($key);
                 $sort = $expression;
@@ -155,6 +153,7 @@ class SqlBuilder{
         }
 
         $this->orderBy = array_merge($this->orderBy,$orderBy);
+
         return $this;
     }
 
@@ -215,7 +214,9 @@ class SqlBuilder{
     {
         $sql = $this->compile();
 
-        return $this->connector->execute($sql,$this->params);
+        $stat = $this->connector->execute($sql,$this->params);
+
+        return $stat->getAll();
     }
 
     public function update()

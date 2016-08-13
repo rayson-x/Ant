@@ -1,9 +1,20 @@
 <?php
 namespace Ant\Http;
 
-use \RuntimeException;
 use \Psr\Http\Message\StreamInterface;
 
+/**
+ * Class Stream
+ * @package Ant\Http
+ *
+ * @example
+ *
+ * 必须用stream_copy_to_stream将input流拷贝到另一个流上,不然无法使用fstat函数
+ * $stream = fopen('php://temp', 'w+');
+ * stream_copy_to_stream(fopen('php://input', 'r'), $stream);
+ * rewind($stream);
+ * $stream = new Ant\Http\Stream($stream);
+ */
 class Stream implements StreamInterface
 {
     /**
@@ -103,15 +114,35 @@ class Stream implements StreamInterface
         }
     }
 
-    //关闭流
+    /**
+     * 关闭流
+     *
+     * @return void
+     */
     public function close(){
-        //TODO
-        fclose($this->stream);
+        if($this->isAttached()){
+            fclose($this->stream);
+        }
+
+        $this->detach();
     }
 
-    //分离流
+    /**
+     * 将stream分离
+     *
+     * @return null|resource
+     */
     public function detach(){
-        //TODO
+        if(!$this->isAttached()){
+            return null;
+        }
+        $oldResource = $this->stream;
+        $this->stream = null;
+        $this->isSeekable = null;
+        $this->isReadable = null;
+        $this->isWritable = null;
+
+        return $oldResource;
     }
 
     /**
@@ -203,9 +234,18 @@ class Stream implements StreamInterface
         return $this->isWritable;
     }
 
-    //写入字符串,返回写入长度
+    /**
+     * 写入字符串,返回写入长度
+     *
+     * @param string $string
+     * @return int
+     */
     public function write($string){
-        //TODO
+        if (!$this->isWritable() || ($written = fwrite($this->stream, $string)) === false) {
+            throw new \RuntimeException('Could not write to stream');
+        }
+
+        return $written;
     }
 
     /**

@@ -55,7 +55,7 @@ class SqlBuilder{
      * @example
      * 支持的以下语法类型(待添加闭包嵌套)
      * // select * from `student` where `age` > '18'
-     * where( 'age > 18' )
+     * where( '`age` > '18' ' )
      *
      * // select * from `student` where `score` = '80'
      * where( ['score' => '80'] )
@@ -363,17 +363,17 @@ class SqlBuilder{
 
             //开始拼接
             $where === null
-                ? $where = implode(' '.$logic.' ', $sql)
-                : $where = $where.' '.$logic.' '.implode(' '.$logic.' ', $sql);
+                ? $where = implode(" {$logic} ", $sql)
+                : $where = $where." {$logic} ".implode(" {$logic} ", $sql);
         }
         $this->params = $params;
 
-        return ' WHERE  '.$where;
+        return " WHERE {$where}";
     }
 
     protected function compileOrder(){
         return empty($this->orderBy)
             ? ''
-            : ' ORDER BY '.implode(', ', $this->orderBy);
+            : ' ORDER BY '.implode(' , ', $this->orderBy);
     }
 }

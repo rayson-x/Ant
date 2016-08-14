@@ -183,6 +183,7 @@ class Connector{
         if(!($this->builder[$table] instanceof SqlBuilder)){
             $this->builder[$table] = new SqlBuilder($this,$table);
         }
+
         return $this->builder[$table];
     }
 

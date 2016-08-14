@@ -22,7 +22,8 @@ $config = [
     'password'=>'123456',
 ];
 
-//show($_SERVER);
+Ant\Http\Uri::createFromCollection(new Ant\Collection($_SERVER));
+
 
 //if($_SERVER['REQUEST_METHOD'] == 'POST'){
 //    try{
@@ -55,10 +56,11 @@ $config = [
 //
 //    $context = stream_context_create($opts);
 //
-//    $fp = fopen('http://127.0.0.1/Ant/index.php','r',false,$context);
+//    $fp = fopen('http://www.bfb100qj.com/app/index.php?i=8&c=entry&id=7&do=detail&m=hx_zhongchou','r',false,$context);
 //    fpassthru($fp);
 //    fclose($fp);
 //}
+
 
 
 //$abc = function(){
@@ -84,7 +86,8 @@ $config = [
 //try{
 //    $pdo = new Ant\Database\Connector\Mysql($config);
 //    $stat = $pdo->table('demo')
-//        ->whereNotIn('name',['aulun','alex','ajax'])
+////        ->whereNotIn('name',['aulun','alex','ajax'])
+//        ->where(['name'=>'alex'])
 //        ->get();
 //    print_r($stat);
 //}catch(Exception $e){

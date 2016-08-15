@@ -22,8 +22,8 @@ $config = [
     'password'=>'123456',
 ];
 
-Ant\Http\Uri::createFromCollection(new Ant\Collection($_SERVER));
-
+//Ant\Http\Uri::createFromCollection(new Ant\Collection($_SERVER));
+show($_FILES);
 
 //if($_SERVER['REQUEST_METHOD'] == 'POST'){
 //    try{

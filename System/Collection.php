@@ -10,7 +10,7 @@ class Collection implements CollectionInterface
 
     public function __construct(array $items){
         foreach($items as $offset => $item){
-            $this->offsetSet($offset,$item);
+            $this->set($offset,$item);
         }
     }
 

@@ -25,6 +25,10 @@ $config = [
 //Ant\Http\Uri::createFromCollection(new Ant\Collection($_SERVER));
 show($_FILES);
 
+$Stream = new Ant\Http\Stream(fopen($_FILES[12412412]['tmp_name'],'r'));
+
+echo $Stream;
+
 //if($_SERVER['REQUEST_METHOD'] == 'POST'){
 //    try{
 //        $stream = fopen('php://input','r');

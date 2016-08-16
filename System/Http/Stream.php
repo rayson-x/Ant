@@ -88,17 +88,6 @@ class Stream implements StreamInterface
     }
 
     /**
-     * Reads all data from the stream into a string, from the beginning to end.
-     *
-     * This method MUST attempt to seek to the beginning of the stream before
-     * reading data and read the stream until the end is reached.
-     *
-     * Warning: This could attempt to load a large amount of data into memory.
-     *
-     * This method MUST NOT raise an exception in order to conform with PHP's
-     * string casting operations.
-     *
-     * @see http://php.net/manual/en/language.oop5.magic.php#object.tostring
      * @return string
      */
     public function __toString(){
@@ -191,18 +180,13 @@ class Stream implements StreamInterface
         return $this->isSeekable;
     }
 
+
     /**
      * 在stream中定位
-     * Seek to a position in the stream.
      *
-     * @link http://www.php.net/manual/en/function.fseek.php
-     * @param int $offset Stream offset
-     * @param int $whence Specifies how the cursor position will be calculated
-     *     based on the seek offset. Valid values are identical to the built-in
-     *     PHP $whence values for `fseek()`.  SEEK_SET: Set position equal to
-     *     offset bytes SEEK_CUR: Set position to current location plus offset
-     *     SEEK_END: Set position to end-of-stream plus offset.
-     * @throws \RuntimeException on failure.
+     * @param int $offset
+     * @param int $whence
+     * @throws \RuntimeException.
      */
     public function seek($offset, $whence = SEEK_SET){
         if(!$this->isSeekable() || fseek($this->stream,$offset,$whence) === -1)
@@ -211,14 +195,8 @@ class Stream implements StreamInterface
 
     /**
      * 倒回文件指针的位置
-     * Seek to the beginning of the stream.
      *
-     * If the stream is not seekable, this method will raise an exception;
-     * otherwise, it will perform a seek(0).
-     *
-     * @see seek()
-     * @see http://www.php.net/manual/en/function.fseek.php
-     * @throws \RuntimeException on failure.
+     * @throws \RuntimeException.
      */
     public function rewind(){
         if(!$this->isSeekable() || rewind($this->stream) === false)

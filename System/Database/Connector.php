@@ -65,7 +65,6 @@ class Connector{
 
         try{
             $con = new \PDO($dsn,$user,$password,$options);
-
             //此处需要添加日志功能
         }catch(\PDOException $e){
             //同上
@@ -208,13 +207,10 @@ class Connector{
                 : ($this->connect()->prepare($sql));
 
             $stat->execute($bind);
+
+            return $stat;
         }catch(\PDOException $e){
             throw new Exception($e->getMessage());
         }
-
-        return $stat;
     }
-
-
-
 }

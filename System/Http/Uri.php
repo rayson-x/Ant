@@ -110,7 +110,7 @@ class Uri implements UriInterface{
     /**
      * 获取host
      *
-     * @return mixed
+     * @return string.
      */
     public function getHost(){
         return $this->host;
@@ -119,7 +119,7 @@ class Uri implements UriInterface{
     /**
      * 获取端口
      *
-     * @return null
+     * @return int|null
      */
     public function getPort(){
         $port = $this->port;
@@ -232,14 +232,11 @@ class Uri implements UriInterface{
     /**
      * 指定query参数
      *
-     * @param string $query
-     * @return Uri
+     * @param string $query The query string to use with the new instance
+     * @return static A new instance with the specified query string
+     * @throws \InvalidArgumentException for invalid query strings
      */
     public function withQuery($query){
-        if(is_array($query)){
-            //将空格编码
-            $query = http_build_query($query,'','&',PHP_QUERY_RFC3986);
-        }
 
         $clone = clone $this;
         $clone->query = $query;
@@ -247,11 +244,16 @@ class Uri implements UriInterface{
         return $clone;
     }
 
+    public function withQueryArray(array $query){
+        //将空格编码
+        $query = http_build_query($query,'','&',PHP_QUERY_RFC3986);
+    }
+
     /**
      * 指定 # 后的参数
      *
      * @param string $fragment
-     * @return Uri
+     * @return static
      */
     public function withFragment($fragment){
         if (!is_string($fragment)) {

@@ -23,47 +23,30 @@ $config = [
 ];
 
 //Ant\Http\Uri::createFromCollection(new Ant\Collection($_SERVER));
-show($_FILES);
 
-$Stream = new Ant\Http\Stream(fopen($_FILES[12412412]['tmp_name'],'r'));
 
-echo $Stream;
 
-//if($_SERVER['REQUEST_METHOD'] == 'POST'){
-//    try{
-//        $stream = fopen('php://input','r');
-//        $stream = new Ant\Http\Stream($stream);
-//        echo $hello = $stream->read(5)."\n";
-//        $stream->seek(1,SEEK_CUR);
-//        $stream->write($hello);
-//        $stream->rewind();
-//        echo $stream->getContents();
-//        var_dump($stream->eof());
-//    }catch(\InvalidArgumentException $e){
-//        echo $e->getMessage();
-//    }catch (Exception $e){
-//        echo $e->getMessage();
-//    }
-//}else{
-//    httpRequest();
-//}
-//
-//function httpRequest(){
-//    $opts = array(
-//        'http'=>array(
-//            'method' => "POST",
-//            'header' => "Cache-Control: no-cache\r\n".
-//                "Content-type: application/x-www-form-urlencoded\r\n" ,
-//            'content'=> 'hello world',
-//        )
-//    );
-//
-//    $context = stream_context_create($opts);
-//
-//    $fp = fopen('http://www.bfb100qj.com/app/index.php?i=8&c=entry&id=7&do=detail&m=hx_zhongchou','r',false,$context);
-//    fpassthru($fp);
-//    fclose($fp);
-//}
+//$Stream = new Ant\Http\Stream(fopen($_FILES[12412412]['tmp_name'],'r'));
+
+try{
+
+    $files = Ant\Http\UploadedFile::parseUploadedFiles($_FILES);
+
+//    echo $files['123'][1]->getSize();
+
+    echo $files['asd']->getSize();
+}catch(Exception $e){
+    echo $e->getMessage()."<br>";
+    foreach(explode("\n", $e->getTraceAsString()) as $index => $line ){
+        echo "{$line} <br>";
+    }
+}catch(Error $e){
+    echo " Error : {$e->getMessage()}";
+}catch(Throwable $e){
+    echo " Exception : {$e->getMessage()}";
+}
+
+
 
 
 
@@ -90,10 +73,11 @@ echo $Stream;
 //try{
 //    $pdo = new Ant\Database\Connector\Mysql($config);
 //    $stat = $pdo->table('demo')
-////        ->whereNotIn('name',['aulun','alex','ajax'])
-//        ->where(['name'=>'alex'])
+//        ->whereNotIn('name',['aulun','alex','ajax'])
+////        ->where(['name'=>'alex'])
 //        ->get();
 //    print_r($stat);
+//
 //}catch(Exception $e){
 //    foreach(explode("\n", $e->getTraceAsString()) as $index => $line ){
 //        echo "{$line} <br>";

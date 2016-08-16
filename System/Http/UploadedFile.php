@@ -28,7 +28,8 @@ class UploadedFile implements UploadedFileInterface{
      * @param $uploadedFiles
      * @return array
      */
-    public static function parseUploadedFiles($uploadedFiles){
+    public static function parseUploadedFiles($uploadedFiles)
+    {
         $parsed = [];
         foreach($uploadedFiles as $field => $uploadedFile){
             if(!isset($uploadedFile['error'])){
@@ -59,7 +60,8 @@ class UploadedFile implements UploadedFileInterface{
      * UploadedFile constructor.
      * @param $file
      */
-    public function __construct($file){
+    public function __construct($file)
+    {
         if(!isset($file['tmp_name'])){
             throw new InvalidArgumentException('File is invalid or not upload file via POST');
         }

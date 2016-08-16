@@ -59,7 +59,8 @@ class Stream implements StreamInterface
      * Stream constructor.
      * @param $stream resource 只接受资源类型
      */
-    public function __construct($stream){
+    public function __construct($stream)
+    {
         if(!is_resource($stream)){
             throw new \InvalidArgumentException(__METHOD__ . ' argument must be a valid PHP resource');
         }
@@ -90,7 +91,8 @@ class Stream implements StreamInterface
     /**
      * @return string
      */
-    public function __toString(){
+    public function __toString()
+    {
         if (!$this->isAttached()) {
             return '';
         }
@@ -108,7 +110,8 @@ class Stream implements StreamInterface
      *
      * @return void
      */
-    public function close(){
+    public function close()
+    {
         if($this->isAttached()){
             fclose($this->stream);
         }
@@ -121,7 +124,8 @@ class Stream implements StreamInterface
      *
      * @return null|resource
      */
-    public function detach(){
+    public function detach()
+    {
         if(!$this->isAttached()){
             return null;
         }
@@ -139,7 +143,8 @@ class Stream implements StreamInterface
      *
      * @return int|null
      */
-    public function getSize(){
+    public function getSize()
+    {
         if(!$this->isAttached())
             return null;
 
@@ -154,7 +159,8 @@ class Stream implements StreamInterface
      * @return int
      * @throws \RuntimeException
      */
-    public function tell(){
+    public function tell()
+    {
         if(($position = ftell($this->stream)) === false)
             throw new \RuntimeException('Unable to get position of stream');
 
@@ -166,7 +172,8 @@ class Stream implements StreamInterface
      *
      * @return bool
      */
-    public function eof(){
+    public function eof()
+    {
         //两者只要满足一个条件,就会返回true
         return !$this->isAttached() || feof($this->stream);
     }
@@ -176,7 +183,8 @@ class Stream implements StreamInterface
      *
      * @return bool
      */
-    public function isSeekable(){
+    public function isSeekable()
+    {
         return $this->isSeekable;
     }
 
@@ -188,7 +196,8 @@ class Stream implements StreamInterface
      * @param int $whence
      * @throws \RuntimeException.
      */
-    public function seek($offset, $whence = SEEK_SET){
+    public function seek($offset, $whence = SEEK_SET)
+    {
         if(!$this->isSeekable() || fseek($this->stream,$offset,$whence) === -1)
             throw new \RuntimeException('Could not seek in stream');
     }
@@ -198,7 +207,8 @@ class Stream implements StreamInterface
      *
      * @throws \RuntimeException.
      */
-    public function rewind(){
+    public function rewind()
+    {
         if(!$this->isSeekable() || rewind($this->stream) === false)
             throw new \RuntimeException('Could not rewind in stream');
     }
@@ -208,7 +218,8 @@ class Stream implements StreamInterface
      *
      * @return bool
      */
-    public function isWritable(){
+    public function isWritable()
+    {
         return $this->isWritable;
     }
 
@@ -218,7 +229,8 @@ class Stream implements StreamInterface
      * @param string $string
      * @return int
      */
-    public function write($string){
+    public function write($string)
+    {
         if (!$this->isWritable() || ($written = fwrite($this->stream, $string)) === false) {
             throw new \RuntimeException('Could not write to stream');
         }
@@ -231,7 +243,8 @@ class Stream implements StreamInterface
      *
      * @return bool
      */
-    public function isReadable(){
+    public function isReadable()
+    {
         return $this->isReadable;
     }
 
@@ -242,7 +255,8 @@ class Stream implements StreamInterface
      * @return string
      * @throws \RuntimeException.
      */
-    public function read($length){
+    public function read($length)
+    {
         if (!$this->isReadable() || ($data = stream_get_contents($this->stream, $length,$this->tell())) === false)
             throw new \RuntimeException('Could not read from stream');
 
@@ -257,7 +271,8 @@ class Stream implements StreamInterface
      * @throws \RuntimeException if unable to read. (无法读取？为空还是读取失败？)
      * @throws \RuntimeException
      */
-    public function getContents(){
+    public function getContents()
+    {
         return $this->read(-1);
     }
 
@@ -267,7 +282,8 @@ class Stream implements StreamInterface
      * @param null $key
      * @return array|mixed|null
      */
-    public function getMetadata($key = null){
+    public function getMetadata($key = null)
+    {
         $meta = stream_get_meta_data($this->stream);
 
         if($key === null){

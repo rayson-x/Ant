@@ -30,7 +30,8 @@ abstract class Message implements \Psr\Http\Message\MessageInterface{
      * 获取HTTP协议版本
      * @return string
      */
-    public function getProtocolVersion(){
+    public function getProtocolVersion()
+    {
         return $this->protocolVersion;
     }
 
@@ -39,7 +40,8 @@ abstract class Message implements \Psr\Http\Message\MessageInterface{
      * @param $version
      * @return Message
      */
-    public function withProtocolVersion($version){
+    public function withProtocolVersion($version)
+    {
         $result = $this->immutability ? clone $this : $this;
         $result->protocolVersion = $version;
 
@@ -50,7 +52,8 @@ abstract class Message implements \Psr\Http\Message\MessageInterface{
      * 获取HTTP Header
      * @return array
      */
-    public function getHeaders(){
+    public function getHeaders()
+    {
         return $this->headers;
     }
 
@@ -60,7 +63,8 @@ abstract class Message implements \Psr\Http\Message\MessageInterface{
      * @param $name
      * @return bool
      */
-    public function hasHeader($name){
+    public function hasHeader($name)
+    {
         $name = strtolower($name);
 
         return array_key_exists($name, $this->headers);
@@ -71,7 +75,8 @@ abstract class Message implements \Psr\Http\Message\MessageInterface{
      * @param $name
      * @return array
      */
-    public function getHeader($name){
+    public function getHeader($name)
+    {
         $name = strtolower($name);
 
         if(!$this->hasHeader($name))
@@ -85,7 +90,8 @@ abstract class Message implements \Psr\Http\Message\MessageInterface{
      * @param $name
      * @return string
      */
-    public function getHeaderLine($name){
+    public function getHeaderLine($name)
+    {
         $value = $this->getHeader($name);
 
         return !empty($value) ? implode(',',$value) : '';
@@ -97,7 +103,8 @@ abstract class Message implements \Psr\Http\Message\MessageInterface{
      * @param $value
      * @return Message
      */
-    public function withHeader($name, $value){
+    public function withHeader($name, $value)
+    {
         $result = $this->immutability ? clone $this : $this;
         $name = strtolower($name);
 
@@ -113,7 +120,8 @@ abstract class Message implements \Psr\Http\Message\MessageInterface{
      * @param $value
      * @return Message
      */
-    public function withAddedHeader($name, $value){
+    public function withAddedHeader($name, $value)
+    {
         if($values = $this->getHeader($name)){
             $values[] = $value;
         }else{
@@ -128,7 +136,8 @@ abstract class Message implements \Psr\Http\Message\MessageInterface{
      * @param $name
      * @return $this|Message
      */
-    public function withoutHeader($name){
+    public function withoutHeader($name)
+    {
         if (!$this->hasHeader($name)) {
             return $this;
         }
@@ -145,7 +154,8 @@ abstract class Message implements \Psr\Http\Message\MessageInterface{
      * 获取body
      * @return \Psr\Http\Message\StreamInterface
      */
-    public function getBody(){
+    public function getBody()
+    {
         return $this->body;
     }
 

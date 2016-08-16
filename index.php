@@ -22,7 +22,7 @@ $config = [
     'password'=>'123456',
 ];
 
-//Ant\Http\Uri::createFromCollection(new Ant\Collection($_SERVER));
+//echo Ant\Http\Uri::createFromCollection(new Ant\Collection($_SERVER));
 
 
 
@@ -30,11 +30,11 @@ $config = [
 
 try{
 
-    $files = Ant\Http\UploadedFile::parseUploadedFiles($_FILES);
+//    $files = Ant\Http\UploadedFile::parseUploadedFiles($_FILES);
 
 //    echo $files['123'][1]->getSize();
 
-    echo $files['asd']->getSize();
+//    echo $files['asd']->getSize();
 }catch(Exception $e){
     echo $e->getMessage()."<br>";
     foreach(explode("\n", $e->getTraceAsString()) as $index => $line ){

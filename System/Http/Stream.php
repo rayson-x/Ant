@@ -1,6 +1,8 @@
 <?php
 namespace Ant\Http;
 
+use \RuntimeException;
+use \InvalidArgumentException;
 use \Psr\Http\Message\StreamInterface;
 
 /**
@@ -62,7 +64,7 @@ class Stream implements StreamInterface
     public function __construct($stream)
     {
         if(!is_resource($stream)){
-            throw new \InvalidArgumentException(__METHOD__ . ' argument must be a valid PHP resource');
+            throw new InvalidArgumentException(__METHOD__ . ' argument must be a valid PHP resource');
         }
         $this->stream = $stream;
 
@@ -73,22 +75,10 @@ class Stream implements StreamInterface
         $this->isWritable = isset($this->writeMode[$mode]) ? true : false;
     }
 
-    public function __destruct()
-    {
-        $this->close();
-    }
 
     /**
-     * 检查是否是stream
+     * 从stream读取所有数据到一个字符串
      *
-     * @return bool
-     */
-    protected function isAttached()
-    {
-        return is_resource($this->stream);
-    }
-
-    /**
      * @return string
      */
     public function __toString()
@@ -100,13 +90,13 @@ class Stream implements StreamInterface
         try {
             $this->rewind();
             return $this->getContents();
-        } catch (\RuntimeException $e) {
+        } catch (RuntimeException $e) {
             return '';
         }
     }
 
     /**
-     * 关闭流
+     * 关闭stream
      *
      * @return void
      */
@@ -129,6 +119,7 @@ class Stream implements StreamInterface
         if(!$this->isAttached()){
             return null;
         }
+
         $oldResource = $this->stream;
         $this->stream = null;
         $this->isSeekable = null;
@@ -139,14 +130,15 @@ class Stream implements StreamInterface
     }
 
     /**
-     * 获取流大小
+     * 获取stream大小
      *
      * @return int|null
      */
     public function getSize()
     {
-        if(!$this->isAttached())
+        if(!$this->isAttached()){
             return null;
+        }
 
         $stat = fstat($this->stream);
 
@@ -154,27 +146,28 @@ class Stream implements StreamInterface
     }
 
     /**
-     * 返回文件指针位置
+     * 返回stream指针位置
      *
      * @return int
      * @throws \RuntimeException
      */
     public function tell()
     {
-        if(($position = ftell($this->stream)) === false)
-            throw new \RuntimeException('Unable to get position of stream');
+        if(($position = ftell($this->stream)) === false){
+            throw new RuntimeException('Unable to get position of stream');
+        }
 
         return $position;
     }
 
     /**
-     * 检查是否到到了文件结束位置
+     * 检查是否到到了stream结束位置
      *
      * @return bool
      */
     public function eof()
     {
-        //两者只要满足一个条件,就会返回true
+        //如果不是资源就返回true
         return !$this->isAttached() || feof($this->stream);
     }
 
@@ -188,29 +181,53 @@ class Stream implements StreamInterface
         return $this->isSeekable;
     }
 
-
     /**
      * 在stream中定位
      *
      * @param int $offset
      * @param int $whence
-     * @throws \RuntimeException.
+     * @throws RuntimeException.
      */
     public function seek($offset, $whence = SEEK_SET)
     {
         if(!$this->isSeekable() || fseek($this->stream,$offset,$whence) === -1)
-            throw new \RuntimeException('Could not seek in stream');
+            throw new RuntimeException('Could not seek in stream');
     }
 
     /**
-     * 倒回文件指针的位置
+     * 是否可读
      *
-     * @throws \RuntimeException.
+     * @return bool
+     */
+    public function isReadable()
+    {
+        return $this->isReadable;
+    }
+
+    /**
+     * 读取指定长度数据流
+     *
+     * @param int $length
+     * @return string
+     * @throws RuntimeException.
+     */
+    public function read($length)
+    {
+        if (!$this->isReadable() || ($data = stream_get_contents($this->stream, $length,$this->tell())) === false)
+            throw new RuntimeException('Could not read from stream');
+
+        return $data;
+    }
+
+    /**
+     * 将stream指针的位置 设置为stream的开头
+     *
+     * @throws RuntimeException.
      */
     public function rewind()
     {
         if(!$this->isSeekable() || rewind($this->stream) === false)
-            throw new \RuntimeException('Could not rewind in stream');
+            throw new RuntimeException('Could not rewind in stream');
     }
 
     /**
@@ -232,44 +249,19 @@ class Stream implements StreamInterface
     public function write($string)
     {
         if (!$this->isWritable() || ($written = fwrite($this->stream, $string)) === false) {
-            throw new \RuntimeException('Could not write to stream');
+            throw new RuntimeException('Could not write to stream');
         }
 
         return $written;
     }
 
-    /**
-     * 是否可读
-     *
-     * @return bool
-     */
-    public function isReadable()
-    {
-        return $this->isReadable;
-    }
-
-    /**
-     * 读取指定长度数据流
-     *
-     * @param int $length
-     * @return string
-     * @throws \RuntimeException.
-     */
-    public function read($length)
-    {
-        if (!$this->isReadable() || ($data = stream_get_contents($this->stream, $length,$this->tell())) === false)
-            throw new \RuntimeException('Could not read from stream');
-
-        return $data;
-    }
 
     /**
      * 获取剩余数据流
      * Returns the remaining contents in a string
      *
      * @return string
-     * @throws \RuntimeException if unable to read. (无法读取？为空还是读取失败？)
-     * @throws \RuntimeException
+     * @throws RuntimeException if unable to read. (无法读取？为空还是读取失败？)
      */
     public function getContents()
     {
@@ -291,5 +283,20 @@ class Stream implements StreamInterface
         }
 
         return isset($meta[$key]) ? $meta[$key] : null;
+    }
+
+    /**
+     * 检查是否是stream
+     *
+     * @return bool
+     */
+    protected function isAttached()
+    {
+        return is_resource($this->stream);
+    }
+
+    public function __destruct()
+    {
+        $this->close();
     }
 }

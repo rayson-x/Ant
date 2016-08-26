@@ -23,7 +23,7 @@ class UploadedFile implements UploadedFileInterface{
     protected $stream = null;
 
     /**
-     * 加载上传文件
+     * 加载上传文件,仅限POST上传
      *
      * @param $uploadedFiles
      * @return array
@@ -73,13 +73,13 @@ class UploadedFile implements UploadedFileInterface{
      * 获取文件流
      *
      * @return StreamInterface Stream representation of the uploaded file.
-     * @throws \RuntimeException in cases when no stream is available.
-     * @throws \RuntimeException in cases when no stream can be created.
+     * @throws RuntimeException in cases when no stream is available.
+     * @throws RuntimeException in cases when no stream can be created.
      */
     public function getStream()
     {
         if ($this->moved) {
-            throw new \RuntimeException('File was moved to other directory');
+            throw new RuntimeException('File was moved to other directory');
         }
 
         if ($this->stream === null) {
@@ -104,11 +104,12 @@ class UploadedFile implements UploadedFileInterface{
         }
 
         $targetIsStream = strpos($targetPath, '://') > 0;
-        if (!$targetIsStream && !is_writable(dirname($targetPath))) {
+        if (!$targetIsStream && !is_writable(dirname($targetPath))){
             throw new InvalidArgumentException('Upload target path is not writable');
         }
 
         if ($targetIsStream) {
+            //处理流
             if (!copy($this->file['tmp_name'], $targetPath)) {
                 throw new RuntimeException(sprintf('Error moving uploaded file %1s to %2s', $this->file['name'], $targetPath));
             }
@@ -116,6 +117,7 @@ class UploadedFile implements UploadedFileInterface{
                 throw new RuntimeException(sprintf('Error removing uploaded file %1s', $this->file['name']));
             }
         } elseif ($this->isCgi()) {
+            //处理post上传
             if (!is_uploaded_file($this->file['tmp_name'])) {
                 throw new RuntimeException(sprintf('%1s is not a valid uploaded file', $this->file['name']));
             }

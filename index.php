@@ -28,24 +28,23 @@ $config = [
 
 //$Stream = new Ant\Http\Stream(fopen($_FILES[12412412]['tmp_name'],'r'));
 
-try{
-
-//    $files = Ant\Http\UploadedFile::parseUploadedFiles($_FILES);
-
-//    echo $files['123'][1]->getSize();
-
-//    echo $files['asd']->getSize();
-}catch(Exception $e){
-    echo $e->getMessage()."<br>";
-    foreach(explode("\n", $e->getTraceAsString()) as $index => $line ){
-        echo "{$line} <br>";
-    }
-}catch(Error $e){
-    echo " Error : {$e->getMessage()}";
-}catch(Throwable $e){
-    echo " Exception : {$e->getMessage()}";
-}
-
+//try{
+//
+////    $files = Ant\Http\UploadedFile::parseUploadedFiles($_FILES);
+//
+////    echo $files['123'][1]->getSize();
+//
+////    echo $files['asd']->getSize();
+//}catch(Exception $e){
+//    echo $e->getMessage()."<br>";
+//    foreach(explode("\n", $e->getTraceAsString()) as $index => $line ){
+//        echo "{$line} <br>";
+//    }
+//}catch(Error $e){
+//    echo " Error : {$e->getMessage()}";
+//}catch(Throwable $e){
+//    echo " Exception : {$e->getMessage()}";
+//}
 
 
 
@@ -67,7 +66,7 @@ try{
 //};
 //
 //$middleware = new Ant\Middleware;
-//$middleware->middleware([$abc,$qwe,$aas]);
+//$middleware->middleware([$abc,$qwe,$one]);
 
 
 //try{

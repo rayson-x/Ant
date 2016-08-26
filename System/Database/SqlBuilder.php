@@ -84,7 +84,8 @@ class SqlBuilder{
      *
      * 同上,只不过将条件表达式变为了OR
      */
-    public function orWhere($where,$params = null){
+    public function orWhere($where,$params = null)
+    {
         $params = ($params === null)
             ? []
             : ( is_array($params) ? $params : array_slice(func_get_args(),1) );
@@ -237,7 +238,8 @@ class SqlBuilder{
     /* 编译sql语句 */
     public function compile()
     {
-        $sql = str_replace(['%COLUMN%',' %TABLE%','%JOIN%','%WHERE%','%GROUP%','%HAVING%','%ORDER%','%LIMIT%','%UNION%'],
+        $sql = str_replace(
+            ['%COLUMN%',' %TABLE%','%JOIN%','%WHERE%','%GROUP%','%HAVING%','%ORDER%','%LIMIT%','%UNION%'],
             [
                 $this->compileColumn(),
                 $this->compileTable(),
@@ -309,7 +311,6 @@ class SqlBuilder{
         }else{
             $this->where[$expr][] = [$where,$params];
         }
-
 
         return $this;
     }

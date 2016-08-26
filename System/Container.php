@@ -9,6 +9,7 @@ class Container{
 
     /**
      * 容器注入口,在此注入脚本
+     *
      * @param $id
      * @param \Closure $callback
      */
@@ -18,6 +19,7 @@ class Container{
 
     /**
      * 返回被依赖实例
+     *
      * @param $id
      * @return mixed
      */
@@ -30,6 +32,7 @@ class Container{
 
     /**
      * 获取回调函数
+     *
      * @param $id
      */
     public function getCallback($id){
@@ -42,6 +45,7 @@ class Container{
 
     /**
      * 检查回调是否存在
+     *
      * @param $id
      * @return bool
      */

@@ -87,6 +87,7 @@ abstract class Message implements \Psr\Http\Message\MessageInterface{
 
     /**
      * 获取指定header的值,为空返回空字符串
+     *
      * @param $name
      * @return string
      */
@@ -99,6 +100,7 @@ abstract class Message implements \Psr\Http\Message\MessageInterface{
 
     /**
      * 替换之前header
+     *
      * @param $name
      * @param $value
      * @return Message
@@ -116,6 +118,7 @@ abstract class Message implements \Psr\Http\Message\MessageInterface{
 
     /**
      * 向header添加信息
+     *
      * @param $name
      * @param $value
      * @return Message
@@ -133,6 +136,7 @@ abstract class Message implements \Psr\Http\Message\MessageInterface{
 
     /**
      * 销毁header信息
+     *
      * @param $name
      * @return $this|Message
      */
@@ -152,6 +156,7 @@ abstract class Message implements \Psr\Http\Message\MessageInterface{
 
     /**
      * 获取body
+     *
      * @return \Psr\Http\Message\StreamInterface
      */
     public function getBody()
@@ -161,6 +166,7 @@ abstract class Message implements \Psr\Http\Message\MessageInterface{
 
     /**
      * 添加body数据
+     *
      * @param \Psr\Http\Message\StreamInterface $body
      * @return $this|Message
      */

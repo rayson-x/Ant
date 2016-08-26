@@ -1,8 +1,8 @@
 <?php
 namespace Ant;
 
-use Ant\Interfaces\CollectionInterface;
 use \ArrayIterator;
+use Ant\Interfaces\CollectionInterface;
 
 class Collection implements CollectionInterface
 {

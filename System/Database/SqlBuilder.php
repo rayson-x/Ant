@@ -2,12 +2,13 @@
 namespace Ant\Database;
 
 use Ant\Exception;
+use \Closure;
 //查询表达式生成器
 class SqlBuilder{
     //连接器实例
     protected $connector;
     //数据表
-    protected $table;
+    public $table;
     //数据表别名
     protected $as;
     //查询条件
@@ -37,6 +38,37 @@ class SqlBuilder{
         $this->table = $table;
     }
 
+    public function __toString()
+    {
+        list($sql) = $this->compile();
+        return $sql;
+    }
+
+    public function __clone()
+    {
+        $this->as = null;
+        $this->where = [];
+        $this->columns = [];
+        $this->join = [];
+        $this->groupBy = [];
+        $this->params = [];
+        $this->limit = 0;
+        $this->offset = 0;
+
+        return $this;
+    }
+
+    public function free(){
+        $this->as = null;
+        $this->where = [];
+        $this->columns = [];
+        $this->join = [];
+        $this->groupBy = [];
+        $this->params = [];
+        $this->limit = 0;
+        $this->offset = 0;
+    }
+
     /**
      * 析构函数，断开连接
      */
@@ -45,7 +77,6 @@ class SqlBuilder{
         $this->connector = null;
     }
 
-
     /**
      * @param $where
      * @param null $params
@@ -53,7 +84,7 @@ class SqlBuilder{
      * @throws Exception
      *
      * @example
-     * 支持的以下语法类型(待添加闭包嵌套)
+     * 支持的以下语法类型
      * // select * from `student` where `age` > '18'
      * where( '`age` > '18' ' )
      *
@@ -94,30 +125,21 @@ class SqlBuilder{
     }
 
     /**
-     * @param string $field 字段
-     * @param array $param  参数
-     * @return SqlBuilder
-     * @throws Exception
+     * @param $column
+     * @param Closure $func
+     * @return $this
      */
-    public function whereIn($field,array $param)
+    public function whereSub($column,$logic,Closure $func)
     {
-        return $this->parseWhereExp([$field=>'IN'],[$param],'AND');
-    }
+        $sqlBuilder = clone $this;
+        $args = array_slice(func_get_args(),3);
 
-    /**
-     * @param string $field
-     * @param array $param
-     * @return SqlBuilder
-     * @throws Exception
-     */
-    public function whereNotIn($field,array $param)
-    {
-        return $this->parseWhereExp([$field=>'NOT IN'],[$param],'AND');
-    }
+        call_user_func_array($func->bindTo($sqlBuilder,$sqlBuilder),$args);
+        list($sql,$params) = $sqlBuilder->compile();
 
-    public function whereExists()
-    {
+        $this->where['AND'][] = ["$column $logic ({$sql})",$params];
 
+        return $this;
     }
 
     /**
@@ -140,7 +162,7 @@ class SqlBuilder{
                     $orderBy[] = array_pop($orderBy).$expression;
                     continue;
                 }
-                //加上引号
+
                 $column = $this->connector->quoteIdentifier($expression);
                 $sort = '';
             } else {
@@ -165,7 +187,7 @@ class SqlBuilder{
 
     /**
      * @param $as
-     * as语句
+     * @return $this
      */
     public function alias($as)
     {
@@ -174,7 +196,7 @@ class SqlBuilder{
         return $this;
     }
 
-    public function select($params)
+    public function columns($params)
     {
         $this->columns = is_array($params) ? $params : func_get_args();
 
@@ -182,8 +204,8 @@ class SqlBuilder{
     }
 
     /**
-     * @param $sql
-     * @param string $type
+     * @param $table
+     * @param string $one
      * 支持闭包Closure
      *
      * alias('a')->join('table_b as b','a.id','=','b.id'')
@@ -213,9 +235,9 @@ class SqlBuilder{
 
     public function get()
     {
-        $sql = $this->compile();
+        list($sql,$params) = $this->compile();
 
-        $stat = $this->connector->execute($sql,$this->params);
+        $stat = $this->connector->execute($sql,$params);
 
         return $stat->getAll();
     }
@@ -253,27 +275,12 @@ class SqlBuilder{
             ],
             'SELECT %COLUMN% FROM  %TABLE%  %JOIN% %WHERE% %GROUP% %HAVING% %ORDER% %LIMIT% %UNION%');
 
-        return $sql;
-    }
-
-    /**
-     * where in 子查询语句.
-     *
-     * @param string       $column
-     * @param array|Select $relation
-     * @param bool         $in
-     *
-     * @return $this
-     */
-    protected function whereSub($column,$relation,$in)
-    {
-        if($relation instanceof SqlBuilder){
-
-        }
+        return [$sql,$this->params];
     }
 
     /**
      * 解析where条件
+     *
      * @param $where
      * @param $params
      * @param $expr
@@ -320,7 +327,7 @@ class SqlBuilder{
             return ' * ';
         }
 
-        return implode(',',$this->columns);
+        return implode(',',$this->connector->quoteIdentifier($this->columns));
     }
 
     protected function compileTable(){

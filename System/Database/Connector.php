@@ -97,30 +97,6 @@ class Connector{
         }
     }
 
-    /* 执行查询语句,返回结果集 */
-    public function query($sql, $bind = null)
-    {
-        $bind = empty($bind)
-            ? []
-            : is_array($bind) ? $bind : array_slice(func_get_args(),1);
-
-        $stat = $this->execute($sql,$bind);
-
-        return $stat->getAll();
-    }
-
-    /* 执行语句,返回影响行数 */
-    public function exec($sql,$bind = null)
-    {
-        $bind = empty($bind)
-            ? []
-            : is_array($bind) ? $bind : array_slice(func_get_args(),1);
-
-        $stat = $this->execute($sql,$bind);
-
-        return $stat->rowCount();
-    }
-
     /**
      * 为SQL语句中的字符串添加引号
      * @param $value
@@ -129,9 +105,9 @@ class Connector{
      */
     public function quote($value)
     {
-        if (is_array($value))
+        if (is_array($value)){
             return array_map([$this, 'quote'], $value);
-
+        }
 
         if ($value instanceof Expression) {
             return $value;
@@ -154,6 +130,7 @@ class Connector{
         if ($identifier instanceof Expression) {
             return $identifier;
         }
+
         $symbol = '`';
         $identifier = str_replace(['"', "'", ';', $symbol], '', $identifier);
 
@@ -171,6 +148,7 @@ class Connector{
         if($key === null){
             return $this->config;
         }
+
         return isset($this->config[$key])
                 ? $this->config[$key]
                 : false;
@@ -179,11 +157,11 @@ class Connector{
     /* 使用查询生成器 */
     public function table($table)
     {
-        if(!($this->builder[$table] instanceof SqlBuilder)){
-            $this->builder[$table] = new SqlBuilder($this,$table);
+        if(!($this->builder instanceof SqlBuilder)){
+            $this->builder = new SqlBuilder($this,$table);
         }
 
-        return $this->builder[$table];
+        return $this->builder;
     }
 
     /* 使用日志 */

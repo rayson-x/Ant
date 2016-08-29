@@ -26,7 +26,6 @@ $config = [
 
 
 
-//$Stream = new Ant\Http\Stream(fopen($_FILES[12412412]['tmp_name'],'r'));
 
 //try{
 //
@@ -68,21 +67,30 @@ $config = [
 //$middleware = new Ant\Middleware;
 //$middleware->middleware([$abc,$qwe,$one]);
 
-
-//try{
-//    $pdo = new Ant\Database\Connector\Mysql($config);
-//    $stat = $pdo->table('demo')
-//        ->whereNotIn('name',['aulun','alex','ajax'])
-////        ->where(['name'=>'alex'])
-//        ->get();
-//    print_r($stat);
+//$i = 1000;
+//while($i > 0){
 //
-//}catch(Exception $e){
-//    foreach(explode("\n", $e->getTraceAsString()) as $index => $line ){
-//        echo "{$line} <br>";
-//    }
-//}catch(Error $e){
-//    echo " Error : {$e->getMessage()}";
-//}catch(Throwable $e){
-//    echo " Exception : {$e->getMessage()}";
+//    $i--;
 //}
+try{
+    $pdo = new Ant\Database\Connector\Mysql($config);
+
+    $name = 'power';
+    $data = $pdo->table('demo')
+        ->whereSub('id','IN',function($name){
+            $this->table = 'users';
+            $this->columns('id')->where(['name'=>$name]);
+        },$name)
+        ->orWhere(['score'=>'>='],[85])
+        ->get();
+
+    show($data);
+}catch(Exception $e){
+    foreach(explode("\n", $e->getTraceAsString()) as $index => $line ){
+        echo "{$line} <br>";
+    }
+}catch(Error $e){
+    echo " Error : {$e->getMessage()}";
+}catch(Throwable $e){
+    echo " Exception : {$e->getMessage()}";
+}

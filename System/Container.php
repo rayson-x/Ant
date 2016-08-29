@@ -50,6 +50,6 @@ class Container{
      * @return bool
      */
     public function has($id){
-        return isset($this->callback[$id]);
+        return array_key_exists($id,$this->callback);
     }
 }

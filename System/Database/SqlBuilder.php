@@ -1,8 +1,11 @@
 <?php
 namespace Ant\Database;
 
-use Ant\Exception;
 use \Closure;
+use Ant\Exception;
+use \UnexpectedValueException;
+use \InvalidArgumentException;
+
 //查询表达式生成器
 class SqlBuilder{
     //连接器实例
@@ -46,27 +49,9 @@ class SqlBuilder{
 
     public function __clone()
     {
-        $this->as = null;
-        $this->where = [];
-        $this->columns = [];
-        $this->join = [];
-        $this->groupBy = [];
-        $this->params = [];
-        $this->limit = 0;
-        $this->offset = 0;
+        $this->free();
 
         return $this;
-    }
-
-    public function free(){
-        $this->as = null;
-        $this->where = [];
-        $this->columns = [];
-        $this->join = [];
-        $this->groupBy = [];
-        $this->params = [];
-        $this->limit = 0;
-        $this->offset = 0;
     }
 
     /**
@@ -113,6 +98,7 @@ class SqlBuilder{
      * @return SqlBuilder
      * @throws Exception
      *
+     * @example
      * 同上,只不过将条件表达式变为了OR
      */
     public function orWhere($where,$params = null)
@@ -128,9 +114,21 @@ class SqlBuilder{
      * @param $column
      * @param Closure $func
      * @return $this
+     *
+     * @example
+     * 闭包嵌套
+     * //SELECT * FROM `demo` WHERE `id` IN (SELECT `id` FROM `users` WHERE `name` = "powers")
+     * whereSub('id','IN',function(){
+     *     $this->table = 'users';
+     *     $this->columns('id')->where(['name'=>'power']);
+     *  })
      */
-    public function whereSub($column,$logic,Closure $func)
+    public function whereSub($column,$logic,$func)
     {
+        if(!$func instanceof Closure){
+            throw new \UnexpectedValueException('');
+        }
+
         $sqlBuilder = clone $this;
         $args = array_slice(func_get_args(),3);
 
@@ -147,7 +145,6 @@ class SqlBuilder{
      * @return $this
      *
      * 支持的语法
-     * order('foo,name,baz desc');
      * order('foo','name','baz','desc');
      * order(['foo'=>'desc','asd'=>'asc']);
      */
@@ -203,29 +200,8 @@ class SqlBuilder{
         return $this;
     }
 
-    /**
-     * @param $table
-     * @param string $one
-     * 支持闭包Closure
-     *
-     * alias('a')->join('table_b as b','a.id','=','b.id'')
-     * alias('a')->join('table_b as b',function($join){
-     *     $join->on('a.id','>','b.id')->orOn(....);
-     * })
-     * join('table_b',function($join){
-     *     $join->
-     * })
-     */
-    public function join($table, $one, $operator = null, $two = null, $type = 'inner')
+    public function join()
     {
-        //检查是否闭包
-        if($one instanceof \Closure){
-            $join = new JoinClause($table,$type);
-            call_user_func($one,$join);
-
-        }else{
-
-        }
     }
 
     public function union()
@@ -239,7 +215,13 @@ class SqlBuilder{
 
         $stat = $this->connector->execute($sql,$params);
 
-        return $stat->getAll();
+        //TODO::预处理函数
+        $rows = [];
+        while($row = $stat->fetch()){
+            $rows[] = $row;
+        }
+
+        return $rows;
     }
 
     public function update()
@@ -279,6 +261,20 @@ class SqlBuilder{
     }
 
     /**
+     * 释放当前sql
+     */
+    public function free(){
+        $this->as = null;
+        $this->where = [];
+        $this->columns = [];
+        $this->join = [];
+        $this->groupBy = [];
+        $this->params = [];
+        $this->limit = 0;
+        $this->offset = 0;
+    }
+
+    /**
      * 解析where条件
      *
      * @param $where
@@ -299,7 +295,7 @@ class SqlBuilder{
             }else{
                 while(list($field,$logic) = each($where)){
                     //预处理语句数量跟参数数量是否匹配
-                    if(!current($params)) throw new Exception('参数不足');
+                    if(!current($params)) throw new InvalidArgumentException('参数不足');
                     //添加引号
                     $field = $this->connector->quoteIdentifier($field);
                     $param = $this->connector->quote(current($params));
@@ -322,6 +318,11 @@ class SqlBuilder{
         return $this;
     }
 
+    /**
+     * 处理字段
+     *
+     * @return string
+     */
     protected function compileColumn(){
         if(empty($this->columns)){
             return ' * ';
@@ -330,6 +331,11 @@ class SqlBuilder{
         return implode(',',$this->connector->quoteIdentifier($this->columns));
     }
 
+    /**
+     * 处理表
+     *
+     * @return Expression|array|mixed|string
+     */
     protected function compileTable(){
         $table = $this->connector->quoteIdentifier($this->table);
         if(isset($this->as)){

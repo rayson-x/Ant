@@ -47,9 +47,10 @@ $config = [
 
 
 
-
 //$abc = function(){
-//    echo "this is abc start \n";
+//    if(empty($_SESSION['isLogin'])){
+//        throw new Exception('not login');
+//    }
 //    yield;
 //    echo "this is abc end \n";
 //};
@@ -61,36 +62,68 @@ $config = [
 //    echo "this is qwe end \n";
 //};
 //$one = function (){
-//    return 1;
+//    throw new Exception(123);
 //};
 //
-//$middleware = new Ant\Middleware;
-//$middleware->middleware([$abc,$qwe,$one]);
-
-//$i = 1000;
-//while($i > 0){
-//
-//    $i--;
+//try{
+//    $middleware = new Ant\Middleware;
+//    $middleware->middleware([$abc,$qwe,$one]);
+//}catch(Exception $e){
+//    $exception = exceptionHandle($e);
+//    foreach($exception as $key => $value){
+//        echo $value.PHP_EOL;
+//    }
+//}catch(Error $e){
+//    $exception = exceptionHandle($e);
+//    foreach($exception as $key => $value){
+//        echo $value.PHP_EOL;
+//    }
+//}catch(Throwable $e){
+//    $exception = exceptionHandle($e);
+//    foreach($exception as $key => $value){
+//        echo $value.PHP_EOL;
+//    }
 //}
-try{
-    $pdo = new Ant\Database\Connector\Mysql($config);
+//
+//function exceptionHandle(Throwable $exception){
+//    if($exception->getPrevious()){
+//        return exceptionHandle($exception->getPrevious());
+//    }
+//
+//    $headers = [];
+//    $headers['Exception'] = sprintf('%s(%d) %s',get_class($exception),$exception->getCode(),$exception->getMessage());
+//
+//    foreach(explode("\n",$exception->getTraceAsString()) as $index => $line){
+//        $key           = sprintf('X-Exception-Trace-%02d', $index);
+//        $headers[$key] = $line;
+//    }
+//
+//    return $headers;
+//}
+//try{
+//    $pdo = new Ant\Database\Connector\Mysql($config);
+//
+//    $name = 'power';
+//    $stat = $pdo->table('demo')
+//        ->whereSub('id','IN',function(){
+//            $this->table = 'users';
+//            $this->columns('id')->where(['name'=>'power']);
+//        })
+//        ->orWhere(['score'=>'>='],[85])
+//        ->get();
+//
+//    show($stat);
+//}catch(Exception $e){
+//    foreach(explode("\n", $e->getTraceAsString()) as $index => $line ){
+//        echo "{$line} <br>";
+//    }
+//}catch(Error $e){
+//    echo " Error : {$e->getMessage()}";
+//}catch(Throwable $e){
+//    echo " Exception : {$e->getMessage()}";
+//}
 
-    $name = 'power';
-    $data = $pdo->table('demo')
-        ->whereSub('id','IN',function($name){
-            $this->table = 'users';
-            $this->columns('id')->where(['name'=>$name]);
-        },$name)
-        ->orWhere(['score'=>'>='],[85])
-        ->get();
 
-    show($data);
-}catch(Exception $e){
-    foreach(explode("\n", $e->getTraceAsString()) as $index => $line ){
-        echo "{$line} <br>";
-    }
-}catch(Error $e){
-    echo " Error : {$e->getMessage()}";
-}catch(Throwable $e){
-    echo " Exception : {$e->getMessage()}";
-}
+
+
+

@@ -43,7 +43,7 @@ class Statement extends \PDOStatement {
     /**
      * 返回所有的查询结果，允许以指定的字段内容为返回数组的key
      *
-     * @param string $col
+     * @param null $column
      * @return array
      */
     public function getAll($column = null) {

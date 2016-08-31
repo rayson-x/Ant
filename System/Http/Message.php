@@ -71,22 +71,24 @@ abstract class Message implements \Psr\Http\Message\MessageInterface{
     }
 
     /**
-     * 获取指定header,为空返回空数组
+     * 返回指定header数组
+     *
      * @param $name
-     * @return array
+     * @return string[]
      */
     public function getHeader($name)
     {
         $name = strtolower($name);
 
-        if(!$this->hasHeader($name))
+        if(!$this->hasHeader($name)){
             return [];
+        }
 
         return $this->headers[$name];
     }
 
     /**
-     * 获取指定header的值,为空返回空字符串
+     * 返回一行header的值
      *
      * @param $name
      * @return string
@@ -110,7 +112,7 @@ abstract class Message implements \Psr\Http\Message\MessageInterface{
         $result = $this->immutability ? clone $this : $this;
         $name = strtolower($name);
 
-        $value = is_array($value) ? $value : [$value];
+        $value = is_array($value) ? $value : explode(',',$value);
         $result->headers[$name] = $value;
 
         return $result;
@@ -119,19 +121,19 @@ abstract class Message implements \Psr\Http\Message\MessageInterface{
     /**
      * 向header添加信息
      *
-     * @param $name
-     * @param $value
+     * @param $name  string
+     * @param $value string||string[]
      * @return Message
      */
     public function withAddedHeader($name, $value)
     {
-        if($values = $this->getHeader($name)){
-            $values[] = $value;
-        }else{
-            $values = $value;
+        if($this->hasHeader($name)){
+            $value = (is_array($value))
+                ? array_merge($this->getHeader($name),$value)
+                : $value = implode(',',$this->getHeader($name)).','.$value;
         }
 
-        return $this->withHeader($name, $values);
+        return $this->withHeader($name, $value);
     }
 
     /**

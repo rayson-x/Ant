@@ -45,9 +45,7 @@ class Uri implements UriInterface{
             $port = $uri->get('SERVER_PORT');
         }
 
-        $uri = new static($scheme,$host,$uri->get('REQUEST_URI','/'),$port,$user,$password);
-
-        return $uri;
+        return new static($scheme,$host,$uri->get('REQUEST_URI','/'),$port,$user,$password);;
     }
 
     /**

@@ -190,8 +190,9 @@ class Stream implements StreamInterface
      */
     public function seek($offset, $whence = SEEK_SET)
     {
-        if(!$this->isSeekable() || fseek($this->stream,$offset,$whence) === -1)
+        if(!$this->isSeekable() || fseek($this->stream,$offset,$whence) === -1){
             throw new RuntimeException('Could not seek in stream');
+        }
     }
 
     /**
@@ -213,8 +214,9 @@ class Stream implements StreamInterface
      */
     public function read($length)
     {
-        if (!$this->isReadable() || ($data = stream_get_contents($this->stream, $length,$this->tell())) === false)
+        if (!$this->isReadable() || ($data = stream_get_contents($this->stream, $length,$this->tell())) === false){
             throw new RuntimeException('Could not read from stream');
+        }
 
         return $data;
     }
@@ -226,8 +228,9 @@ class Stream implements StreamInterface
      */
     public function rewind()
     {
-        if(!$this->isSeekable() || rewind($this->stream) === false)
+        if(!$this->isSeekable() || rewind($this->stream) === false){
             throw new RuntimeException('Could not rewind in stream');
+        }
     }
 
     /**

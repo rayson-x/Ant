@@ -26,6 +26,11 @@ $config = [
 
 
 
+$request = new Ant\Http\Request(new \Ant\Collection($_SERVER));
+//$data = $request->getParsedBody();
+//var_dump($data);
+//echo $request->getRequestTarget();
+//show($_POST);
 //$Stream = new Ant\Http\Stream(fopen($_FILES[12412412]['tmp_name'],'r'));
 
 //try{

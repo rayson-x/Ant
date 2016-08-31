@@ -8,10 +8,9 @@ class Collection implements CollectionInterface
 {
     protected $items = [];
 
-    public function __construct(array $items){
-        foreach($items as $offset => $item){
-            $this->set($offset,$item);
-        }
+    public function __construct(array $items)
+    {
+        $this->replace($items);
     }
 
     /**
@@ -44,8 +43,8 @@ class Collection implements CollectionInterface
      */
     public function replace(array $items)
     {
-        foreach($items as $key => $value){
-            $this->set($key,$value);
+        foreach($items as $offset => $item){
+            $this->set($offset,$item);
         }
     }
 

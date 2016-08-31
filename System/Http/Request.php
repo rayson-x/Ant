@@ -4,6 +4,10 @@ namespace Ant\Http;
 use \Psr\Http\Message\ServerRequestInterface;
 use \Psr\Http\Message\UriInterface;
 use \Psr\Http\Message\StreamInterface;
+use \Ant\Collection;
+use \InvalidArgumentException;
+use \RuntimeException;
+
 /**
  * Class Request
  * @package Ant\Http
@@ -11,93 +15,123 @@ use \Psr\Http\Message\StreamInterface;
  */
 class Request extends Message implements ServerRequestInterface{
     /**
-     * @var string 请求资源
+     * 请求资源
+     *
+     * @var string
      */
     protected $requestTarget;
     /**
-     * @var string http 请求方式
+     * http 请求方式
+     *
+     * @var string
      */
     protected $method;
     /**
-     * @var \Psr\Http\Message\UriInterface 实例
+     * Uri 实例
+     *
+     * @var \Psr\Http\Message\UriInterface
      */
     protected $uri;
     /**
+     * 服务器和执行环境信息
+     *
      * @var array
      */
     protected $serverParams;
     /**
-     * @var array cookie参数
+     * cookie参数
+     *
+     * @var array
      */
     protected $cookieParams;
     /**
-     * @var array 查询参数
+     * 查询参数
+     *
+     * @var array
      */
     protected $queryParams;
     /**
-     * @var array 每一个元素都为\Psr\Http\Message\UploadedFileInterface 实例
+     * http上传文件 \Psr\Http\Message\UploadedFileInterface 实例
+     *
+     * @var array
      */
     protected $uploadFiles;
     /**
-     * @var array|object|null 主体参数
+     * body 参数
+     *
+     * @var array|object|null
      */
-    protected $bodyParsers;
+    protected $bodyParsed;
+    /**
+     * body 解析器 根据subtype进行调用
+     *
+     * @var callable[]
+     */
+    protected $bodyParsers = [];
     /**
      * @var array 属性
      */
     protected $attributes = [];
 
-    public function initialize(){
-        $server = $_SERVER;
-        $method = $_SERVER['REQUEST_METHOD'];
-        $uri = '';
-        $cookie = $_COOKIE;
-        $files = '';
-        $body = '';
 
-        $headers = [];
-        foreach ($server as $key => $value) {
-            if (strpos($key, 'HTTP_') === 0) {
-                $key           = strtolower(str_replace('_', '-', substr($key, 5)));
-                $headers[$key] = explode(',', $value);
-            }
+    public function __construct(Collection $server){
+        $this->uri = Uri::createFromCollection($server);
+        $this->serverParams = $server->all();
+        $this->headers = Header::createFromCollection($server)->all();
+        $this->cookieParams = $_COOKIE;
+        $this->uploadFiles = UploadedFile::parseUploadedFiles($_FILES);
+        $this->body = new RequestBody();
+
+        $type = ['application/x-www-form-urlencoded','multipart/form-data'];
+        if($server['REQUEST_METHOD'] === 'POST' && in_array($this->getContentType(),$type)){
+            $this->bodyParsed = $_POST;
         }
 
-    }
+        /* 加载默认body解析器 */
+        $this->setBodyParsers('json',function($input){
+            return json_decode($input,true);
+        });
 
-    /**
-     * @param array $headers                            http 头信息
-     * @param string $method                            http 请求方式
-     * @param \Psr\Http\Message\UriInterface $uri       uri
-     * @param array $server                             服务器参数
-     * @param array $cookie                             cookie参数
-     * @param array $files                              上传文件
-     * @param \Psr\Http\Message\StreamInterface $body   http请求内容
-     */
-    public function __construct(
-        array $headers,
-        $method,
-        $uri,
-        array $server,
-        array $cookie,
-        array $files = [],
-        $body
-    ){
+        $this->setBodyParsers('xml',function($input){
+            $backup = libxml_disable_entity_loader(true);
+            $result = simplexml_load_string($input);
+            libxml_disable_entity_loader($backup);
+            return $result;
+        });
 
+        $this->setBodyParsers('x-www-form-urlencoded',function($input){
+            parse_str($input,$data);
+            return $data;
+        });
     }
 
     //获取请求目标(资源)
     public function getRequestTarget(){
-
+        return $this->serverParams['REQUEST_URI'] ?:'/';
     }
 
     //设置请求资源,需保持数据不变性
     public function withRequestTarget($requestTarget){
+        $result = clone $this;
 
+        $result->serverParams['REQUEST_URI'] = $requestTarget;
+
+        return $result;
     }
 
     //获取请求方式
     public function getMethod(){
+        if($this->method){
+            return $this->method;
+        }
+
+        $method = isset($this->serverParams['REQUEST_METHOD']) ? strtoupper($this->serverParams['REQUEST_METHOD']) : 'GET';
+        if ($method !== 'POST') {
+            return $this->method = $method;
+        }
+
+        $override = $this->getHeaderLine('x-http-method-override') ?: $this->getParsedBody();
+
 
     }
 
@@ -108,7 +142,7 @@ class Request extends Message implements ServerRequestInterface{
 
     //获取uri,返回\Psr\Http\Message\UriInterface实例
     public function getUri(){
-
+        return $this->uri;
     }
 
     //设置uri,需要保持数据不变性
@@ -118,7 +152,7 @@ class Request extends Message implements ServerRequestInterface{
 
     //检索服务器参数
     public function getServerParams(){
-
+        return $this->serverParams;
     }
 
     //检索Cookie参数,返回Array
@@ -131,14 +165,33 @@ class Request extends Message implements ServerRequestInterface{
 
     }
 
-    //获取查询参数(也就是GET),返回Array
-    public function getQueryParams(){
-        //TODO::parse_str
+    /**
+     * 获取查询参数
+     *
+     * @return array
+     */
+    public function getQueryParams()
+    {
+        if(is_array($this->queryParams)){
+            return $this->queryParams;
+        }
+
+        if ($this->uri === null) {
+            return [];
+        }
+
+        parse_str($this->uri->getQuery(),$this->queryParams);
+
+        return $this->queryParams;
     }
 
     //添加查询参数,保持数据不变性
-    public function withQueryParams(array $query){
+    public function withQueryParams(array $query)
+    {
+        $result = clone $this;
+        $result->queryParams = array_merge($result->getQueryParams(),$query);
 
+        return $result;
     }
 
     //获取上传文件信息,需返回数组
@@ -151,14 +204,51 @@ class Request extends Message implements ServerRequestInterface{
 
     }
 
-    //检索请求主体提供任何参数
-    public function getParsedBody(){
+    /**
+     * 获取body解析结果
+     *
+     * @return array|null|object
+     */
+    public function getParsedBody()
+    {
+        if($this->bodyParsed){
+            return $this->bodyParsers;
+        }
 
+        if(!$this->body){
+            return null;
+        }
+
+        $contentType = $this->getContentType();
+        $parts = explode('/',$contentType);
+        $type = array_shift($parts);
+        $subtype = array_pop($parts);
+
+        if(in_array(strtolower($type),['application','text']) && isset($this->bodyParsers[$subtype])){
+            $body = (string)$this->getBody();
+            $parsed = call_user_func($this->bodyParsers[$subtype],$body);
+
+            if (!(is_null($parsed) || is_object($parsed) || is_array($parsed))){
+                throw new RuntimeException('Request body media type parser return value must be an array, an object, or null');
+            }
+            $this->bodyParsed = $parsed;
+            return $this->bodyParsed;
+        }
+
+        return null;
     }
 
     //输入数据只能为null,数组,对象,保持数据不变性
-    public function withParsedBody($data){
+    public function withParsedBody($data)
+    {
+        if(!(is_null($data) || is_array($data) || is_object($data))){
+            throw new InvalidArgumentException('Parsed body value must be an array, an object, or null');
+        }
 
+        $result = clone $this;
+        $result->bodyParsed = $data;
+
+        return $result;
     }
 
     /**
@@ -228,8 +318,82 @@ class Request extends Message implements ServerRequestInterface{
      * @param string $name The attribute name.
      * @return self
      */
-    public function withoutAttribute($name){
+    public function withoutAttribute($name)
+    {
 
     }
 
+    public function isMethod($method)
+    {
+        return $this->getMethod() === $method;
+    }
+
+    public function isGet()
+    {
+        return $this->isMethod('GET');
+    }
+
+    public function isPost()
+    {
+        return $this->isMethod('POST');
+    }
+
+    public function isPut()
+    {
+        return $this->isMethod('PUT');
+    }
+
+    public function isDelete()
+    {
+        return $this->isMethod('DELETE');
+    }
+
+    public function isAjax()
+    {
+        return strtolower($this->getHeaderLine('x-requested-with')) === 'xmlhttprequest';
+    }
+
+    public function get()
+    {
+    }
+
+    public function post()
+    {
+
+    }
+
+    /**
+     * 获取content-type
+     *
+     * @return null
+     */
+    public function getContentType()
+    {
+        $result = $this->getHeader('content-type');
+
+        $contentType = $result ? $result[0] : null;
+        if ($contentType) {
+            $contentTypeParts = preg_split('/\s*[;,]\s*/', $contentType);
+
+            return strtolower($contentTypeParts[0]);
+        }
+
+        return null;
+
+    }
+
+    /**
+     * 设置body解析器
+     *
+     * @param $subtype string
+     * @param $parsers callable
+     */
+    public function setBodyParsers($subtype,$parsers)
+    {
+        if(!is_callable($parsers) && !function_exists($parsers)){
+            throw new InvalidArgumentException('Body parsers must be a callable');
+        }
+
+        $this->bodyParsers[$subtype] = $parsers;
+    }
 }

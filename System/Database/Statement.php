@@ -7,7 +7,8 @@ class Statement extends \PDOStatement {
      *
      * @return string
      */
-    public function __toString() {
+    public function __toString()
+    {
         return $this->queryString;
     }
 
@@ -16,7 +17,8 @@ class Statement extends \PDOStatement {
      *
      * @return array
      */
-    public function getRow() {
+    public function getRow()
+    {
         return $this->fetch();
     }
 
@@ -26,7 +28,8 @@ class Statement extends \PDOStatement {
      * @param integer $col_number   ÁÐÐòºÅ
      * @return mixed
      */
-    public function getCol($col_number = 0) {
+    public function getCol($col_number = 0)
+    {
         return $this->fetch(\PDO::FETCH_COLUMN, $col_number);
     }
 
@@ -36,7 +39,8 @@ class Statement extends \PDOStatement {
      * @param integer $col_number   ÁÐÐòºÅ
      * @return array
      */
-    public function getCols($col_number = 0) {
+    public function getCols($col_number = 0)
+    {
         return $this->fetchAll(\PDO::FETCH_COLUMN, $col_number);
     }
 
@@ -46,7 +50,8 @@ class Statement extends \PDOStatement {
      * @param null $column
      * @return array
      */
-    public function getAll($column = null) {
+    public function getAll($column = null)
+    {
         if (!$column) {
             return $this->fetchAll();
         }

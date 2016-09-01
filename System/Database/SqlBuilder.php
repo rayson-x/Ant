@@ -6,29 +6,66 @@ use Ant\Exception;
 use \UnexpectedValueException;
 use \InvalidArgumentException;
 
-//查询表达式生成器
 class SqlBuilder{
-    //连接器实例
+    /**
+     * 连接器实例
+     *
+     * @var Connector
+     */
     protected $connector;
-    //数据表
-    public $table;
-    //数据表别名
-    protected $as;
-    //查询条件
+    /**
+     * 数据表
+     *
+     * @var string|Closure|Expression
+     */
+    protected $table;
+    /**
+     * 查询条件
+     *
+     * @var array
+     */
     protected $where = [];
-    //查询的字段
+    /**
+     * 查询的字段
+     *
+     * @var array
+     */
     protected $columns = [];
-    //联合查询
+    /**
+     * 联合查询
+     *
+     * @var array
+     */
     protected $join = [];
-    //分组条件
+    /**
+     * 分组条件
+     *
+     * @var array
+     */
     protected $groupBy = [];
-    //排序条件
+    /**
+     * 排序条件
+     *
+     * @var array
+     */
     protected $orderBy = [];
-    //预处理参数
+    /**
+     * 预处理参数
+     *
+     * @var array
+     */
     protected $params = [];
-    //单次查询数量
+    /**
+     * 单次查询数量
+     *
+     * @var int
+     */
     protected $limit = 0;
-    //语句参数
+    /**
+     * 语句参数
+     *
+     * @var int
+     */
     protected $offset = 0;
 
     /**
@@ -62,6 +99,30 @@ class SqlBuilder{
         $this->connector = null;
     }
 
+    public function setColumns($params)
+    {
+        $this->columns = is_array($params) ? $params : func_get_args();
+
+        return $this;
+    }
+
+    /**
+     * 设置查询数据表
+     *
+     * @param $table string|Closure|Expression
+     * @return $this
+     */
+    public function setFrom($table)
+    {
+        if($table instanceof Closure){
+            $this->table = $this->subQuery($table);
+        }else{
+            $this->table = $table;
+        }
+
+        return $this;
+    }
+
     /**
      * @param $where
      * @param null $params
@@ -84,7 +145,6 @@ class SqlBuilder{
      */
     public function where($where,$params = null)
     {
-        //因为执行语句为预处理方式，所以要保证条件最后格式必须为 'foo = ?','123'
         $params = ($params === null)
             ? []
             : ( is_array($params) ? $params : array_slice(func_get_args(),1) );
@@ -111,7 +171,8 @@ class SqlBuilder{
     }
 
     /**
-     * @param $column
+     * @param $column string
+     * @param $logic string
      * @param Closure $func
      * @return $this
      *
@@ -119,21 +180,13 @@ class SqlBuilder{
      * 闭包嵌套
      * //SELECT * FROM `demo` WHERE `id` IN (SELECT `id` FROM `users` WHERE `name` = "powers")
      * whereSub('id','IN',function(){
-     *     $this->table = 'users';
+     *     $this->setFrom = 'users';
      *     $this->columns('id')->where(['name'=>'power']);
      *  })
      */
     public function whereSub($column,$logic,$func)
     {
-        if(!$func instanceof Closure){
-            throw new \UnexpectedValueException('');
-        }
-
-        $sqlBuilder = clone $this;
-        $args = array_slice(func_get_args(),3);
-
-        call_user_func_array($func->bindTo($sqlBuilder,$sqlBuilder),$args);
-        list($sql,$params) = $sqlBuilder->compile();
+        list($sql,$params) = $this->subQuery($func)->compile();
 
         $this->where['AND'][] = ["$column $logic ({$sql})",$params];
 
@@ -182,24 +235,6 @@ class SqlBuilder{
 
     }
 
-    /**
-     * @param $as
-     * @return $this
-     */
-    public function alias($as)
-    {
-        $this->as = $as;
-
-        return $this;
-    }
-
-    public function columns($params)
-    {
-        $this->columns = is_array($params) ? $params : func_get_args();
-
-        return $this;
-    }
-
     public function join()
     {
     }
@@ -209,11 +244,18 @@ class SqlBuilder{
 
     }
 
+    //TODO::mysql聚合函数
+
+    public function execute()
+    {
+        list($sql, $params) = $this->compile();
+
+        return $this->connector->execute($sql, $params);
+    }
+
     public function get()
     {
-        list($sql,$params) = $this->compile();
-
-        $stat = $this->connector->execute($sql,$params);
+        $stat = $this->execute();
 
         //TODO::预处理函数
         $rows = [];
@@ -246,7 +288,7 @@ class SqlBuilder{
             ['%COLUMN%',' %TABLE%','%JOIN%','%WHERE%','%GROUP%','%HAVING%','%ORDER%','%LIMIT%','%UNION%'],
             [
                 $this->compileColumn(),
-                $this->compileTable(),
+                $this->compileFrom(),
                 '',
                 $this->compileWhere(),
                 '',
@@ -255,16 +297,33 @@ class SqlBuilder{
                 '',
                 '',
             ],
-            'SELECT %COLUMN% FROM  %TABLE%  %JOIN% %WHERE% %GROUP% %HAVING% %ORDER% %LIMIT% %UNION%');
+            'SELECT %COLUMN% FROM %TABLE% %JOIN% %WHERE% %GROUP% %HAVING% %ORDER% %LIMIT% %UNION%');
 
         return [$sql,$this->params];
+    }
+
+    /**
+     * 编译sql子查询
+     *
+     * @param $func Closure
+     * @param array $args
+     * @return SqlBuilder
+     */
+    public function subQuery($func,$args = []){
+        if(!$func instanceof Closure){
+            throw new InvalidArgumentException('Function must be a Closure');
+        }
+        $sqlBuilder = clone $this;
+
+        call_user_func_array($func->bindTo($sqlBuilder,$sqlBuilder),$args);
+
+        return $sqlBuilder;
     }
 
     /**
      * 释放当前sql
      */
     public function free(){
-        $this->as = null;
         $this->where = [];
         $this->columns = [];
         $this->join = [];
@@ -281,7 +340,7 @@ class SqlBuilder{
      * @param $params
      * @param $expr
      * @return $this
-     * @throws Exception
+     * @throws InvalidArgumentException
      */
     protected function parseWhereExp($where,$params,$expr){
         if(is_array($where)){
@@ -295,8 +354,9 @@ class SqlBuilder{
             }else{
                 while(list($field,$logic) = each($where)){
                     //预处理语句数量跟参数数量是否匹配
-                    if(!current($params)) throw new InvalidArgumentException('参数不足');
-                    //添加引号
+                    if(!current($params)){
+                        throw new UnexpectedValueException('Lack of prepare parameters');
+                    }
                     $field = $this->connector->quoteIdentifier($field);
                     $param = $this->connector->quote(current($params));
 
@@ -334,12 +394,18 @@ class SqlBuilder{
     /**
      * 处理表
      *
-     * @return Expression|array|mixed|string
+     * @return string
      */
-    protected function compileTable(){
-        $table = $this->connector->quoteIdentifier($this->table);
-        if(isset($this->as)){
-            $table = $table.' AS '.$this->connector->quoteIdentifier($this->as);
+    protected function compileFrom()
+    {
+        if($this->table instanceof self){
+            list($sql,$params) = $this->table->compile();
+            $table = sprintf('(%s) AS %s', $sql, $this->connector->quoteIdentifier(uniqid()));
+            $this->params = array_merge($this->params,$params);
+        }elseif($this->table instanceof Expression){
+            $table = (string) $this->table;
+        }else{
+            $table = $this->connector->quoteIdentifier($this->table);
         }
 
         return $table;

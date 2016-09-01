@@ -100,30 +100,29 @@ $config = [
 //
 //    return $headers;
 //}
-//try{
-//    $pdo = new Ant\Database\Connector\Mysql($config);
-//
+
+try{
+    $pdo = new Ant\Database\Connector\Mysql($config);
+
+    $table = $pdo->getTables();
 //    $name = 'power';
-//    $stat = $pdo->table('demo')
+//    $stat = $pdo->select('demo')
 //        ->whereSub('id','IN',function(){
 //            $this->table = 'users';
 //            $this->columns('id')->where(['name'=>'power']);
 //        })
 //        ->orWhere(['score'=>'>='],[85])
 //        ->get();
-//
-//    show($stat);
-//}catch(Exception $e){
-//    foreach(explode("\n", $e->getTraceAsString()) as $index => $line ){
-//        echo "{$line} <br>";
-//    }
-//}catch(Error $e){
-//    echo " Error : {$e->getMessage()}";
-//}catch(Throwable $e){
-//    echo " Exception : {$e->getMessage()}";
-//}
 
-
-
+    show($table);
+}catch(Exception $e){
+    foreach(explode("\n", $e->getTraceAsString()) as $index => $line ){
+        echo "{$line} <br>";
+    }
+}catch(Error $e){
+    echo " Error : {$e->getMessage()}";
+}catch(Throwable $e){
+    echo " Exception : {$e->getMessage()}";
+}
 
 

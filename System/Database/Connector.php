@@ -1,14 +1,18 @@
 <?php
 namespace Ant\Database;
-//连接数据库
-use Ant\Exception;
-use PDO;
 
-class Connector{
+use PDO;
+use \PDOStatement;
+use \PDOException;
+use Ant\Exception;
+
+abstract class Connector{
     //链接实例
     protected $con;
     //事务状态
     protected $inTransaction;
+    //标识符
+    protected $identifierSymbol = '`';
     //查询生成器实例
     protected $builder;
     //配置信息
@@ -18,6 +22,38 @@ class Connector{
     //日志驱动
     protected $log = '';
 
+    /**
+     * 获取最后一个自增ID
+     *
+     * @return mixed
+     */
+    abstract public function lastId();
+
+    /**
+     * 获取所有数据表信息
+     *
+     * @return mixed
+     */
+    abstract public function getTables();
+
+    /**
+     * 获取一个表的字段属性
+     *
+     * @return mixed
+     */
+    abstract public function getColumns($table);
+
+    /**
+     * 获取表索引
+     *
+     * @return mixed
+     */
+    abstract public function getIndexes();
+
+    /**
+     * Connector constructor.
+     * @param array $config
+     */
     public function __construct(array $config = [])
     {
         if(empty($config['dsn'])){
@@ -26,26 +62,42 @@ class Connector{
         $this->config = $config;
     }
 
-    /* 支持直接使用PDO函数 */
+    /**
+     * 调用PDO函数
+     *
+     * @param $method
+     * @param array $args
+     * @return mixed
+     * @throws Exception
+     */
     public function __call($method, array $args) {
         return $args
             ? call_user_func_array([$this->connect(), $method], $args)
             : $this->connect()->$method();
     }
 
-    /* 序列化时断开连接 */
+    /**
+     * 序列化时断开
+     */
     public function __sleep()
     {
         $this->disconnect();
     }
 
-    /* 程序结束断开连接,减少损耗 */
+    /**
+     * 断开连接
+     */
     public function __destruct()
     {
-//        $this->disconnect();
+        $this->disconnect();
     }
 
-    /* 连接数据库 */
+    /**
+     * 连接数据库
+     *
+     * @return PDO
+     * @throws Exception
+     */
     public function connect()
     {
         if($this->isConnected()){
@@ -57,30 +109,37 @@ class Connector{
         $password   = $this->getConfig('password') ?: null;
         $options    = $this->getConfig('options') ?: [];
 
-        //配置PDO
-        $options[\PDO::ATTR_CASE] = isset($options[\PDO::ATTR_CASE]) ? : \PDO::CASE_LOWER;
-        $options[\PDO::ATTR_ERRMODE] = isset($options[\PDO::ATTR_ERRMODE]) ? : \PDO::ERRMODE_EXCEPTION;
-        $options[\PDO::ATTR_STATEMENT_CLASS] = isset($options[\PDO::ATTR_STATEMENT_CLASS]) ? : ['Ant\\Database\\Statement'];
-        $options[\PDO::ATTR_DEFAULT_FETCH_MODE] = isset($options[\PDO::ATTR_DEFAULT_FETCH_MODE]) ? : \PDO::FETCH_ASSOC;
+        //设置PDO默认参数
+        $options[PDO::ATTR_CASE] = isset($options[PDO::ATTR_CASE]) ? $options[PDO::ATTR_CASE] : PDO::CASE_NATURAL;
+        $options[PDO::ATTR_ERRMODE] = isset($options[PDO::ATTR_ERRMODE]) ? $options[PDO::ATTR_ERRMODE] : PDO::ERRMODE_EXCEPTION;
+        $options[PDO::ATTR_DEFAULT_FETCH_MODE] = isset($options[PDO::ATTR_DEFAULT_FETCH_MODE]) ? $options[PDO::ATTR_DEFAULT_FETCH_MODE] : PDO::FETCH_ASSOC;
+        $options[PDO::ATTR_STATEMENT_CLASS] = isset($options[PDO::ATTR_STATEMENT_CLASS]) ? $options[PDO::ATTR_STATEMENT_CLASS] : ['Ant\\Database\\Statement'];
 
+        //TODO::日志,记录连接
         try{
-            $con = new \PDO($dsn,$user,$password,$options);
-            //此处需要添加日志功能
-        }catch(\PDOException $e){
-            //同上
+            $con = new PDO($dsn,$user,$password,$options);
+        }catch(PDOException $e){
             throw new Exception($e);
         }
 
         return $this->con = $con;
     }
 
-    /* 检查是否连接 */
+    /**
+     * 检查是否连接
+     *
+     * @return bool
+     */
     public function isConnected()
     {
-        return $this->con instanceof \PDO;
+        return $this->con instanceof PDO;
     }
 
-    /* 断开连接 */
+    /**
+     * 断开连接
+     *
+     * @return $this
+     */
     public function disconnect()
     {
         if($this->isConnected()){
@@ -90,7 +149,12 @@ class Connector{
         return $this;
     }
 
-    public function rollbackAll(){
+    /**
+     * 回滚所有事务
+     */
+    public function rollbackAll()
+    {
+        //TODO::取缔PDO事务
         $max = 9;
         while($this->inTransaction() && $max-->0){
             $this->rollback();
@@ -99,6 +163,7 @@ class Connector{
 
     /**
      * 为SQL语句中的字符串添加引号
+     *
      * @param $value
      * @return array|string
      * @throws Exception
@@ -117,10 +182,15 @@ class Connector{
             return 'NULL';
         }
 
-        //PDO::quote 返回一个带引号的字符串，理论上可以安全的传递到SQL语句中并执行。如果该驱动程序不支持则返回FALSE
         return $this->connect()->quote($value);
     }
 
+    /**
+     * 添加数据库标识符
+     *
+     * @param $identifier
+     * @return Expression|array|mixed
+     */
     public function quoteIdentifier($identifier)
     {
         if (is_array($identifier)) {
@@ -131,7 +201,7 @@ class Connector{
             return $identifier;
         }
 
-        $symbol = '`';
+        $symbol = $this->identifierSymbol;
         $identifier = str_replace(['"', "'", ';', $symbol], '', $identifier);
 
         $result = [];
@@ -142,7 +212,12 @@ class Connector{
         return new Expression(implode('.', $result));
     }
 
-    /* 获取配置信息 */
+    /**
+     * 获取配置信息
+     *
+     * @param null $key
+     * @return array|bool
+     */
     public function getConfig($key = null)
     {
         if($key === null){
@@ -154,41 +229,47 @@ class Connector{
                 : false;
     }
 
-    /* 使用查询生成器 */
-    public function table($table)
+    /**
+     * 选择sql生成器,一个表对应一个实例
+     *
+     * @param $table string
+     * @return SqlBuilder
+     */
+    public function select($table)
     {
-        if(!($this->builder instanceof SqlBuilder)){
-            $this->builder = new SqlBuilder($this,$table);
+        if(!($this->builder[$table] instanceof SqlBuilder)){
+            $this->builder[$table] = new SqlBuilder($this,$table);
         }
 
-        return $this->builder;
+        return $this->builder[$table];
     }
 
-    /* 使用日志 */
-    protected function log($content)
-    {
-        if($this->supportLog){
-            if($log = new $this->log instanceof \Ant\logInterface){
-                $log->save($content);
-            }else{
-                throw new \Exception($this->log." Not using logInterface");
-            }
-        }
-    }
-
-    /* 只负责预处理,不返回执行结果 */
+    /**
+     * 只负责预处理,不返回执行结果
+     *
+     * @param $sql
+     * @param array $bind
+     * @return PDOStatement|Statement
+     * @throws Exception
+     */
     public function execute($sql,$bind = [])
     {
         try{
-            $stat = $sql instanceof \PDOStatement
+            $stat = $sql instanceof PDOStatement
                 ? $sql
                 : ($this->connect()->prepare($sql));
 
             $stat->execute($bind);
 
             return $stat;
-        }catch(\PDOException $e){
+        }catch(PDOException $e){
             throw new Exception($e->getMessage());
         }
+    }
+
+    /* 使用日志 */
+    protected function log($content)
+    {
+        //TODO::日志功能
     }
 }

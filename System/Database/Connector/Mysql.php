@@ -1,8 +1,31 @@
 <?php
 namespace Ant\Database\Connector;
-//继承Connector,专门负责mysql连接
 
 use Ant\Database\Connector;
-class Mysql extends connector{
 
+class Mysql extends Connector{
+
+    public function lastId()
+    {
+        return $this->connect()->lastInsertId();
+    }
+
+    public function getTables()
+    {
+        return $this->select('information_schema.TABLES')
+                    ->setColumns('TABLE_NAME')
+                    ->where('TABLE_SCHEMA = database()')
+                    ->execute()
+                    ->getCols();
+    }
+
+    public function getColumns($table)
+    {
+        // TODO: Implement getColumns() method.
+    }
+
+    public function getIndexes()
+    {
+        // TODO: Implement getIndexes() method.
+    }
 }

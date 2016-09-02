@@ -19,8 +19,8 @@
     xhr.open("POST", "http://127.0.0.1/index.php");
     xhr.setRequestHeader("content-type", "application/json");
     xhr.setRequestHeader("cache-control", "no-cache");
-    xhr.setRequestHeader("postman-token", "a79a886d-d690-448b-da22-0594ee1119cf");
     xhr.setRequestHeader('x-requested-with','XMLHttpRequest');
+    xhr.setRequestHeader('x-http-method-override','delete');
 
 
     xhr.send(data);

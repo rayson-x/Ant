@@ -22,17 +22,17 @@ class Uri implements UriInterface{
     protected $fragment;
 
     /**
-     * @param Collection $uri
-     * @return Collection|static
+     * @param Collection $server
+     * @return static
      */
-    public static function createFromCollection(Collection $uri)
+    public static function createFromCollection(Collection $server)
     {
-        $scheme = (empty($scheme) || $uri->get('HTTPS') === 'off') ? 'http' : 'https';
-        $user = $uri->get('PHP_AUTH_USER','');
-        $password = $uri->get('PHP_AUTH_PW','');
+        $scheme = (empty($scheme) || $server->get('HTTPS') === 'off') ? 'http' : 'https';
+        $user = $server->get('PHP_AUTH_USER','');
+        $password = $server->get('PHP_AUTH_PW','');
 
         //HTTP_HOST在http1.0下可以返回空
-        if($httpHost = $uri->get('HTTP_HOST',false)){
+        if($httpHost = $server->get('HTTP_HOST',false)){
             if(strpos($httpHost,':')){
                 list($host,$port) = explode(':',$httpHost,2);
                 $port = intval($port);
@@ -41,11 +41,11 @@ class Uri implements UriInterface{
                 $port = null;
             }
         }else{
-            $host = $uri->get('SERVER_NAME')?:$uri->get('SERVER_ADDR');
-            $port = $uri->get('SERVER_PORT');
+            $host = $server->get('SERVER_NAME')?:$server->get('SERVER_ADDR');
+            $port = $server->get('SERVER_PORT');
         }
 
-        return new static($scheme,$host,$uri->get('REQUEST_URI','/'),$port,$user,$password);;
+        return new static($scheme,$host,$server->get('REQUEST_URI','/'),$port,$user,$password);
     }
 
     /**
@@ -125,7 +125,7 @@ class Uri implements UriInterface{
     }
 
     /**
-     * 指定userinfo
+     * 指定userInfo
      *
      * @param string $user
      * @param null $password

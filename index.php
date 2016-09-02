@@ -27,6 +27,15 @@ $config = [
 
 
 $request = new Ant\Http\Request(new \Ant\Collection($_SERVER));
+
+$result = $request->withParsedBody(['asdf'=>'123']);
+var_dump($request->getBodyParam());
+
+//$uri = Ant\Http\Uri::createFromCollection(new \Ant\Collection($_SERVER));
+//$uri = $uri->withHost("");
+//$request = $request->withUri($uri);
+//var_dump($request->withUri(Ant\Http\Uri::createFromCollection(new \Ant\Collection($_SERVER))->withHost('www.baidu.com'),true)->getHeader('host'));
+
 //$data = $request->getParsedBody();
 //var_dump($data);
 //echo $request->getRequestTarget();

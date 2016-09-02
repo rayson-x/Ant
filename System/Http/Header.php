@@ -15,12 +15,10 @@ class Header extends Collection{
     ];
 
     /**
-     * Create new headers collection with data extracted from
-     * the application Environment object
+     * 获取header数据集
      *
-     * @param Collection $environment The Slim application Environment
-     *
-     * @return self
+     * @param Collection $server
+     * @return static
      */
     public static function createFromCollection(Collection $server)
     {

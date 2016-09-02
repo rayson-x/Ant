@@ -1,19 +1,27 @@
 <?php
 namespace Ant\Http;
 
-use \Psr\Http\Message\ServerRequestInterface;
-use \Psr\Http\Message\UriInterface;
-use \Psr\Http\Message\StreamInterface;
-use \Ant\Collection;
-use \InvalidArgumentException;
-use \RuntimeException;
+use Ant\Collection;
+use RuntimeException;
+use InvalidArgumentException;
+use Psr\Http\Message\UriInterface;
+use Psr\Http\Message\StreamInterface;
+use Psr\Http\Message\UploadedFileInterface;
+use Psr\Http\Message\ServerRequestInterface;
 
 /**
  * Class Request
  * @package Ant\Http
+ * @see http://www.php-fig.org/psr/psr-7/
  * 可能改变实例的所有方法都必须保证请求实例不能被改变,使得它们保持当前消息的内部状态,并返回一个包含改变状态的实例.
  */
 class Request extends Message implements ServerRequestInterface{
+    /**
+     * 是否保持数据不变性
+     *
+     * @var bool
+     */
+    protected $immutability = true;
     /**
      * 请求资源
      *
@@ -72,9 +80,24 @@ class Request extends Message implements ServerRequestInterface{
      * @var array 属性
      */
     protected $attributes = [];
+    /**
+     * 支持的http请求方式
+     *
+     * @var array
+     */
+    protected $viewMethods = [
+        'GET' => 1,
+        'PUT' => 1,
+        'POST' => 1,
+        'DELETE' => 1,
+        'HEAD' => 1,
+        'PATCH' => 1,
+    ];
 
 
-    public function __construct(Collection $server){
+    public function __construct(Collection $server)
+    {
+        //TODO::一些非必要参数可以在方法中单独加载,可以节省开销
         $this->uri = Uri::createFromCollection($server);
         $this->serverParams = $server->all();
         $this->headers = Header::createFromCollection($server)->all();
@@ -105,22 +128,34 @@ class Request extends Message implements ServerRequestInterface{
         });
     }
 
-    //获取请求目标(资源)
-    public function getRequestTarget(){
+    /**
+     * 获取请求目标(资源)
+     *
+     * @return string
+     */
+    public function getRequestTarget()
+    {
         return $this->serverParams['REQUEST_URI'] ?:'/';
     }
 
-    //设置请求资源,需保持数据不变性
-    public function withRequestTarget($requestTarget){
-        $result = clone $this;
-
-        $result->serverParams['REQUEST_URI'] = $requestTarget;
-
-        return $result;
+    /**
+     * 设置请求资源
+     *
+     * @param mixed $requestTarget
+     * @return Request
+     */
+    public function withRequestTarget($requestTarget)
+    {
+        return $this->immutability($this,['serverParams','REQUEST_URI'],$requestTarget);
     }
 
-    //获取请求方式
-    public function getMethod(){
+    /**
+     * 获取http请求方式,支持重写请求方式
+     *
+     * @return string
+     */
+    public function getMethod()
+    {
         if($this->method){
             return $this->method;
         }
@@ -130,39 +165,113 @@ class Request extends Message implements ServerRequestInterface{
             return $this->method = $method;
         }
 
-        $override = $this->getHeaderLine('x-http-method-override') ?: $this->getParsedBody();
+        $override = $this->getHeaderLine('x-http-method-override') ?: $this->post('_method');
+        if($override){
+            $method = $this->filterMethod($override);
+        }
 
-
+        return $this->method = $method;
     }
 
-    //设置请求方式,需保持数据不变性
-    public function withMethod($method){
-
+    /**
+     * 设置请求方式
+     *
+     * @param string $method
+     * @return Request
+     */
+    public function withMethod($method)
+    {
+        return $this->immutability($this,'method',$this->filterMethod($method));
     }
 
-    //获取uri,返回\Psr\Http\Message\UriInterface实例
-    public function getUri(){
+    /**
+     * 过滤非法请求方式
+     *
+     * @param $method
+     * @return string
+     */
+    public function filterMethod($method)
+    {
+        $method = strtoupper($method);
+
+        if(!array_key_exists($method,$this->viewMethods)){
+            throw new InvalidArgumentException(sprintf(
+                'Unsupported HTTP method "%s" provided',
+                $method
+            ));
+        }
+
+        return $method;
+    }
+
+    /**
+     * 获取URI
+     *
+     * @return UriInterface
+     */
+    public function getUri()
+    {
         return $this->uri;
     }
 
-    //设置uri,需要保持数据不变性
-    public function withUri(\Psr\Http\Message\UriInterface $uri,$preserveHost = false){
+    /**
+     * 设置uri
+     *
+     * 如果开启host保护
+     * HOST为空,新的URI包含HOST,更新
+     * HOST为空,新的URI不包含,不更新
+     * HOST不为空,不更新
+     *
+     * @param UriInterface $uri
+     * @param bool|false $preserveHost
+     * @return Request
+     */
+    public function withUri(\Psr\Http\Message\UriInterface $uri,$preserveHost = false)
+    {
+        if(!$preserveHost){
+                $host = explode(',',$uri->getHost());
+        }else{
+            if( (!$this->hasHeader('host') || empty($this->getHeaderLine('host'))) && $uri->getHost() !== ''){
+                $host = explode(',',$uri->getHost());
+            }
+        }
 
+        if(empty($host)){
+            $host = $this->getHeader('host');
+        }
+
+        return $this->immutability($this,['headers','host'],$host);
     }
 
-    //检索服务器参数
-    public function getServerParams(){
+    /**
+     * 获取server参数
+     *
+     * @return array
+     */
+    public function getServerParams()
+    {
         return $this->serverParams;
     }
 
-    //检索Cookie参数,返回Array
-    public function getCookieParams(){
-
+    /**
+     * 获取cookie参数
+     *
+     * @return array
+     */
+    public function getCookieParams()
+    {
+        return $this->cookieParams;
     }
 
-    //设置cookie参数,保持数据不变
-    public function withCookieParams(array $cookies){
-
+    /**
+     * 设置cookie参数
+     *
+     * @param array $cookies
+     * @return Request
+     */
+    public function withCookieParams(array $cookies)
+    {
+        return $this->immutability($this,'cookieParams',$cookies);
     }
 
     /**
@@ -185,23 +294,42 @@ class Request extends Message implements ServerRequestInterface{
         return $this->queryParams;
     }
 
-    //添加查询参数,保持数据不变性
+    /**
+     * 设置查询参数
+     *
+     * @param array $query
+     * @return Request
+     */
     public function withQueryParams(array $query)
     {
-        $result = clone $this;
-        $result->queryParams = array_merge($result->getQueryParams(),$query);
-
-        return $result;
+        return $this->immutability($this,'queryParams',$query);
     }
 
-    //获取上传文件信息,需返回数组
-    public function getUploadedFiles(){
+    /**
+     * 向get中添加参数
+     *
+     * @param array $query
+     * @return Request
+     */
+    public function withAddedQueryParams(array $query)
+    {
+        return $this->withQueryParams(array_merge($this->getQueryParams(),$query));
+    }
 
+    /**
+     * 获取上传文件信息
+     *
+     * @return array[]|UploadedFileInterface
+     */
+    public function getUploadedFiles()
+    {
+        return $this->uploadFiles;
     }
 
     //添加上传文件信息
-    public function withUploadedFiles(array $uploadedFiles){
-
+    public function withUploadedFiles(array $uploadedFiles)
+    {
+        return $this->immutability($this,'uploadFiles',$uploadedFiles);
     }
 
     /**
@@ -225,6 +353,7 @@ class Request extends Message implements ServerRequestInterface{
         $subtype = array_pop($parts);
 
         if(in_array(strtolower($type),['application','text']) && isset($this->bodyParsers[$subtype])){
+            //调用body解析函数
             $body = (string)$this->getBody();
             $parsed = call_user_func($this->bodyParsers[$subtype],$body);
 
@@ -238,17 +367,19 @@ class Request extends Message implements ServerRequestInterface{
         return null;
     }
 
-    //输入数据只能为null,数组,对象,保持数据不变性
+    /**
+     * 设置body解析结果
+     *
+     * @param array|null|object $data
+     * @return Request
+     */
     public function withParsedBody($data)
     {
         if(!(is_null($data) || is_array($data) || is_object($data))){
             throw new InvalidArgumentException('Parsed body value must be an array, an object, or null');
         }
 
-        $result = clone $this;
-        $result->bodyParsed = $data;
-
-        return $result;
+        return $this->immutability($this,'bodyParsers',$data);
     }
 
     /**
@@ -262,7 +393,8 @@ class Request extends Message implements ServerRequestInterface{
      *
      * @return mixed[] Attributes derived from the request.
      */
-    public function getAttributes(){
+    public function getAttributes()
+    {
 
     }
 
@@ -281,7 +413,8 @@ class Request extends Message implements ServerRequestInterface{
      * @param mixed $default Default value to return if the attribute does not exist.
      * @return mixed
      */
-    public function getAttribute($name, $default = null){
+    public function getAttribute($name, $default = null)
+    {
 
     }
 
@@ -300,7 +433,8 @@ class Request extends Message implements ServerRequestInterface{
      * @param mixed $value The value of the attribute.
      * @return self
      */
-    public function withAttribute($name, $value){
+    public function withAttribute($name, $value)
+    {
 
     }
 
@@ -323,43 +457,119 @@ class Request extends Message implements ServerRequestInterface{
 
     }
 
+    /**
+     * 检查请求方式
+     *
+     * @param $method
+     * @return bool
+     */
     public function isMethod($method)
     {
         return $this->getMethod() === $method;
     }
 
+    /**
+     * 查看是否是GET请求
+     *
+     * @return bool
+     */
     public function isGet()
     {
         return $this->isMethod('GET');
     }
 
+    /**
+     * 查看是否是POST请求
+     *
+     * @return bool
+     */
     public function isPost()
     {
         return $this->isMethod('POST');
     }
 
+    /**
+     * 查看是否是PUT请求
+     *
+     * @return bool
+     */
     public function isPut()
     {
         return $this->isMethod('PUT');
     }
 
+    /**
+     * 查看是否是DELETE请求
+     *
+     * @return bool
+     */
     public function isDelete()
     {
         return $this->isMethod('DELETE');
     }
 
+    /**
+     * 检查是否是异步请求
+     * 注意 : 主流JS框架发起AJAX都有此参数,如果是原生AJAX需要手动添加到http头
+     *
+     * @return bool
+     */
     public function isAjax()
     {
         return strtolower($this->getHeaderLine('x-requested-with')) === 'xmlhttprequest';
     }
 
-    public function get()
+    /**
+     * 获取GET参数
+     *
+     * @param null $key
+     * @return array|null
+     */
+    public function get($key = null)
     {
+        $get = $this->getQueryParams();
+        if($key === null){
+            return $get;
+        }
+
+        return isset($get[$key]) ? $get[$key] : null;
     }
 
-    public function post()
+    /**
+     * 获取POST参数
+     *
+     * @param null $key
+     * @return array|null|object
+     */
+    public function post($key = null)
     {
+        if($this->serverParams['REQUEST_METHOD'] === 'POST'){
+            return $this->getBodyParam($key);
+        }
 
+        return $key ? [] : null;
+    }
+
+    /**
+     * 获取body参数
+     *
+     * @param null $key
+     * @return array|null|object
+     */
+    public function getBodyParam($key = null)
+    {
+        $params = $this->getParsedBody();
+        if($key === null){
+            return $params;
+        }
+
+        if(is_array($params) && isset($params[$key])){
+            return $params[$key];
+        }elseif (is_object($params) && property_exists($params, $key)){
+            return $params->$key;
+        }
+
+        return null;
     }
 
     /**
@@ -395,5 +605,28 @@ class Request extends Message implements ServerRequestInterface{
         }
 
         $this->bodyParsers[$subtype] = $parsers;
+    }
+
+    /**
+     * 保持数据不变性
+     *
+     * @param $instance Request
+     * @param $attribute string
+     * @param $value mixed
+     * @return Request
+     */
+    public function immutability(Request $instance,$attribute,$value)
+    {
+        $result = clone $instance;
+        if(is_array($attribute)){
+            $key = array_pop($attribute);
+            $array = array_shift($attribute);
+
+            $result->$array[$key] = $value;
+        }else{
+            $result->$attribute = $value;
+        }
+
+        return $result;
     }
 }

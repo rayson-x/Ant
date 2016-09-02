@@ -1,9 +1,9 @@
 <?php
 namespace Ant\Http;
 
-use \RuntimeException;
-use \InvalidArgumentException;
-use \Psr\Http\Message\StreamInterface;
+use RuntimeException;
+use InvalidArgumentException;
+use Psr\Http\Message\StreamInterface;
 
 /**
  * Class Stream

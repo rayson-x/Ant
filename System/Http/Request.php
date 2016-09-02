@@ -5,7 +5,6 @@ use Ant\Collection;
 use RuntimeException;
 use InvalidArgumentException;
 use Psr\Http\Message\UriInterface;
-use Psr\Http\Message\StreamInterface;
 use Psr\Http\Message\UploadedFileInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
@@ -22,64 +21,77 @@ class Request extends Message implements ServerRequestInterface{
      * @var bool
      */
     protected $immutability = true;
+
     /**
      * 请求资源
      *
      * @var string
      */
     protected $requestTarget;
+
     /**
      * http 请求方式
      *
      * @var string
      */
     protected $method;
+
     /**
      * Uri 实例
      *
      * @var \Psr\Http\Message\UriInterface
      */
     protected $uri;
+
     /**
      * 服务器和执行环境信息
      *
      * @var array
      */
     protected $serverParams;
+
     /**
      * cookie参数
      *
      * @var array
      */
     protected $cookieParams;
+
     /**
      * 查询参数
      *
      * @var array
      */
     protected $queryParams;
+
     /**
      * http上传文件 \Psr\Http\Message\UploadedFileInterface 实例
      *
      * @var array
      */
     protected $uploadFiles;
+
     /**
      * body 参数
      *
      * @var array|object|null
      */
     protected $bodyParsed;
+
     /**
      * body 解析器 根据subtype进行调用
      *
      * @var callable[]
      */
     protected $bodyParsers = [];
+
     /**
-     * @var array 属性
+     * 属性
+     *
+     * @var array
      */
     protected $attributes = [];
+
     /**
      * 支持的http请求方式
      *
@@ -100,10 +112,11 @@ class Request extends Message implements ServerRequestInterface{
         //TODO::一些非必要参数可以在方法中单独加载,可以节省开销
         $this->uri = Uri::createFromCollection($server);
         $this->serverParams = $server->all();
-        $this->headers = Header::createFromCollection($server)->all();
+        $this->headers = Header::createFromCollection($server);
         $this->cookieParams = $_COOKIE;
         $this->uploadFiles = UploadedFile::parseUploadedFiles($_FILES);
         $this->body = new RequestBody();
+        $this->attributes = new Collection();
 
         $type = ['application/x-www-form-urlencoded','multipart/form-data'];
         if($server['REQUEST_METHOD'] === 'POST' && in_array($this->getContentType(),$type)){
@@ -226,7 +239,7 @@ class Request extends Message implements ServerRequestInterface{
      * @param bool|false $preserveHost
      * @return Request
      */
-    public function withUri(\Psr\Http\Message\UriInterface $uri,$preserveHost = false)
+    public function withUri(UriInterface $uri,$preserveHost = false)
     {
         if(!$preserveHost){
                 $host = explode(',',$uri->getHost());
@@ -339,7 +352,7 @@ class Request extends Message implements ServerRequestInterface{
      */
     public function getParsedBody()
     {
-        if($this->bodyParsed){
+        if($this->bodyParsers){
             return $this->bodyParsers;
         }
 
@@ -383,30 +396,17 @@ class Request extends Message implements ServerRequestInterface{
     }
 
     /**
-     * Retrieve attributes derived from the request.
-     *
-     * The request "attributes" may be used to allow injection of any
-     * parameters derived from the request: e.g., the results of path
-     * match operations; the results of decrypting cookies; the results of
-     * deserializing non-form-encoded message bodies; etc. Attributes
-     * will be application and request specific, and CAN be mutable.
+     * 获取所有属性
      *
      * @return mixed[] Attributes derived from the request.
      */
     public function getAttributes()
     {
-
+        return $this->attributes->all();
     }
 
     /**
-     * Retrieve a single derived request attribute.
-     *
-     * Retrieves a single derived request attribute as described in
-     * getAttributes(). If the attribute has not been previously set, returns
-     * the default value as provided.
-     *
-     * This method obviates the need for a hasAttribute() method, as it allows
-     * specifying a default value to return if the attribute is not found.
+     * 获取一个属性的值
      *
      * @see getAttributes()
      * @param string $name The attribute name.
@@ -415,18 +415,11 @@ class Request extends Message implements ServerRequestInterface{
      */
     public function getAttribute($name, $default = null)
     {
-
+        return $this->attributes->get($name,$default);
     }
 
     /**
-     * Return an instance with the specified derived request attribute.
-     *
-     * This method allows setting a single derived request attribute as
-     * described in getAttributes().
-     *
-     * This method MUST be implemented in such a way as to retain the
-     * immutability of the message, and MUST return an instance that has the
-     * updated attribute.
+     * 设置一个属性.
      *
      * @see getAttributes()
      * @param string $name The attribute name.
@@ -435,18 +428,13 @@ class Request extends Message implements ServerRequestInterface{
      */
     public function withAttribute($name, $value)
     {
-
+        $result = clone $this;
+        $result->attributes->set($name, $value);
+        return $result;
     }
 
     /**
-     * Return an instance that removes the specified derived request attribute.
-     *
-     * This method allows removing a single derived request attribute as
-     * described in getAttributes().
-     *
-     * This method MUST be implemented in such a way as to retain the
-     * immutability of the message, and MUST return an instance that removes
-     * the attribute.
+     * 删除一个属性
      *
      * @see getAttributes()
      * @param string $name The attribute name.
@@ -454,7 +442,9 @@ class Request extends Message implements ServerRequestInterface{
      */
     public function withoutAttribute($name)
     {
-
+        $result = clone $this;
+        $result->attributes->remove($name);
+        return $result;
     }
 
     /**
@@ -589,7 +579,6 @@ class Request extends Message implements ServerRequestInterface{
         }
 
         return null;
-
     }
 
     /**

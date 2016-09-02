@@ -1,11 +1,14 @@
 <?php
 namespace Ant\Http;
 
+use Psr\Http\Message\StreamInterface;
+use Psr\Http\Message\MessageInterface;
+
 /**
  * Class Message
  * @package Ant\Http
  */
-abstract class Message implements \Psr\Http\Message\MessageInterface{
+abstract class Message implements MessageInterface{
     /**
      * @var bool 是否保持数据不变性
      */
@@ -17,17 +20,20 @@ abstract class Message implements \Psr\Http\Message\MessageInterface{
     protected $protocolVersion = '1.1';
 
     /**
-     * @var array HTTP头信息
+     * HTTP头信息
+     *
+     * @var Header
      */
-    protected $headers = [];
+    protected $headers;
 
     /**
-     * @var \Psr\Http\Message\StreamInterface body信息
+     * @var StreamInterface body信息
      */
     protected $body;
 
     /**
      * 获取HTTP协议版本
+     *
      * @return string
      */
     public function getProtocolVersion()
@@ -37,6 +43,7 @@ abstract class Message implements \Psr\Http\Message\MessageInterface{
 
     /**
      * 设置HTTP协议版本
+     *
      * @param $version
      * @return Message
      */
@@ -50,16 +57,18 @@ abstract class Message implements \Psr\Http\Message\MessageInterface{
 
     /**
      * 获取HTTP Header
+     *
      * @return array
      */
     public function getHeaders()
     {
-        return $this->headers;
+        return $this->headers->all();
     }
 
 
     /**
      * 检查header是否存在
+     *
      * @param $name
      * @return bool
      */
@@ -67,7 +76,7 @@ abstract class Message implements \Psr\Http\Message\MessageInterface{
     {
         $name = strtolower($name);
 
-        return array_key_exists($name, $this->headers);
+        return $this->headers->has($name);
     }
 
     /**
@@ -84,7 +93,7 @@ abstract class Message implements \Psr\Http\Message\MessageInterface{
             return [];
         }
 
-        return $this->headers[$name];
+        return $this->headers->get($name);
     }
 
     /**
@@ -113,7 +122,7 @@ abstract class Message implements \Psr\Http\Message\MessageInterface{
         $name = strtolower($name);
 
         $value = is_array($value) ? $value : explode(',',$value);
-        $result->headers[$name] = $value;
+        $result->headers->set($name,$value);
 
         return $result;
     }
@@ -151,7 +160,7 @@ abstract class Message implements \Psr\Http\Message\MessageInterface{
         $result = $this->immutability ? clone $this : $this;
         $name = strtolower($name);
 
-        unset($result->headers[$name]);
+        $result->headers->remove($name);
 
         return $result;
     }
@@ -159,7 +168,7 @@ abstract class Message implements \Psr\Http\Message\MessageInterface{
     /**
      * 获取body
      *
-     * @return \Psr\Http\Message\StreamInterface
+     * @return StreamInterface
      */
     public function getBody()
     {
@@ -169,10 +178,10 @@ abstract class Message implements \Psr\Http\Message\MessageInterface{
     /**
      * 添加body数据
      *
-     * @param \Psr\Http\Message\StreamInterface $body
+     * @param StreamInterface $body
      * @return $this|Message
      */
-    public function withBody(\Psr\Http\Message\StreamInterface $body)
+    public function withBody(StreamInterface $body)
     {
         if ($body === $this->body) {
             return $this;

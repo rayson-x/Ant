@@ -1,14 +1,14 @@
 <?php
 namespace Ant;
 
-use \ArrayIterator;
+use ArrayIterator;
 use Ant\Interfaces\CollectionInterface;
 
 class Collection implements CollectionInterface
 {
     protected $items = [];
 
-    public function __construct(array $items)
+    public function __construct(array $items = [])
     {
         $this->replace($items);
     }

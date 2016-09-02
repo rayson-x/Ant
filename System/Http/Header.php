@@ -15,7 +15,7 @@ class Header extends Collection{
     ];
 
     /**
-     * »ñÈ¡headerÊı¾İ¼¯
+     * ï¿½ï¿½è·å–headeræ•°æ®é›†ï¿½ï¿½ï¿½İ¼ï¿½
      *
      * @param Collection $server
      * @return static
@@ -24,7 +24,7 @@ class Header extends Collection{
     {
         $headers = [];
         foreach ($server as $key => $value) {
-            //ÌáÈ¡httpÍ·
+            //ï¿½ï¿½æå–HTTPå¤´
             if (isset(static::$special[$key]) || strpos($key, 'HTTP_') === 0) {
                 $key = strtolower(str_replace('_', '-', $key));
                 $key = (strpos($key, 'http-') === 0) ? substr($key, 5) : $key;

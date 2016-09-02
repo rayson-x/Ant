@@ -1,9 +1,9 @@
 <?php
 namespace Ant\Http;
 
-use \InvalidArgumentException;
-use \Psr\Http\Message\UriInterface;
-use \Ant\Collection;
+use Ant\Collection;
+use InvalidArgumentException;
+use Psr\Http\Message\UriInterface;
 
 class Uri implements UriInterface{
 

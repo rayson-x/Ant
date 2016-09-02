@@ -28,9 +28,6 @@ $config = [
 
 $request = new Ant\Http\Request(new \Ant\Collection($_SERVER));
 
-$result = $request->withParsedBody(['asdf'=>'123']);
-var_dump($request->getBodyParam());
-
 //$uri = Ant\Http\Uri::createFromCollection(new \Ant\Collection($_SERVER));
 //$uri = $uri->withHost("");
 //$request = $request->withUri($uri);

@@ -26,6 +26,21 @@ $config = [
 
 
 
+<<<<<<< HEAD
+=======
+$request = new Ant\Http\Request(new \Ant\Collection($_SERVER));
+
+//$uri = Ant\Http\Uri::createFromCollection(new \Ant\Collection($_SERVER));
+//$uri = $uri->withHost("");
+//$request = $request->withUri($uri);
+//var_dump($request->withUri(Ant\Http\Uri::createFromCollection(new \Ant\Collection($_SERVER))->withHost('www.baidu.com'),true)->getHeader('host'));
+
+//$data = $request->getParsedBody();
+//var_dump($data);
+//echo $request->getRequestTarget();
+//show($_POST);
+//$Stream = new Ant\Http\Stream(fopen($_FILES[12412412]['tmp_name'],'r'));
+>>>>>>> 9ee76d29557655e3c41727786a48edd55e685ceb
 
 //try{
 //

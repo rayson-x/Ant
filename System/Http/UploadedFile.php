@@ -1,9 +1,10 @@
 <?php
 namespace Ant\Http;
 
-use \InvalidArgumentException;
-use \RuntimeException;
-use \Psr\Http\Message\UploadedFileInterface;
+use RuntimeException;
+use InvalidArgumentException;
+use Psr\Http\Message\StreamInterface;
+use Psr\Http\Message\UploadedFileInterface;
 
 class UploadedFile implements UploadedFileInterface{
 

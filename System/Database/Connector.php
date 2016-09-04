@@ -8,7 +8,7 @@ use Ant\Exception;
 
 abstract class Connector{
     //链接实例
-    protected $con;
+    protected $connect;
     //事务状态
     protected $inTransaction;
     //标识符
@@ -101,7 +101,7 @@ abstract class Connector{
     public function connect()
     {
         if($this->isConnected()){
-            return $this->con;
+            return $this->connect;
         }
 
         $dsn        = $this->getConfig('dsn');
@@ -117,12 +117,12 @@ abstract class Connector{
 
         //TODO::日志,记录连接
         try{
-            $con = new PDO($dsn,$user,$password,$options);
+            $connect = new PDO($dsn,$user,$password,$options);
         }catch(PDOException $e){
             throw new Exception($e);
         }
 
-        return $this->con = $con;
+        return $this->connect = $connect;
     }
 
     /**
@@ -132,7 +132,7 @@ abstract class Connector{
      */
     public function isConnected()
     {
-        return $this->con instanceof PDO;
+        return $this->connect instanceof PDO;
     }
 
     /**
@@ -144,7 +144,7 @@ abstract class Connector{
     {
         if($this->isConnected()){
             $this->rollbackAll();
-            $this->con = null;
+            $this->connect = null;
         }
         return $this;
     }

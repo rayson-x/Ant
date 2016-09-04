@@ -5,6 +5,8 @@ use Ant\Database\Connector;
 
 class Mysql extends Connector{
 
+    protected $identifierSymbol = '`';
+
     public function lastId()
     {
         return $this->connect()->lastInsertId();

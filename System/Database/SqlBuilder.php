@@ -352,13 +352,14 @@ class SqlBuilder{
                     $this->where[$expr][] = ["$key = ?",[$value]];
                 }
             }else{
+                //TODO::待优化
                 while(list($field,$logic) = each($where)){
                     //预处理语句数量跟参数数量是否匹配
-                    if(!current($params)){
+                    if(!($param = current($params))){
                         throw new UnexpectedValueException('Lack of prepare parameters');
                     }
                     $field = $this->connector->quoteIdentifier($field);
-                    $param = $this->connector->quote(current($params));
+                    $param = $this->connector->quote($param);
 
                     //将数组参数转为为字符串
                     $param = !is_array($param)

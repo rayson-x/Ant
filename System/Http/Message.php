@@ -1,11 +1,14 @@
 <?php
 namespace Ant\Http;
 
+use Psr\Http\Message\StreamInterface;
+use Psr\Http\Message\MessageInterface;
+
 /**
  * Class Message
  * @package Ant\Http
  */
-abstract class Message implements \Psr\Http\Message\MessageInterface{
+abstract class Message implements MessageInterface{
     /**
      * @var bool 是否保持数据不变性
      */
@@ -17,17 +20,20 @@ abstract class Message implements \Psr\Http\Message\MessageInterface{
     protected $protocolVersion = '1.1';
 
     /**
-     * @var array HTTP头信息
+     * HTTP头信息
+     *
+     * @var Header
      */
-    protected $headers = [];
+    protected $headers;
 
     /**
-     * @var \Psr\Http\Message\StreamInterface body信息
+     * @var StreamInterface body信息
      */
     protected $body;
 
     /**
      * 获取HTTP协议版本
+     *
      * @return string
      */
     public function getProtocolVersion()
@@ -37,6 +43,7 @@ abstract class Message implements \Psr\Http\Message\MessageInterface{
 
     /**
      * 设置HTTP协议版本
+     *
      * @param $version
      * @return Message
      */
@@ -50,16 +57,18 @@ abstract class Message implements \Psr\Http\Message\MessageInterface{
 
     /**
      * 获取HTTP Header
+     *
      * @return array
      */
     public function getHeaders()
     {
-        return $this->headers;
+        return $this->headers->all();
     }
 
 
     /**
      * 检查header是否存在
+     *
      * @param $name
      * @return bool
      */
@@ -67,26 +76,28 @@ abstract class Message implements \Psr\Http\Message\MessageInterface{
     {
         $name = strtolower($name);
 
-        return array_key_exists($name, $this->headers);
+        return $this->headers->has($name);
     }
 
     /**
-     * 获取指定header,为空返回空数组
+     * 返回指定header数组
+     *
      * @param $name
-     * @return array
+     * @return string[]
      */
     public function getHeader($name)
     {
         $name = strtolower($name);
 
-        if(!$this->hasHeader($name))
+        if(!$this->hasHeader($name)){
             return [];
+        }
 
-        return $this->headers[$name];
+        return $this->headers->get($name);
     }
 
     /**
-     * 获取指定header的值,为空返回空字符串
+     * 返回一行header的值
      *
      * @param $name
      * @return string
@@ -110,8 +121,8 @@ abstract class Message implements \Psr\Http\Message\MessageInterface{
         $result = $this->immutability ? clone $this : $this;
         $name = strtolower($name);
 
-        $value = is_array($value) ? $value : [$value];
-        $result->headers[$name] = $value;
+        $value = is_array($value) ? $value : explode(',',$value);
+        $result->headers->set($name,$value);
 
         return $result;
     }
@@ -119,19 +130,19 @@ abstract class Message implements \Psr\Http\Message\MessageInterface{
     /**
      * 向header添加信息
      *
-     * @param $name
-     * @param $value
+     * @param $name  string
+     * @param $value string||string[]
      * @return Message
      */
     public function withAddedHeader($name, $value)
     {
-        if($values = $this->getHeader($name)){
-            $values[] = $value;
-        }else{
-            $values = $value;
+        if($this->hasHeader($name)){
+            $value = (is_array($value))
+                ? array_merge($this->getHeader($name),$value)
+                : $value = implode(',',$this->getHeader($name)).','.$value;
         }
 
-        return $this->withHeader($name, $values);
+        return $this->withHeader($name, $value);
     }
 
     /**
@@ -149,7 +160,7 @@ abstract class Message implements \Psr\Http\Message\MessageInterface{
         $result = $this->immutability ? clone $this : $this;
         $name = strtolower($name);
 
-        unset($result->headers[$name]);
+        $result->headers->remove($name);
 
         return $result;
     }
@@ -157,7 +168,7 @@ abstract class Message implements \Psr\Http\Message\MessageInterface{
     /**
      * 获取body
      *
-     * @return \Psr\Http\Message\StreamInterface
+     * @return StreamInterface
      */
     public function getBody()
     {
@@ -167,10 +178,10 @@ abstract class Message implements \Psr\Http\Message\MessageInterface{
     /**
      * 添加body数据
      *
-     * @param \Psr\Http\Message\StreamInterface $body
+     * @param StreamInterface $body
      * @return $this|Message
      */
-    public function withBody(\Psr\Http\Message\StreamInterface $body)
+    public function withBody(StreamInterface $body)
     {
         if ($body === $this->body) {
             return $this;

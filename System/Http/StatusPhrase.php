@@ -1,6 +1,13 @@
 <?php
 namespace Ant\Http;
 
+/**
+ *
+ * @see http://www.iana.org/assignments/http-status-codes/http-status-codes.xhtml
+ * @see http://blog.sina.com.cn/s/blog_4ae187490100x9u7.html
+ * Class StatusPhrase
+ * @package Ant\Http
+ */
 class StatusPhrase{
     const SWITCHING_PROTOCOLS = 101;
     const PROCESSING = 102;
@@ -62,7 +69,6 @@ class StatusPhrase{
     /**
      * http状态码与对应短语
      *
-     * @see http://www.iana.org/assignments/http-status-codes/http-status-codes.xhtml
      * @var array
      */
     public static $httpReasonPhrase = [

@@ -15,7 +15,7 @@ class Header extends Collection{
     ];
 
     /**
-     * ��获取header数据集���ݼ�
+     * 获取header数据集
      *
      * @param Collection $server
      * @return static
@@ -24,7 +24,7 @@ class Header extends Collection{
     {
         $headers = [];
         foreach ($server as $key => $value) {
-            //��提取HTTP头
+            //提取HTTP头
             if (isset(static::$special[$key]) || strpos($key, 'HTTP_') === 0) {
                 $key = strtolower(str_replace('_', '-', $key));
                 $key = (strpos($key, 'http-') === 0) ? substr($key, 5) : $key;

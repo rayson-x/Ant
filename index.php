@@ -26,21 +26,6 @@ $config = [
 
 
 
-<<<<<<< HEAD
-=======
-$request = new Ant\Http\Request(new \Ant\Collection($_SERVER));
-
-//$uri = Ant\Http\Uri::createFromCollection(new \Ant\Collection($_SERVER));
-//$uri = $uri->withHost("");
-//$request = $request->withUri($uri);
-//var_dump($request->withUri(Ant\Http\Uri::createFromCollection(new \Ant\Collection($_SERVER))->withHost('www.baidu.com'),true)->getHeader('host'));
-
-//$data = $request->getParsedBody();
-//var_dump($data);
-//echo $request->getRequestTarget();
-//show($_POST);
-//$Stream = new Ant\Http\Stream(fopen($_FILES[12412412]['tmp_name'],'r'));
->>>>>>> 9ee76d29557655e3c41727786a48edd55e685ceb
 
 //try{
 //
@@ -117,19 +102,28 @@ $request = new Ant\Http\Request(new \Ant\Collection($_SERVER));
 //}
 
 try{
-    $pdo = new Ant\Database\Connector\Mysql($config);
-
-    $table = $pdo->getTables();
-//    $name = 'power';
-//    $stat = $pdo->select('demo')
-//        ->whereSub('id','IN',function(){
-//            $this->table = 'users';
-//            $this->columns('id')->where(['name'=>'power']);
-//        })
-//        ->orWhere(['score'=>'>='],[85])
-//        ->get();
-
-    show($table);
+//    $pdo = new Ant\Database\Connector\Mysql($config);
+//
+//    $table = $pdo->getTables();
+////    $name = 'power';
+////    $stat = $pdo->select('demo')
+////        ->whereSub('id','IN',function(){
+////            $this->table = 'users';
+////            $this->columns('id')->where(['name'=>'power']);
+////        })
+////        ->orWhere(['score'=>'>='],[85])
+////        ->get();
+//
+//    show($table);
+//
+//    $request = new Ant\Http\Request(new Ant\Collection($_SERVER));
+//
+//    foreach($request->getHeaders() as $name => $values){
+//        foreach($values as $value){
+//            echo sprintf('%s: %s',$name,$value).PHP_EOL;
+//        }
+//    }
+    $response = new Ant\Http\Response();
 }catch(Exception $e){
     foreach(explode("\n", $e->getTraceAsString()) as $index => $line ){
         echo "{$line} <br>";

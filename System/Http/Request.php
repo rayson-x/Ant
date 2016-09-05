@@ -109,12 +109,10 @@ class Request extends Message implements ServerRequestInterface{
 
     public function __construct(Collection $server)
     {
-        //TODO::一些非必要参数可以在方法中单独加载,可以节省开销
         $this->uri = Uri::createFromCollection($server);
         $this->serverParams = $server->all();
         $this->headers = Header::createFromCollection($server);
         $this->cookieParams = $_COOKIE;
-        $this->uploadFiles = UploadedFile::parseUploadedFiles($_FILES);
         $this->body = new RequestBody();
         $this->attributes = new Collection();
 
@@ -336,6 +334,9 @@ class Request extends Message implements ServerRequestInterface{
      */
     public function getUploadedFiles()
     {
+        if(!$this->uploadFiles){
+            $this->uploadFiles = UploadedFile::parseUploadedFiles($_FILES);
+        }
         return $this->uploadFiles;
     }
 

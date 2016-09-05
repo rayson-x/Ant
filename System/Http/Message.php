@@ -27,7 +27,9 @@ abstract class Message implements MessageInterface{
     protected $headers;
 
     /**
-     * @var StreamInterface body信息
+     * body信息
+     *
+     * @var StreamInterface
      */
     protected $body;
 

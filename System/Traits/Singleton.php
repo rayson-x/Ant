@@ -3,35 +3,66 @@ namespace Ant\Traits;
 
 use Ant\Exception;
 
-// 单例模式
+/**
+ * 单例模式
+ *
+ * Class Singleton
+ * @package Ant\Traits
+ */
 trait Singleton
 {
-    protected static $__instances__ = array();
+    /**
+     * @var self
+     */
+    protected static $instance;
 
+    /**
+     * 禁止外部实例化
+     */
     protected function __construct()
     {
     }
 
+    /**
+     * 禁止克隆
+     *
+     * @throws Exception
+     */
     public function __clone()
     {
         throw new Exception('Cloning '.__CLASS__.' is not allowed');
     }
 
-    public static function getInstance()
+    /**
+     * 禁止序列化
+     *
+     * @throws Exception
+     */
+    public function __sleep()
     {
-        $class = get_called_class();
-
-        if (!isset(static::$__instances__[$class])) {
-            static::$__instances__[$class] = new static();
-        }
-
-        return static::$__instances__[$class];
+        throw new Exception('Serialize '.__CLASS__.' is not allowed');
     }
 
+    /**
+     * 获取实例
+     *
+     * @return Singleton
+     */
+    public static function getInstance()
+    {
+        if (!isset(static::$instance)) {
+            static::$instance = new static();
+        }
+
+        return static::$instance;
+    }
+
+    /**
+     * 重置实例
+     */
     public static function resetInstance()
     {
-        $class = get_called_class();
-        unset(static::$__instances__[$class]);
+        unset(static::$instance);
     }
 }
 

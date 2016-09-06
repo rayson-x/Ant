@@ -14,6 +14,7 @@ class ComposerStaticInit6e27f74fc6ea6cea61263699f99666a5
         'A' =>[
             'Ant\\'                => 4,
         ],
+
     );
 
     public static $prefixDirsPsr4 = array (

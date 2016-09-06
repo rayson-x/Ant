@@ -399,7 +399,7 @@ class Request extends Message implements ServerRequestInterface{
     /**
      * 获取所有属性
      *
-     * @return mixed[] Attributes derived from the request.
+     * @return mixed[]
      */
     public function getAttributes()
     {
@@ -409,9 +409,8 @@ class Request extends Message implements ServerRequestInterface{
     /**
      * 获取一个属性的值
      *
-     * @see getAttributes()
-     * @param string $name The attribute name.
-     * @param mixed $default Default value to return if the attribute does not exist.
+     * @param string $name
+     * @param mixed $default
      * @return mixed
      */
     public function getAttribute($name, $default = null)
@@ -422,9 +421,8 @@ class Request extends Message implements ServerRequestInterface{
     /**
      * 设置一个属性.
      *
-     * @see getAttributes()
-     * @param string $name The attribute name.
-     * @param mixed $value The value of the attribute.
+     * @param string $name
+     * @param mixed $value
      * @return self
      */
     public function withAttribute($name, $value)
@@ -438,7 +436,7 @@ class Request extends Message implements ServerRequestInterface{
      * 删除一个属性
      *
      * @see getAttributes()
-     * @param string $name The attribute name.
+     * @param string $name .
      * @return self
      */
     public function withoutAttribute($name)

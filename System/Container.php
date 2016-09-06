@@ -1,55 +1,128 @@
 <?php
 namespace Ant;
 
-class Container{
+use Closure;
+use ArrayAccess;
+use Ant\Traits\Singleton;
+use Ant\Interfaces\ContainerInterface;
 
-    protected $callback = [
-        //id  =>  callback
-    ];
+class Container implements ContainerInterface,ArrayAccess{
+    
+    use Singleton;
+    /**
+     * 已经实例化的服务.
+     *
+     * @var array
+     */
+    protected $resolved = [];
 
     /**
-     * 容器注入口,在此注入脚本
+     * 已经绑定的服务.
      *
-     * @param $id
-     * @param \Closure $callback
+     * @var array
      */
-    public function set($id,\Closure $callback){
-        $this->callback[$id] = $callback->bindTo($this,$this);
+    protected $bindings = [];
+
+    /**
+     * 服务实例.
+     *
+     * @var array
+     */
+    protected $instances = [];
+
+    /**
+     * 服务别名.
+     *
+     * @var array
+     */
+    protected $aliases = [];
+
+    /**
+     * 服务扩展.
+     *
+     * @var array
+     */
+    protected $extenders = [];
+
+    /**
+     * 标签.
+     *
+     * @var array
+     */
+    protected $tags = [];
+
+    /**
+     * 实例服务时绑定的上下文.
+     *
+     * @var array
+     */
+    public $contextual = [];
+
+    public function bound($abstract){
+
     }
 
-    /**
-     * 返回被依赖实例
-     *
-     * @param $id
-     * @return mixed
-     */
-    public function get($id){
-        $callback = $this->getCallback($id);
-        $args = array_slice(func_get_args(),1);
+    public function alias($abstract, $alias){
 
-        return call_user_func_array($callback,$args);
     }
 
-    /**
-     * 获取回调函数
-     *
-     * @param $id
-     */
-    public function getCallback($id){
-        if ($this->has($id)) {
-            return $this->callback[$id];
-        }
+    public function tag($abstracts, $tags){
 
-        throw new \UnexpectedValueException;
     }
 
-    /**
-     * 检查回调是否存在
-     *
-     * @param $id
-     * @return bool
-     */
-    public function has($id){
-        return array_key_exists($id,$this->callback);
+    public function tagged($tag){
+
+    }
+
+    public function bind($abstract, $concrete = null, $shared = false){
+
+    }
+
+    public function bindIf($abstract, $concrete = null, $shared = false){
+
+    }
+
+    public function singleton($abstract, $concrete = null){
+
+    }
+
+    public function extend($abstract, Closure $closure){
+
+    }
+
+    public function instance($abstract, $instance){
+
+    }
+
+    public function when($concrete){
+
+    }
+
+    public function make($abstract, array $parameters = []){
+
+    }
+
+    public function call($callback, array $parameters = [], $defaultMethod = null){
+
+    }
+
+    public function resolved($abstract){
+
+    }
+
+    public function offsetSet($offset,$value){
+
+    }
+
+    public function offsetExists($offset){
+
+    }
+
+    public function offsetGet($offset){
+
+    }
+
+    public function offsetUnset($offset){
+
     }
 }

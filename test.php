@@ -1,37 +1,68 @@
 <?php
-
 class test{
-    public $string = '';
+    public $string;
 
-    public function __construct($string){
+    public $instances;
+
+    public function __construct($string = ''){
         $this->string = $string;
     }
 
+    public function extend($server, Closure $closure)
+    {
+        if(isset($this->instances[$server])){
+            $returnValue = call_user_func($closure,$this->instances[$server],$this);
+            if($returnValue !== null){
+                $this->instances[$server] = $returnValue;
+            }
+        }
+    }
 }
+$obj = new class{
+    private $demo = 123;
+
+    public function get(){
+        return $this->demo;
+    }
+
+    public function update(){
+        $this->demo = 456;
+    }
+};
+$test = new test();
+$test->instances['demo'] = $obj;
+var_dump($test->instances['demo']->get());
+
+$test->extend('demo',function($obj){
+    $obj->update();
+
+    return new class{
+        public function get(){
+            return 'this is new obj';
+        }
+    };
+});
+
+var_dump($test->instances['demo']->get());
 
 
-//$a = new test('123123');
-//$b = new test('asdfsafa');
-//$c = new test('qweq456');
-//$d = new test('sadfdasfsdafasfasdfxx');
+//$array = [
+//    'mu'=>[
+//        0,0,0,1
+//    ],
+//    'you'=>[
+//        0,0,0,1
+//    ],
+//    'wa'=>[
+//        0,0,0,1
+//    ],
+//];
 //
-//$spl = new SplObjectStorage();
-//$spl->attach($a);
+//$array = array_map(function($array){
+//    return array(end($array));
+//},$array);
 //
-//$demo = new SplObjectStorage;
-//
-//$demo[$a] = 1;
-//$demo[$b] = 2;
-//$demo[$c] = 3;
-//$demo[$d] = 4;
-//
-//foreach($demo as $key => $value){
-//    echo "{$key} : $value".PHP_EOL;
-//}
-//
-//echo serialize($demo);
-//
-
+//var_dump($array);
 /*
  SplObjectStorage
 

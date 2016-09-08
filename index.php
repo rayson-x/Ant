@@ -4,85 +4,26 @@ include 'vendor\autoload.php';
 //\Ant\Autoloader::register();
 //\Ant\Autoloader::addNamespace('Ant\\Database','System'.DIRECTORY_SEPARATOR.'Database');
 
-//function show($msg){
-//    echo "<pre>";
-//    var_dump($msg);
-//    echo "</pre>";
-//}
-//function debug(){
-//    echo "<pre>";
-//    var_dump(func_get_args());
-//    echo "</pre>";
-//    die;
-//}
-//
-//$config = [
-//    'dsn'=>'mysql:dbname=test;host=127.0.0.1',
-//    'user'=>'root',
-//    'password'=>'123456',
-//];
+function show($msg){
+    echo "<pre>";
+    var_dump($msg);
+    echo "</pre>";
+}
+function debug(){
+    echo "<pre>";
+    var_dump(func_get_args());
+    echo "</pre>";
+    die;
+}
 
-//echo Ant\Http\Uri::createFromCollection(new Ant\Collection($_SERVER));
+$config = [
+    'dsn'=>'mysql:dbname=test;host=127.0.0.1',
+    'user'=>'root',
+    'password'=>'123456',
+];
 
-
-//try{
-//
-////    $files = Ant\Http\UploadedFile::parseUploadedFiles($_FILES);
-//
-////    echo $files['123'][1]->getSize();
-//
-////    echo $files['asd']->getSize();
-//}catch(Exception $e){
-//    echo $e->getMessage()."<br>";
-//    foreach(explode("\n", $e->getTraceAsString()) as $index => $line ){
-//        echo "{$line} <br>";
-//    }
-//}catch(Error $e){
-//    echo " Error : {$e->getMessage()}";
-//}catch(Throwable $e){
-//    echo " Exception : {$e->getMessage()}";
-//}
-
-
-
-//$abc = function(){
-//    if(empty($_SESSION['isLogin'])){
-//        throw new Exception('not login');
-//    }
-//    yield;
-//    echo "this is abc end \n";
-//};
-//
-//$qwe = function (){
-//    echo "this is qwe start \n";
-//    $a = yield;
-//    echo $a."\n";
-//    echo "this is qwe end \n";
-//};
-//$one = function (){
-//    throw new Exception(123);
-//};
-//
-//try{
-//    $middleware = new Ant\Middleware;
-//    $middleware->middleware([$abc,$qwe,$one]);
-//}catch(Exception $e){
-//    $exception = exceptionHandle($e);
-//    foreach($exception as $key => $value){
-//        echo $value.PHP_EOL;
-//    }
-//}catch(Error $e){
-//    $exception = exceptionHandle($e);
-//    foreach($exception as $key => $value){
-//        echo $value.PHP_EOL;
-//    }
-//}catch(Throwable $e){
-//    $exception = exceptionHandle($e);
-//    foreach($exception as $key => $value){
-//        echo $value.PHP_EOL;
-//    }
-//}
-//
+$c = Ant\Container::getInstance();
+$c->when('123');
 //function exceptionHandle(Throwable $exception){
 //    if($exception->getPrevious()){
 //        return exceptionHandle($exception->getPrevious());

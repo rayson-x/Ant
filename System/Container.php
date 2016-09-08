@@ -200,6 +200,15 @@ class Container implements ArrayAccess{
             $concrete = $server;
         }
 
+        //给服务绑定具体生成实例的方法
+        if (! $concrete instanceof Closure) {
+            $concrete = function($c,$parameters = [])use($server,$concrete){
+                $method = ($concrete === $server) ? 'build' : 'make';
+
+                return $c->$method($concrete, $parameters);
+            };
+        }
+
         $this->bindings[$server] = compact('concrete', 'shared');
     }
 
@@ -315,6 +324,8 @@ class Container implements ArrayAccess{
         if (isset($this->contextual[end($this->buildStack)][$server])) {
             return $this->contextual[end($this->buildStack)][$server];
         }
+
+        return null;
     }
 
     public function getConcrete($server)
@@ -334,7 +345,15 @@ class Container implements ArrayAccess{
             return $this->instances[$server];
         }
 
+        $concrete = $this->getConcrete($server);
 
+        if($concrete === $server || $concrete instanceof Closure){
+            $serverObject = $this->build($concrete,$parameters);
+        }else{
+            $serverObject = $this->make($concrete,$parameters);
+        }
+
+        return $serverObject;
     }
 
     /**

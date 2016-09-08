@@ -98,8 +98,9 @@ class Response extends Message implements ResponseInterface{
     /**
      * http重定向
      *
-     * @param $uri
-     * @param null $status
+     * @param $url
+     * @param $status 303
+     * @return Response
      */
     public function redirect($url, $status = 303)
     {

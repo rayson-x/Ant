@@ -69,3 +69,4 @@ var_dump($test->instances['demo']->get());
  通过ArrayAccess接口以对象作为key与一个value绑定
  通过Iterator接口将已绑定的对象作为value输出，对应的key为数字
  */
+

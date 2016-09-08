@@ -4,11 +4,14 @@ namespace Ant;
 use Closure;
 use ArrayAccess;
 use ReflectionClass;
+use ReflectionMethod;
+use RuntimeException;
+use ReflectionParameter;
 use Ant\Traits\Singleton;
 
 /**
  * IoC容器,只要将服务注册到容器中,在有依赖关系时,容器便会会自动载入服务
- * 注意 : 在追求性能的时候,推荐注册服务时候绑定闭包函数,不然容器会通过反射API去加载服务所需要的类,这样会造成不必要的损耗
+ * 注意 : 在追求性能的时候,推荐注册服务时候绑定闭包函数,特别是有大量反射时
  *
  * Class Container
  * @package Ant
@@ -165,14 +168,28 @@ class Container implements ArrayAccess{
         }
     }
 
+    /**
+     * 获取一个标签里的所有服务
+     *
+     * @param $tag
+     * @return array
+     */
     public function tagged($tag)
     {
+        $results = [];
 
+        if (isset($this->tags[$tag])) {
+            foreach ($this->tags[$tag] as $abstract) {
+                $results[] = $this->make($abstract);
+            }
+        }
+
+        return $results;
     }
 
     /**
      * @param string $server        服务名称
-     * @param null $concrete        服务具体实例过程
+     * @param null $concrete        服务具体实例方法
      * @param bool|false $shared    是否共享
      *
      * @example
@@ -200,7 +217,7 @@ class Container implements ArrayAccess{
             $concrete = $server;
         }
 
-        //给服务绑定具体生成实例的方法
+        //如果服务没有生成实例的方法,那么创建一个生成实例的方法
         if (! $concrete instanceof Closure) {
             $concrete = function($c,$parameters = [])use($server,$concrete){
                 $method = ($concrete === $server) ? 'build' : 'make';
@@ -279,6 +296,21 @@ class Container implements ArrayAccess{
     }
 
     /**
+     * 获取服务扩展
+     *
+     * @param $server
+     * @return array
+     */
+    public function getExtend($server)
+    {
+        if(isset($this->extenders[$server])){
+            return $this->extenders[$server];
+        }
+
+        return [];
+    }
+
+    /**
      * 绑定上下文参数到具体服务上,绑定之后每次实例都会加载绑定参数
      *
      * @param $concrete
@@ -314,7 +346,7 @@ class Container implements ArrayAccess{
     }
 
     /**
-     * 获取生成中的服务所绑定的上下文
+     * 获取当前服务所绑定的上下文
      *
      * @param $server
      * @return mixed
@@ -324,10 +356,14 @@ class Container implements ArrayAccess{
         if (isset($this->contextual[end($this->buildStack)][$server])) {
             return $this->contextual[end($this->buildStack)][$server];
         }
-
-        return null;
     }
 
+    /**
+     * 获取具体实现方式
+     *
+     * @param $server
+     * @return mixed
+     */
     public function getConcrete($server)
     {
         if (! isset($this->bindings[$server])) {
@@ -352,6 +388,7 @@ class Container implements ArrayAccess{
         }else{
             $serverObject = $this->make($concrete,$parameters);
         }
+        //TODO::Extend
 
         return $serverObject;
     }
@@ -423,8 +460,8 @@ class Container implements ArrayAccess{
     /**
      * 获取实例依赖参数
      *
-     * @param $dependencies
      * @param $parameters
+     * @param $primitives
      * @return mixed
      */
     public function getDependencies($parameters,$primitives)
@@ -432,44 +469,85 @@ class Container implements ArrayAccess{
         $dependencies = [];
 
         foreach($parameters as $parameter){
-            if(array_key_exists($parameters->name,$primitives)){
+            if(array_key_exists($parameter->name,$primitives)){
                 //使用用户给定的值
                 $dependencies[] = $primitives[$parameter->name];
             }elseif(is_null($parameter->getClass())){
                 //获取上下文参数
-                //TODO::获取绑定参数
+                $dependencies[] = $this->resolveNotClass($parameter);
             }else{
                 //获取依赖的服务实例
-                //TODO::获取实例
+                $dependencies[] = $this->resolveClass($parameter);
             }
         }
 
         return $dependencies;
     }
 
-    public function call($callback, array $parameters = [], $defaultMethod = null)
+    /**
+     * 获取上下文绑定参数
+     *
+     * @param ReflectionParameter $parameter
+     * @return mixed
+     */
+    public function resolveNotClass(ReflectionParameter $parameter)
     {
+        if (! is_null($concrete = $this->getContextualConcrete('$'.$parameter->name))) {
+            if ($concrete instanceof Closure) {
+                return call_user_func($concrete, $this);
+            } else {
+                return $concrete;
+            }
+        }
 
+        if($parameter->isDefaultValueAvailable()){
+            return $parameter->getDefaultValue();
+        }
+
+        throw new RuntimeException();
+    }
+
+    /**
+     * 获取显性依赖实例
+     *
+     * @param ReflectionParameter $parameter
+     * @return mixed|object
+     * @throws \Exception
+     */
+    public function resolveClass(ReflectionParameter $parameter)
+    {
+        try{
+            return $this->make($parameter->getClass()->getName());
+        }catch(\Exception $e){
+            if($parameter->isOptional()){
+                return $parameter->getDefaultValue();
+            }
+
+            throw $e;
+        }
     }
 
     public function offsetSet($offset,$value)
     {
-
+        $this->bind($offset,$value);
     }
 
     public function offsetExists($offset)
     {
-
+        return $this->bound($offset);
     }
 
     public function offsetGet($offset)
     {
-
+        return $this->make($offset);
     }
 
     public function offsetUnset($offset)
     {
-
+        unset($this->aliases[$offset]);
+        unset($this->bindings[$offset]);
+        unset($this->instances[$offset]);
+        unset($this->extenders[$offset]);
     }
 
     /**
@@ -483,6 +561,11 @@ class Container implements ArrayAccess{
         return is_string($service) ? ltrim($service, '\\') : $service;
     }
 
+    /**
+     * 清空实例
+     *
+     * @param $server
+     */
     protected function removeStaleInstances($server)
     {
         unset($this->instances[$server], $this->aliases[$server]);

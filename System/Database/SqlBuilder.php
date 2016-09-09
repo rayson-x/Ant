@@ -99,6 +99,14 @@ class SqlBuilder{
         $this->connector = null;
     }
 
+    /**
+     * @param $params
+     * @return $this
+     *
+     * @example
+     * setColumns(['foo','bar'])
+     * setColumns('foo','bar')
+     */
     public function setColumns($params)
     {
         $this->columns = is_array($params) ? $params : func_get_args();
@@ -181,7 +189,7 @@ class SqlBuilder{
      * //SELECT * FROM `demo` WHERE `id` IN (SELECT `id` FROM `users` WHERE `name` = "powers")
      * whereSub('id','IN',function(){
      *     $this->setFrom = 'users';
-     *     $this->columns('id')->where(['name'=>'power']);
+     *     $this->setColumns('id')->where(['name'=>'power']);
      *  })
      */
     public function whereSub($column,$logic,$func)
@@ -250,6 +258,7 @@ class SqlBuilder{
     {
         list($sql, $params) = $this->compile();
 
+        var_dump($sql);
         return $this->connector->execute($sql, $params);
     }
 
@@ -297,7 +306,7 @@ class SqlBuilder{
                 '',
                 '',
             ],
-            'SELECT %COLUMN% FROM %TABLE% %JOIN% %WHERE% %GROUP% %HAVING% %ORDER% %LIMIT% %UNION%');
+            'SELECT %COLUMN% FROM %TABLE%%JOIN%%WHERE%%GROUP%%HAVING%%ORDER%%LIMIT%%UNION%');
 
         return [$sql,$this->params];
     }
@@ -355,7 +364,7 @@ class SqlBuilder{
                 //TODO::待优化
                 while(list($field,$logic) = each($where)){
                     //预处理语句数量跟参数数量是否匹配
-                    if(!($param = current($params))){
+                    if(false === $param = current($params)){
                         throw new UnexpectedValueException('Lack of prepare parameters');
                     }
                     $field = $this->connector->quoteIdentifier($field);
@@ -386,7 +395,7 @@ class SqlBuilder{
      */
     protected function compileColumn(){
         if(empty($this->columns)){
-            return ' * ';
+            return '*';
         }
 
         return implode(',',$this->connector->quoteIdentifier($this->columns));
@@ -409,7 +418,7 @@ class SqlBuilder{
             $table = $this->connector->quoteIdentifier($this->table);
         }
 
-        return $table;
+        return " $table";
     }
 
     /**

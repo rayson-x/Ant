@@ -140,6 +140,7 @@ class Request extends Message implements ServerRequestInterface{
             parse_str($input,$data);
             return $data;
         });
+
     }
 
     /**
@@ -356,8 +357,8 @@ class Request extends Message implements ServerRequestInterface{
      */
     public function getParsedBody()
     {
-        if($this->bodyParsers){
-            return $this->bodyParsers;
+        if(!empty($this->bodyParsed)){
+            return $this->bodyParsed;
         }
 
         if(!$this->body){

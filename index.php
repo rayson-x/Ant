@@ -22,40 +22,41 @@ $config = [
     'password'=>'123456',
 ];
 
-//try{
+try{
+    $c = Ant\Container::getInstance();
+//    /* 注册HTTP请求 */
+    $c->when(Ant\Http\Request::class)->needs(Ant\Collection::class)->give(function(){
+        return new Ant\Collection($_SERVER);
+    });
+//    $request = $c[Ant\Http\Request::class];
 //
-//}catch(Exception $e){
-//    echo $e->getMessage();
-//    foreach(explode("\n", $e->getTraceAsString()) as $index => $line ){
-//        echo "{$line} <br>";
-//    }
-//}catch(Error $e){
-//    echo " Error : {$e->getMessage()}";
-//}catch(Throwable $e){
-//    echo " Exception : {$e->getMessage()}";
-//}
-//
-//function exceptionHandle(Throwable $exception){
-//    if($exception->getPrevious()){
-//        return exceptionHandle($exception->getPrevious());
-//    }
-//
-//    $headers = [];
-//    $headers['Exception'] = sprintf('%s(%d) %s',get_class($exception),$exception->getCode(),$exception->getMessage());
-//
-//    foreach(explode("\n",$exception->getTraceAsString()) as $index => $line){
-//        $key           = sprintf('X-Exception-Trace-%02d', $index);
-//        $headers[$key] = $line;
-//    }
-//
-//    return $headers;
-//}
+//    var_dump($request->getBodyParam());
+    $c->bind([Ant\Middleware::class => 'request']);
+    $c->bind('request',Ant\Http\Request::class);
+}catch(Exception $e){
+    echo $e->getMessage();
+    foreach(explode("\n", $e->getTraceAsString()) as $index => $line ){
+        echo "{$line} <br>";
+    }
+}catch(Error $e){
+    echo " Error : {$e->getMessage()}";
+}catch(Throwable $e){
+    echo " Exception : {$e->getMessage()}";
+}
 
-$c = Ant\Container::getInstance();
+function exceptionHandle(Throwable $exception){
+    if($exception->getPrevious()){
+        return exceptionHandle($exception->getPrevious());
+    }
 
-$c->when(Ant\Database\Connector\Mysql::class)->needs('$config')->give($config);
-$c->bind([Ant\Database\Connector::class => 'DB'],Ant\Database\Connector\Mysql::class);
+    $headers = [];
+    $headers['Exception'] = sprintf('%s(%d) %s',get_class($exception),$exception->getCode(),$exception->getMessage());
 
-$c->when(Ant\Database\SqlBuilder::class)->needs('$table')->give('123');
-$c->when(Ant\Database\SqlBuilder::class)->needs('$connector')->give('DB');
-$c->make(Ant\Database\SqlBuilder::class);
+    foreach(explode("\n",$exception->getTraceAsString()) as $index => $line){
+        $key           = sprintf('X-Exception-Trace-%02d', $index);
+        $headers[$key] = $line;
+    }
+
+    return $headers;
+}
+

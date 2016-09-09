@@ -4,7 +4,6 @@ namespace Ant;
 use Closure;
 use ArrayAccess;
 use ReflectionClass;
-use ReflectionMethod;
 use RuntimeException;
 use ReflectionParameter;
 use Ant\Traits\Singleton;
@@ -108,7 +107,7 @@ class Container implements ArrayAccess{
      * @param $abstract
      * @return bool
      */
-    public function isShared($abstract)
+    protected function isShared($abstract)
     {
         $abstract = $this->normalize($abstract);
 
@@ -140,7 +139,7 @@ class Container implements ArrayAccess{
      * @param $name
      * @return bool
      */
-    public function isAlias($name)
+    protected function isAlias($name)
     {
         return isset($this->aliases[$this->normalize($name)]);
     }
@@ -150,7 +149,7 @@ class Container implements ArrayAccess{
      *
      * @param array $array
      */
-    public function setAliasFromArray(array $array)
+    protected function setAliasFromArray(array $array)
     {
         list($serverName,$alias) = [key($array),current($array)];
 
@@ -165,7 +164,7 @@ class Container implements ArrayAccess{
      * @param $name
      * @return string
      */
-    public function getAlias($name)
+    protected function getServerNameFromAlias($name)
     {
         return isset($this->aliases[$name]) ? $this->aliases[$name] : $name;
     }
@@ -278,9 +277,10 @@ class Container implements ArrayAccess{
     {
         $serverName = $this->normalize($serverName);
 
-        //TODO::绑定实例是解决别名可能导致的BUG
-        //如果将服务实例绑定到容器中
-        //那么只能通过 instances 获取服务
+        if(is_array($serverName)){
+            $serverName = $this->setAliasFromArray($serverName);
+        }
+
         unset($this->aliases[$serverName]);
 
         $this->instances[$serverName] = $instance;
@@ -312,7 +312,7 @@ class Container implements ArrayAccess{
      * @param $serverName
      * @return array
      */
-    public function getExtenders($serverName)
+    protected function getExtenders($serverName)
     {
         if(isset($this->extenders[$serverName])){
             return $this->extenders[$serverName];
@@ -362,7 +362,7 @@ class Container implements ArrayAccess{
      * @param $serverName
      * @return mixed
      */
-    public function getContextualConcrete($serverName)
+    protected function getContextualConcrete($serverName)
     {
         if (isset($this->contextual[end($this->buildStack)][$serverName])) {
             $concrete = $this->contextual[end($this->buildStack)][$serverName];
@@ -376,7 +376,7 @@ class Container implements ArrayAccess{
      * @param $serverName
      * @return mixed
      */
-    public function getConcrete($serverName)
+    protected function getConcrete($serverName)
     {
         if (! isset($this->bindings[$serverName])) {
             return $serverName;
@@ -395,7 +395,7 @@ class Container implements ArrayAccess{
     public function make($serverName, array $parameters = [])
     {
         //获取服务名称
-        $serverName = $this->getAlias($serverName);
+        $serverName = $this->getServerNameFromAlias($serverName);
 
         if(isset($this->instances[$serverName])){
             return $this->instances[$serverName];
@@ -406,10 +406,15 @@ class Container implements ArrayAccess{
 
         $serverObject = $this->build($concrete,$parameters);
 
+        //扩展服务
         foreach ($this->getExtenders($serverName) as $extender) {
-            $serverObject = $extender($serverObject, $this);
+            $returnValue = $extender($serverObject, $this);
+            if(!is_null($returnValue)){
+                $serverObject = $extender($serverObject, $this);
+            }
         }
 
+        //是否保存为全局唯一实例
         if ($this->isShared($serverName)) {
             $this->instances[$serverName] = $serverObject;
         }
@@ -468,7 +473,7 @@ class Container implements ArrayAccess{
      * @param $parameters
      * @return mixed
      */
-    public function keyParametersByArgument($dependencies, $parameters)
+    protected function keyParametersByArgument($dependencies, $parameters)
     {
         foreach($parameters as $key => $value){
             //通过数组索引进行匹配
@@ -489,7 +494,7 @@ class Container implements ArrayAccess{
      * @param $primitives
      * @return mixed
      */
-    public function getDependencies($parameters,$primitives)
+    protected function getDependencies($parameters,$primitives)
     {
         $dependencies = [];
 
@@ -515,7 +520,7 @@ class Container implements ArrayAccess{
      * @param ReflectionParameter $parameter
      * @return mixed
      */
-    public function resolveNotClass(ReflectionParameter $parameter)
+    protected function resolveNotClass(ReflectionParameter $parameter)
     {
         if (! is_null($concrete = $this->getContextualConcrete('$'.$parameter->name))) {
             return $concrete;
@@ -535,7 +540,7 @@ class Container implements ArrayAccess{
      * @return mixed|object
      * @throws \Exception
      */
-    public function resolveClass(ReflectionParameter $parameter)
+    protected function resolveClass(ReflectionParameter $parameter)
     {
         try{
             $dependencyClass = $parameter->getClass()->getName();
@@ -557,6 +562,10 @@ class Container implements ArrayAccess{
         }
     }
 
+    /**
+     * @param mixed $offset
+     * @param mixed $value
+     */
     public function offsetSet($offset,$value)
     {
         if(is_object($value) && !($value instanceof Closure)){
@@ -564,24 +573,32 @@ class Container implements ArrayAccess{
         }else{
             $this->bind($offset,$value);
         }
-
     }
 
+    /**
+     * @param mixed $offset
+     * @return bool
+     */
     public function offsetExists($offset)
     {
         return $this->bound($offset);
     }
 
+    /**
+     * @param mixed $offset
+     * @return object
+     */
     public function offsetGet($offset)
     {
         return $this->make($offset);
     }
 
+    /**
+     * @param mixed $offset
+     */
     public function offsetUnset($offset)
     {
-        $offset = $this->normalize($offset);
-
-        unset($this->bindings[$offset], $this->instances[$offset], $this->resolved[$offset]);
+        $this->forgetServer($offset);
     }
 
     /**
@@ -602,6 +619,22 @@ class Container implements ArrayAccess{
      */
     protected function removeStaleInstances($serverName)
     {
-        unset($this->instances[$serverName], $this->aliases[$serverName]);
+        //如果服务原名与服务别名重复,会出现无法加载服务的情况
+        unset($this->instances[$serverName],$this->aliases[$serverName]);
+    }
+
+    protected function forgetServer($name){
+        $name = $this->normalize($name);
+        //获取服务原名
+        $serverName = $this->getServerNameFromAlias($name);
+
+        unset($this->bindings[$serverName], $this->instances[$serverName], $this->resolved[$serverName]);
+    }
+
+    public function reset(){
+        $this->aliases = [];
+        $this->resolved = [];
+        $this->bindings = [];
+        $this->instances = [];
     }
 }

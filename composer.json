@@ -1,13 +1,4 @@
 {
-    "name": "sssxxxzzz/ant",
-    "description": "this is my framework",
-    "license": "MIT",
-    "authors": [
-        {
-            "name": "alex",
-            "email": "739849601@qq.com"
-        }
-    ],
     "require": {
         "psr/http-message": "^1.0"
     }

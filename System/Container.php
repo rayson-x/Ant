@@ -103,6 +103,27 @@ class Container implements ArrayAccess{
     }
 
     /**
+     * 是否共享一个实例
+     *
+     * @param $abstract
+     * @return bool
+     */
+    public function isShared($abstract)
+    {
+        $abstract = $this->normalize($abstract);
+
+        if (isset($this->instances[$abstract])) {
+            return true;
+        }
+
+        if (! isset($this->bindings[$abstract]['shared'])) {
+            return false;
+        }
+
+        return $this->bindings[$abstract]['shared'] === true;
+    }
+
+    /**
      * 给服务定义一个别名
      *
      * @param string $serverName
@@ -257,10 +278,7 @@ class Container implements ArrayAccess{
     {
         $serverName = $this->normalize($serverName);
 
-        if(is_array($serverName)){
-            $serverName = $this->setAliasFromArray($serverName);
-        }
-
+        //TODO::绑定实例是解决别名可能导致的BUG
         //如果将服务实例绑定到容器中
         //那么只能通过 instances 获取服务
         unset($this->aliases[$serverName]);
@@ -294,7 +312,7 @@ class Container implements ArrayAccess{
      * @param $serverName
      * @return array
      */
-    public function getExtend($serverName)
+    public function getExtenders($serverName)
     {
         if(isset($this->extenders[$serverName])){
             return $this->extenders[$serverName];
@@ -388,7 +406,15 @@ class Container implements ArrayAccess{
 
         $serverObject = $this->build($concrete,$parameters);
 
-        //TODO::Extend
+        foreach ($this->getExtenders($serverName) as $extender) {
+            $serverObject = $extender($serverObject, $this);
+        }
+
+        if ($this->isShared($serverName)) {
+            $this->instances[$serverName] = $serverObject;
+        }
+
+        $this->resolved[$serverName] = true;
 
         return $serverObject;
     }

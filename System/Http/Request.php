@@ -2,6 +2,7 @@
 namespace Ant\Http;
 
 use Ant\Collection;
+use Ant\Interfaces\CollectionInterface;
 use RuntimeException;
 use InvalidArgumentException;
 use Psr\Http\Message\UriInterface;
@@ -106,7 +107,9 @@ class Request extends Message implements ServerRequestInterface{
         'PATCH' => 1,
     ];
 
-
+    /**
+     * @param Collection $server
+     */
     public function __construct(Collection $server)
     {
         $this->uri = Uri::createFromCollection($server);

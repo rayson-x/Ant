@@ -1,50 +1,31 @@
 <?php
 class test{
-    public $string;
+    public $string = '123123';
 
-    public $instances;
+    public $func;
 
     public function __construct($string = ''){
         $this->string = $string;
     }
 
-    public function extend($server, Closure $closure)
-    {
-        if(isset($this->instances[$server])){
-            $returnValue = call_user_func($closure,$this->instances[$server],$this);
-            if($returnValue !== null){
-                $this->instances[$server] = $returnValue;
-            }
-        }
+    public function set($func){
+        $this->func = $func;
     }
-}
-$obj = new class{
-    private $demo = 123;
 
     public function get(){
-        return $this->demo;
+        $args = [];
+        array_unshift($args,$this);
+        var_dump(call_user_func_array($this->func,$args));
     }
-
-    public function update(){
-        $this->demo = 456;
-    }
-};
-$test = new test();
-$test->instances['demo'] = $obj;
-var_dump($test->instances['demo']->get());
-
-$test->extend('demo',function($obj){
-    $obj->update();
-
-    return new class{
-        public function get(){
-            return 'this is new obj';
-        }
-    };
+}
+$test = new test('123123');
+$test->set(function($test){
+   return $test->string;
 });
 
-var_dump($test->instances['demo']->get());
-
+for($i=0;$i<100000;$i++){
+    $test->get();
+}
 
 //$array = [
 //    'mu'=>[

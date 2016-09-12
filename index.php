@@ -24,22 +24,24 @@ $config = [
 
 try{
     $c = Ant\Container::getInstance();
-//    /* 注册HTTP请求 */
-    $c->when(Ant\Http\Request::class)->needs(Ant\Collection::class)->give(function(){
-        return new Ant\Collection($_SERVER);
+    /* 注册HTTP请求 */
+    $c->when(Ant\Http\Request::class)->needs(Ant\Http\Environment::class)->give(function(){
+        return new Ant\Http\Environment($_SERVER);
     });
-//    $request = $c[Ant\Http\Request::class];
-//
-//    var_dump($request->getBodyParam());
-    $c->bind([Ant\Middleware::class => 'request']);
-    $c->bind('request',Ant\Http\Request::class);
+    $request = $c[Ant\Http\Request::class];
+    var_dump($request->getBodyParam());
+//    $c->bind([Ant\Middleware::class => 'request']);
+//    $c->bind('request',Ant\Http\Request::class);
 }catch(Exception $e){
-    echo $e->getMessage();
+    echo $e->getMessage()."<br>";
     foreach(explode("\n", $e->getTraceAsString()) as $index => $line ){
         echo "{$line} <br>";
     }
 }catch(Error $e){
     echo " Error : {$e->getMessage()}";
+    foreach(explode("\n", $e->getTraceAsString()) as $index => $line ){
+        echo "{$line} <br>";
+    }
 }catch(Throwable $e){
     echo " Exception : {$e->getMessage()}";
 }
@@ -59,4 +61,3 @@ function exceptionHandle(Throwable $exception){
 
     return $headers;
 }
-

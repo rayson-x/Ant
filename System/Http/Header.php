@@ -20,7 +20,7 @@ class Header extends Collection{
      * @param Collection $server
      * @return static
      */
-    public static function createFromCollection(Collection $server)
+    public static function createFromEnvironment(Collection $server)
     {
         $headers = [];
         foreach ($server as $key => $value) {

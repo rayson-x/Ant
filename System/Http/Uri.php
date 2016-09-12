@@ -25,7 +25,7 @@ class Uri implements UriInterface{
      * @param Collection $server
      * @return static
      */
-    public static function createFromCollection(Collection $server)
+    public static function createFromEnvironment(Collection $server)
     {
         $scheme = (empty($scheme) || $server->get('HTTPS') === 'off') ? 'http' : 'https';
         $user = $server->get('PHP_AUTH_USER','');

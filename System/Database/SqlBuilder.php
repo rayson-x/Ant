@@ -258,7 +258,6 @@ class SqlBuilder{
     {
         list($sql, $params) = $this->compile();
 
-        var_dump($sql);
         return $this->connector->execute($sql, $params);
     }
 

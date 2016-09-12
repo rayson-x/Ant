@@ -21,6 +21,12 @@ class ContextualBindingBuilder{
         $this->container = $container;
     }
 
+    /**
+     * 依赖的参数或实例
+     *
+     * @param $abstract
+     * @return $this
+     */
     public function needs($abstract)
     {
         $this->needs = $abstract;
@@ -28,6 +34,11 @@ class ContextualBindingBuilder{
         return $this;
     }
 
+    /**
+     * 传入的参数
+     *
+     * @param $implementation
+     */
     public function give($implementation)
     {
         $this->container->addContextualBinding($this->concrete, $this->needs, $implementation);

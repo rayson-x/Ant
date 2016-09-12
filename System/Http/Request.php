@@ -2,7 +2,6 @@
 namespace Ant\Http;
 
 use Ant\Collection;
-use Ant\Interfaces\CollectionInterface;
 use RuntimeException;
 use InvalidArgumentException;
 use Psr\Http\Message\UriInterface;
@@ -108,13 +107,13 @@ class Request extends Message implements ServerRequestInterface{
     ];
 
     /**
-     * @param Collection $server
+     * @param Environment $server
      */
-    public function __construct(Collection $server)
+    public function __construct(Environment $server)
     {
-        $this->uri = Uri::createFromCollection($server);
+        $this->uri = Uri::createFromEnvironment($server);
         $this->serverParams = $server->all();
-        $this->headers = Header::createFromCollection($server);
+        $this->headers = Header::createFromEnvironment($server);
         $this->cookieParams = $_COOKIE;
         $this->body = new RequestBody();
         $this->attributes = new Collection();

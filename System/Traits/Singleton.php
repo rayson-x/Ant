@@ -46,7 +46,7 @@ trait Singleton
     /**
      * 获取实例
      *
-     * @return \Ant\Container|Singleton
+     * @return \Ant\Container\Container|Singleton
      */
     public static function getInstance()
     {

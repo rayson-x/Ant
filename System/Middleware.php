@@ -1,21 +1,36 @@
 <?php
 namespace Ant;
 
-use UnexpectedValueException;
+//use UnexpectedValueException;
+use Ant\Container\Container;
+use InvalidArgumentException;
 
-class Middleware{
+trait Middleware{
+
+    //TODO::中间容器,管理全局中间件
 
     protected $handlers;
 
-    public function set($handler)
+    public function addMiddleware($name,callable $handler)
     {
-        if(!is_callable($handler)){
-            throw new UnexpectedValueException('Middleware must be a callable');
+        if(!is_string($name) || method_exists($name,'__toString')){
+            throw new InvalidArgumentException('Middleware name must be a string');
         }
 
-        $this->handlers[] = $handler;
+        $this->handlers[$name] = $handler;
 
         return $this;
+    }
+
+    public function getMiddleware(array $names)
+    {
+        return array_filter($this->handlers,function($name)use($names){
+            if(in_array($name,$names)){
+                return true;
+            }
+
+            return false;
+        },ARRAY_FILTER_USE_KEY);
     }
 
     public function reset()
@@ -23,12 +38,33 @@ class Middleware{
         $this->handlers = [];
     }
 
-    public function middleware($arguments = [],$handlers = [])
+    /**
+     * 获取容器
+     *
+     * @return Container
+     */
+    public function getContainer()
+    {
+        if(! $this->container instanceof Container){
+            $this->container = Container::getInstance();
+        }
+
+        return $this->container;
+    }
+
+    /**
+     * 执行中间件
+     *
+     * @param array $arguments
+     * @param array $handlers
+     * @return null|void
+     */
+    public function execute($handlers = [] , $arguments = [])
     {
         $handlers = $handlers ?: $this->handlers;
-
+        $arguments = $this->getContainer()->make('arguments',$arguments)->all();
         if (!$handlers) {
-            return;
+            return ;
         }
 
         //函数栈
@@ -48,19 +84,33 @@ class Middleware{
                     break;
                 }
             } elseif ($generator !== null) {
-                //重入协程参数
+                // 回调参数
                 $result = $generator;
             }
+
+            //获取
+            $arguments = $this->getContainer()->make('arguments')->all();
         }
 
         $return = ($result !== null);
+
+        $getReturnValueSwitch = version_compare(PHP_VERSION, '7.0.0', '>=');
+        //重入函数栈
         while ($generator = array_pop($stack)) {
             if ($return) {
                 $generator->send($result);
-                continue;
+            }else{
+                $generator->next();
             }
 
-            $generator->next();
+            if ($getReturnValueSwitch) {
+                $result = $generator->getReturn();
+                $return = ($result !== null);
+            }else{
+                $return = false;
+            }
         }
+
+        return $result;
     }
 }

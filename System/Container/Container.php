@@ -1,14 +1,13 @@
 <?php
-namespace Ant;
+namespace Ant\Container;
 
 use Closure;
 use ArrayAccess;
 use ReflectionClass;
-use RuntimeException;
 use ReflectionParameter;
 use Ant\Traits\Singleton;
+use Ant\Interfaces\ServiceProviderInterface;
 
-//TODO::容器专用异常
 /**
  * IoC容器,只要将服务注册到容器中,在有依赖关系时,容器便会会自动载入服务
  * 注意 : 当一个实例的构造函数需要大量参数时,推荐通过闭包函数生成实例,这样可以大幅度提升效率
@@ -149,6 +148,7 @@ class Container implements ArrayAccess{
      * 通过数组设置服务别名
      *
      * @param array $array
+     * @return mixed
      */
     protected function setAliasFromArray(array $array)
     {
@@ -236,7 +236,9 @@ class Container implements ArrayAccess{
         //如果已经绑定,删除之前所有的服务实例
         $this->removeStaleInstances($serviceName);
 
-        if(is_null($concrete)){
+        if($concrete instanceof Closure){
+            $concrete = $concrete->bindTo($this);
+        }elseif(is_null($concrete)){
             $concrete = $serviceName;
         }
 
@@ -252,7 +254,9 @@ class Container implements ArrayAccess{
      */
     public function bindIf($serviceName, $concrete = null, $shared = false)
     {
-        if(!$this->bound($serviceName)){
+        $key = is_array($serviceName) ? key($serviceName) : $serviceName;
+
+        if(!$this->bound($key)){
             $this->bind($serviceName,$concrete,$shared);
         }
     }
@@ -461,7 +465,6 @@ class Container implements ArrayAccess{
     public function build($concrete, array $parameters = [])
     {
         if ($concrete instanceof Closure) {
-            array_unshift($parameters,$this);
             return call_user_func_array($concrete,$parameters);
         }
         //通过反射机制实现实例
@@ -477,7 +480,7 @@ class Container implements ArrayAccess{
                 $message = "Target [$concrete] is not instantiable.";
             }
 
-            throw new RuntimeException($message);
+            throw new ContainerValueNotFoundException($message);
         }
 
         $construct = $reflection->getConstructor();
@@ -565,7 +568,7 @@ class Container implements ArrayAccess{
             return $parameter->getDefaultValue();
         }
 
-        throw new RuntimeException("Unresolvable dependency resolving [$parameter] in class {$parameter->getDeclaringClass()->getName()}");
+        throw new ContainerValueNotFoundException("Unresolvable dependency resolving [$parameter] in class {$parameter->getDeclaringClass()->getName()}");
     }
 
     /**
@@ -588,7 +591,7 @@ class Container implements ArrayAccess{
             }
 
             return $this->make($dependencyClass);
-        }catch(\RuntimeException $e){
+        }catch(ContainerValueNotFoundException $e){
             if($parameter->isOptional()){
                 return $parameter->getDefaultValue();
             }
@@ -666,6 +669,19 @@ class Container implements ArrayAccess{
         unset($this->bindings[$serviceName], $this->instances[$serviceName], $this->resolved[$serviceName]);
     }
 
+    /**
+     * 服务提供者
+     *
+     * @param ServiceProviderInterface $serviceProvider
+     */
+    public function registerService(ServiceProviderInterface $serviceProvider)
+    {
+        $serviceProvider->register($this);
+    }
+
+    /**
+     * 重置容器
+     */
     public function reset(){
         $this->aliases = [];
         $this->resolved = [];

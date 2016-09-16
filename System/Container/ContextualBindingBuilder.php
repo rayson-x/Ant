@@ -1,5 +1,5 @@
 <?php
-namespace Ant;
+namespace Ant\Container;
 
 class ContextualBindingBuilder{
     /**
@@ -12,7 +12,7 @@ class ContextualBindingBuilder{
     protected $needs;
 
     /**
-     * @param \Ant\Container $container
+     * @param Container $container
      * @param $concrete
      */
     public function __construct(Container $container, $concrete)

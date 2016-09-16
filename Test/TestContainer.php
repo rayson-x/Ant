@@ -1,5 +1,4 @@
 <?php
-
 class TestContainer extends PHPUnit_Framework_TestCase{
 
     public function testSingleton()
@@ -238,6 +237,15 @@ class TestContainer extends PHPUnit_Framework_TestCase{
      */
     public function testGetsTheDefaultInstanceOfTheDependentInterface($c)
     {
+        $c->when(Ant\Database\Connector\Mysql::class)->needs('$config')->give([
+            'dsn'=>'mysql:dbname=test;host=127.0.0.1',
+            'user'=>'root',
+            'password'=>'123456',
+        ]);
+        $c->bind(Ant\Database\Connector::class,Ant\Database\Connector\Mysql::class);
+
+        //获取 Ant\Database\Connector 默认返回 Ant\Database\Connector\Mysql
+        $this->assertInstanceOf(Ant\Database\Connector\Mysql::class,$c[Ant\Database\Connector::class]);
     }
 
     /**

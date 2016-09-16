@@ -8,8 +8,9 @@ class Collection implements CollectionInterface
 {
     protected $items = [];
 
-    public function __construct(array $items = [])
+    public function __construct($items = [])
     {
+        $items = is_array($items)? $items :func_get_args();
         $this->replace($items);
     }
 
@@ -88,7 +89,8 @@ class Collection implements CollectionInterface
     {
         $this->items = [];
     }
-
+    
+    
     /**
      * ArrayAccess预定义接口,可以将对象以数组的方式使用
      *

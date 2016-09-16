@@ -1,6 +1,7 @@
 <?php
 define('EXT','.php');
 include 'vendor\autoload.php';
+include 'system/Helper.php';
 //\Ant\Autoloader::register();
 //\Ant\Autoloader::addNamespace('Ant\\Database','System'.DIRECTORY_SEPARATOR.'Database');
 
@@ -9,42 +10,44 @@ function show($msg){
     var_dump($msg);
     echo "</pre>";
 }
-function debug(){
-    echo "<pre>";
-    var_dump(func_get_args());
-    echo "</pre>";
-    die;
-}
 
 $config = [
     'dsn'=>'mysql:dbname=test;host=127.0.0.1',
     'user'=>'root',
     'password'=>'123456',
 ];
+/* ($a??1) Eq (isset($a) ? $a : 1) */
 
-try{
-    $c = Ant\Container::getInstance();
-    /* 注册HTTP请求 */
-    $c->when(Ant\Http\Request::class)->needs(Ant\Http\Environment::class)->give(function(){
-        return new Ant\Http\Environment($_SERVER);
+/**
+ * php7错误跟异常都继承于Throwable,可以用try...catch的方式来捕获程序中的错误
+ */
+if(version_compare(PHP_VERSION, '7.0.0', '<')){
+    set_error_handler(function($errno,$errstr,$errfile,$errline){
+        throw new ErrorException($errstr, 0, $errno, $errfile, $errline);
     });
-    $request = $c[Ant\Http\Request::class];
-    var_dump($request->getBodyParam());
-//    $c->bind([Ant\Middleware::class => 'request']);
-//    $c->bind('request',Ant\Http\Request::class);
-}catch(Exception $e){
-    echo $e->getMessage()."<br>";
-    foreach(explode("\n", $e->getTraceAsString()) as $index => $line ){
-        echo "{$line} <br>";
-    }
-}catch(Error $e){
-    echo " Error : {$e->getMessage()}";
-    foreach(explode("\n", $e->getTraceAsString()) as $index => $line ){
-        echo "{$line} <br>";
-    }
-}catch(Throwable $e){
-    echo " Exception : {$e->getMessage()}";
 }
+
+$app = new Ant\App();
+$app->registerService();
+
+$app->addMiddleware('a',function($req,$res){
+    newRequest($req->withParsedBody(['abc'=>'abc']));
+    $ac = yield;
+    var_dump($ac);
+});
+
+$app->addMiddleware('b',function($req,$res){
+    var_dump($req->post());
+    $ac = yield;
+    return $ac + 11;
+});
+
+$app->addMiddleware('c',function($req,$res){
+    return 123;
+});
+
+$app->run();
+
 
 function exceptionHandle(Throwable $exception){
     if($exception->getPrevious()){

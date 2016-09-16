@@ -106,6 +106,7 @@ class Request extends Message implements ServerRequestInterface{
         'PATCH' => 1,
     ];
 
+    //TODO::调整构造函数,将构造职责与通过环境构造进行分离
     /**
      * @param Environment $server
      */
@@ -122,24 +123,6 @@ class Request extends Message implements ServerRequestInterface{
         if($server['REQUEST_METHOD'] === 'POST' && in_array($this->getContentType(),$type)){
             $this->bodyParsed = $_POST;
         }
-
-        /* 加载默认body解析器 */
-        $this->setBodyParsers('json',function($input){
-            return json_decode($input,true);
-        });
-
-        $this->setBodyParsers('xml',function($input){
-            $backup = libxml_disable_entity_loader(true);
-            $result = simplexml_load_string($input);
-            libxml_disable_entity_loader($backup);
-            return $result;
-        });
-
-        $this->setBodyParsers('x-www-form-urlencoded',function($input){
-            parse_str($input,$data);
-            return $data;
-        });
-
     }
 
     /**
@@ -396,7 +379,7 @@ class Request extends Message implements ServerRequestInterface{
             throw new InvalidArgumentException('Parsed body value must be an array, an object, or null');
         }
 
-        return $this->immutability($this,'bodyParsers',$data);
+        return $this->immutability($this,'bodyParsed',$data);
     }
 
     /**

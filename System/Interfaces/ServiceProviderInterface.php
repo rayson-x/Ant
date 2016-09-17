@@ -1,5 +1,5 @@
 <?php
-namespace Ant\Container;
+namespace Ant\Interfaces;
 
 /**
  * 服务提供者
@@ -12,8 +12,8 @@ interface ServiceProviderInterface
     /**
      * 将服务绑定至服务容器中
      *
-     * @param Container $container
+     * @param ContainerInterface $container
      * @return mixed
      */
-    public function register(Container $container);
+    public function register(ContainerInterface $container);
 }

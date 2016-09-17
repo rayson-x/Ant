@@ -4,12 +4,12 @@ namespace Ant;
 use Ant\Http\Request;
 use Ant\Http\Response;
 use Ant\Http\Environment;
-use Ant\Container\Container;
-use Ant\Container\ServiceProviderInterface;
+use Ant\Interfaces\ContainerInterface;
+use Ant\Interfaces\ServiceProviderInterface;
 
 class BaseServiceProvider implements ServiceProviderInterface
 {
-    public function register(Container $container)
+    public function register(ContainerInterface $container)
     {
         /**
          * 按照顺序注册服务
@@ -23,9 +23,9 @@ class BaseServiceProvider implements ServiceProviderInterface
     /**
      * 注册服务实例
      *
-     * @param Container $container
+     * @param ContainerInterface $container
      */
-    protected function registerClass(Container $container)
+    protected function registerClass(ContainerInterface $container)
     {
         /**
          * 注册Server数据集
@@ -56,9 +56,9 @@ class BaseServiceProvider implements ServiceProviderInterface
     /**
      * 注册服务扩展
      *
-     * @param Container $container
+     * @param ContainerInterface $container
      */
-    protected function registerServiceExtend(Container $container)
+    protected function registerServiceExtend(ContainerInterface $container)
     {
         /**
          * 扩展 Http Request 处理类
@@ -90,9 +90,9 @@ class BaseServiceProvider implements ServiceProviderInterface
     /**
      * 给服务注册依赖参数
      *
-     * @param Container $container
+     * @param ContainerInterface $container
      */
-    protected function registerServiceNeedArguments(Container $container)
+    protected function registerServiceNeedArguments(ContainerInterface $container)
     {
 
     }
@@ -100,9 +100,9 @@ class BaseServiceProvider implements ServiceProviderInterface
     /**
      * 注册各种数据类型的服务
      *
-     * @param Container $container
+     * @param ContainerInterface $container
      */
-    protected function registerOtherTypesService(Container $container)
+    protected function registerOtherTypesService(ContainerInterface $container)
     {
         /**
          * 将中间件参数托管至此服务
@@ -110,7 +110,7 @@ class BaseServiceProvider implements ServiceProviderInterface
          * 修改调用时传递给每个中间件的参数
          */
         $container->bind('arguments',function(){
-            /* @var $this Container */
+            /* @var $this ContainerInterface */
             static $arguments = null;
             if(is_null($arguments)){
                 $arguments = new Collection();

@@ -45,7 +45,7 @@ $app->addMiddleware(function($req,$res){
 });
 
 $app->addMiddleware(function($req,$res){
-//    var_dump($req->post());
+    var_dump($req->post());
     yield;
 });
 

@@ -6,6 +6,8 @@ use ArrayAccess;
 use ReflectionClass;
 use ReflectionParameter;
 use Ant\Traits\Singleton;
+use Ant\Interfaces\ContainerInterface;
+use Ant\Interfaces\ServiceProviderInterface;
 
 /**
  * IoC容器,只要将服务注册到容器中,在有依赖关系时,容器便会会自动载入服务
@@ -15,7 +17,7 @@ use Ant\Traits\Singleton;
  * Class Container
  * @package Ant
  */
-class Container implements ArrayAccess{
+class Container implements ContainerInterface,ArrayAccess{
     use Singleton;
 
     /**
@@ -173,7 +175,7 @@ class Container implements ArrayAccess{
      * 将服务打上标签
      *
      * @param array|string $serviceGroup
-     * @param array|mixed $tags
+     * @param array|string $tags
      */
     public function tag($serviceGroup, $tags)
     {
@@ -209,10 +211,13 @@ class Container implements ArrayAccess{
         return $results;
     }
 
+
     /**
-     * @param string $serviceName    服务名称
-     * @param null $concrete        服务具体实例方法(实例名称或者闭包函数)
-     * @param bool|false $shared    是否共享
+     * 绑定服务到容器
+     *
+     * @param array|string $serviceName
+     * @param mixed $concrete
+     * @param bool $shared
      *
      * @example
      * 手动实例 :
@@ -247,8 +252,8 @@ class Container implements ArrayAccess{
     /**
      * 绑定未绑定服务,如果已绑定就放弃
      *
-     * @param $serviceName
-     * @param null $concrete
+     * @param string|array $serviceName
+     * @param mixed $concrete
      * @param bool|false $shared
      */
     public function bindIf($serviceName, $concrete = null, $shared = false)
@@ -263,8 +268,8 @@ class Container implements ArrayAccess{
     /**
      * 绑定一个单例
      *
-     * @param $serviceName
-     * @param null $concrete
+     * @param string|array $serviceName
+     * @param mixed $concrete
      */
     public function singleton($serviceName, $concrete = null)
     {
@@ -274,8 +279,8 @@ class Container implements ArrayAccess{
     /**
      * 绑定一个实例
      *
-     * @param $serviceName
-     * @param $instance
+     * @param string|array $serviceName
+     * @param mixed $instance
      */
     public function instance($serviceName, $instance)
     {
@@ -293,7 +298,7 @@ class Container implements ArrayAccess{
     /**
      * 扩展容器中一个服务
      *
-     * @param $serviceName
+     * @param string|array $serviceName
      * @param Closure $closure
      */
     public function extend($serviceName, Closure $closure)
@@ -394,9 +399,9 @@ class Container implements ArrayAccess{
     /**
      * 通过服务名称获取服务
      *
-     * @param $serviceName
+     * @param string $serviceName
      * @param array $parameters
-     * @return object
+     * @return mixed
      */
     public function make($serviceName, array $parameters = [])
     {
@@ -636,6 +641,11 @@ class Container implements ArrayAccess{
         unset($this->instances[$serviceName],$this->aliases[$serviceName]);
     }
 
+    /**
+     * 从容器中移除一个服务
+     *
+     * @param $name
+     */
     public function forgetService($name){
         $name = $this->normalize($name);
         //获取服务原名

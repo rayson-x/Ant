@@ -1,7 +1,7 @@
 <?php
 namespace Ant\Traits;
 
-use Ant\Exception;
+use Exception;
 
 /**
  * 单例模式

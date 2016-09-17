@@ -5,7 +5,7 @@ use Ant\Http\Request;
 use Ant\Http\Response;
 use Ant\Http\Environment;
 use Ant\Container\Container;
-use Ant\Interfaces\ServiceProviderInterface;
+use Ant\Container\ServiceProviderInterface;
 
 class BaseServiceProvider implements ServiceProviderInterface
 {
@@ -105,7 +105,9 @@ class BaseServiceProvider implements ServiceProviderInterface
     protected function registerOtherTypesService(Container $container)
     {
         /**
-         * 中间件参数统一进行管理
+         * 将中间件参数托管至此服务
+         * 通过修改此服务实例来达到
+         * 修改调用时传递给每个中间件的参数
          */
         $container->bind('arguments',function(){
             /* @var $this Container */

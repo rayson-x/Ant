@@ -1,7 +1,5 @@
 <?php
-namespace Ant\Interfaces;
-
-use Ant\Container\Container;
+namespace Ant\Container;
 
 /**
  * 服务提供者

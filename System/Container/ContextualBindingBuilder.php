@@ -7,8 +7,18 @@ class ContextualBindingBuilder{
      */
     protected $container;
 
+    /**
+     * 实例的服务名称
+     *
+     * @var
+     */
     protected $concrete;
 
+    /**
+     * 需要的参数名称
+     *
+     * @var
+     */
     protected $needs;
 
     /**

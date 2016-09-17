@@ -6,7 +6,6 @@ use ArrayAccess;
 use ReflectionClass;
 use ReflectionParameter;
 use Ant\Traits\Singleton;
-use Ant\Interfaces\ServiceProviderInterface;
 
 /**
  * IoC容器,只要将服务注册到容器中,在有依赖关系时,容器便会会自动载入服务
@@ -343,32 +342,6 @@ class Container implements ArrayAccess{
     {
         $concrete = $this->normalize($concrete);
 
-        //PHP7可以通过匿名类进行上下文绑定
-//        return new class($this,$concrete) {
-//            protected $container;
-//
-//            protected $concrete;
-//
-//            protected $needs;
-//
-//            public function __construct($container , $concrete)
-//            {
-//                $this->concrete = $concrete;
-//                $this->container = $container;
-//            }
-//
-//            public function needs($abstract)
-//            {
-//                $this->needs = $abstract;
-//
-//                return $this;
-//            }
-//
-//            public function give($implementation)
-//            {
-//                $this->container->addContextualBinding($this->concrete, $this->needs, $implementation);
-//            }
-//        };
         return new ContextualBindingBuilder($this,$concrete);
     }
 
@@ -397,7 +370,9 @@ class Container implements ArrayAccess{
     {
         if (isset($this->contextual[end($this->buildStack)][$serviceName])) {
             $concrete = $this->contextual[end($this->buildStack)][$serviceName];
-            return ($concrete instanceof Closure) ? call_user_func($concrete, $this) : $concrete;
+            return ($concrete instanceof Closure)
+                ? call_user_func($concrete, $this)
+                : $concrete;
         }
     }
 

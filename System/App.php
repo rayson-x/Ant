@@ -1,12 +1,12 @@
 <?php
 namespace Ant;
 
+use Exception;
 use Ant\Container\Container;
+use Ant\Middleware\Middleware;
 
 class App{
-    use Middleware{
-        Middleware::addMiddleware as setMiddleware;
-    }
+    use Middleware;
 
     /**
      * 加载的中间件
@@ -29,6 +29,9 @@ class App{
      */
     protected $exceptionHandler;
 
+    /**
+     * App constructor.
+     */
     public function __construct()
     {
         $this->container = Container::getInstance();
@@ -42,10 +45,14 @@ class App{
         $this->container->registerService(new BaseServiceProvider());
     }
 
-    public function addMiddleware($name,callable $callable)
+    /**
+     * php7错误跟异常都继承于Throwable,可以用try...catch的方式来捕获程序中的错误
+     */
+    public function setErrorHandler(callable $errorHandler)
     {
-        $this->middleware[] = $name;
-        $this->setMiddleware($name,$callable);
+        if(version_compare(PHP_VERSION, '7.0.0', '<')){
+            set_error_handler($errorHandler);
+        }
     }
 
     public function setExceptionHandler(callable $handler)
@@ -61,7 +68,7 @@ class App{
         }
 
         return function($exception){
-
+            
         };
     }
 
@@ -70,21 +77,16 @@ class App{
         $request = $this->container['request'];
         $response = $this->container['response'];
 
+        $this->withArguments(function()use($request,$response){
+            return $this->container->make('arguments',[$request,$response])->all();
+        });
+
         try{
-            $middleware = $this->getMiddleware($this->middleware);
-            $this->execute($middleware,[$request,$response]);
+            $this->execute();
         }catch(Exception $e){
-            echo $e->getMessage()."<br>";
-            foreach(explode("\n", $e->getTraceAsString()) as $index => $line ){
-                echo "{$line} <br>";
-            }
-        }catch(\Error $e){
-            echo " Error : {$e->getMessage()}";
-            foreach(explode("\n", $e->getTraceAsString()) as $index => $line ){
-                echo "{$line} <br>";
-            }
+            call_user_func($this->getExceptionHandler(),$e);
         }catch(\Throwable $e){
-            echo " Exception : {$e->getMessage()}";
+            call_user_func($this->getExceptionHandler(),$e);
         }
 
         $response->send();

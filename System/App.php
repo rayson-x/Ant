@@ -1,8 +1,8 @@
 <?php
 namespace Ant;
 
-use Exception;
 use Ant\Container\Container;
+use Ant\Http\Response;
 use Ant\Middleware\Middleware;
 
 class App{
@@ -45,15 +45,6 @@ class App{
         $this->container->registerService(new BaseServiceProvider());
     }
 
-    /**
-     * php7错误跟异常都继承于Throwable,可以用try...catch的方式来捕获程序中的错误
-     */
-    public function setErrorHandler(callable $errorHandler)
-    {
-        if(version_compare(PHP_VERSION, '7.0.0', '<')){
-            set_error_handler($errorHandler);
-        }
-    }
 
     public function setExceptionHandler(callable $handler)
     {
@@ -67,8 +58,19 @@ class App{
             return $this->exceptionHandler;
         }
 
-        return function($exception){
-            
+        return function($exception,$request,$response){
+            /* @var $response Response*/
+            if ($exception instanceof \Ant\Http\Exception) {
+                $status = $exception->getCode();
+            } else {
+                $status = 500;
+            }
+
+            $response->withStatus($status);
+
+//            foreach (exceptionHandle($exception) as $key => $value) {
+//                $response->withHeader($key, $value);
+//            }
         };
     }
 
@@ -77,16 +79,23 @@ class App{
         $request = $this->container['request'];
         $response = $this->container['response'];
 
+        /* 将中间件参数交给服务容器维护 */
         $this->withArguments(function()use($request,$response){
+            static $init = false;
+            if($init){
+                return $this->container['arguments']->all();
+            }
+
+            $init = true;
             return $this->container->make('arguments',[$request,$response])->all();
         });
 
         try{
             $this->execute();
-        }catch(Exception $e){
-            call_user_func($this->getExceptionHandler(),$e);
-        }catch(\Throwable $e){
-            call_user_func($this->getExceptionHandler(),$e);
+        }catch(\Exception $exception){
+            call_user_func($this->getExceptionHandler(),$exception,$request,$response);
+        }catch(\Throwable $error){
+            call_user_func($this->getExceptionHandler(),$error,$request,$response);
         }
 
         $response->send();

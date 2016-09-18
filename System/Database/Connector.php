@@ -2,9 +2,10 @@
 namespace Ant\Database;
 
 use PDO;
-use \PDOStatement;
-use \PDOException;
-use Ant\Exception;
+use PDOStatement;
+use PDOException;
+use Exception;
+use InvalidArgumentException;
 
 abstract class Connector{
     //链接实例
@@ -57,7 +58,7 @@ abstract class Connector{
     public function __construct(array $config = [])
     {
         if(empty($config['dsn'])){
-            throw new \InvalidArgumentException('Invalid database config, require "dsn" key.');
+            throw new InvalidArgumentException('Invalid database config, require "dsn" key.');
         }
         $this->config = $config;
     }

@@ -67,23 +67,21 @@ class BaseServiceProvider implements ServiceProviderInterface
          */
         $container->extend(Request::class,function($request){
             /* @var $request Request */
-            if(method_exists($request,'setBodyParsers')){
-                $request->setBodyParsers('json',function($input){
-                    return json_decode($input,true);
-                });
+            $request->setBodyParsers('json',function($input){
+                return safe_json_decode($input,true);
+            });
 
-                $request->setBodyParsers('xml',function($input){
-                    $backup = libxml_disable_entity_loader(true);
-                    $result = simplexml_load_string($input);
-                    libxml_disable_entity_loader($backup);
-                    return $result;
-                });
+            $request->setBodyParsers('xml',function($input){
+                $backup = libxml_disable_entity_loader(true);
+                $result = simplexml_load_string($input);
+                libxml_disable_entity_loader($backup);
+                return $result;
+            });
 
-                $request->setBodyParsers('x-www-form-urlencoded',function($input){
-                    parse_str($input,$data);
-                    return $data;
-                });
-            }
+            $request->setBodyParsers('x-www-form-urlencoded',function($input){
+                parse_str($input,$data);
+                return $data;
+            });
         });
     }
 

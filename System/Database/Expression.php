@@ -9,7 +9,7 @@ namespace Ant\Database;
  * $select = $db->select('foobar')->setColumns('count(1)');
  *
  * 正确：select count(1) from `foobar`
- * $select = $db->select('foobar')->setColumns(new Expr('count(1)'));
+ * $select = $db->select('foobar')->setColumns(new Expression('count(1)'));
  *
  * Class Expression
  * @package Ant\Database

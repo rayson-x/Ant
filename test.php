@@ -1,31 +1,31 @@
 <?php
-class test{
-    public $string = '123123';
-
-    public $func;
-
-    public function __construct($string = ''){
-        $this->string = $string;
-    }
-
-    public function set($func){
-        $this->func = $func;
-    }
-
-    public function get(){
-        $args = [];
-        array_unshift($args,$this);
-        var_dump(call_user_func_array($this->func,$args));
-    }
-}
-$test = new test('123123');
-$test->set(function($test){
-   return $test->string;
-});
-
-for($i=0;$i<100000;$i++){
-    $test->get();
-}
+//class test{
+//    public $string = '123123';
+//
+//    public $func;
+//
+//    public function __construct($string = ''){
+//        $this->string = $string;
+//    }
+//
+//    public function set($func){
+//        $this->func = $func;
+//    }
+//
+//    public function get(){
+//        $args = [];
+//        array_unshift($args,$this);
+//        var_dump(call_user_func_array($this->func,$args));
+//    }
+//}
+//$test = new test('123123');
+//$test->set(function($test){
+//   return $test->string;
+//});
+//
+//for($i=0;$i<100000;$i++){
+//    $test->get();
+//}
 
 //$array = [
 //    'mu'=>[

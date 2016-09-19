@@ -4,6 +4,7 @@ namespace Ant\Http;
 use Ant\Collection;
 use RuntimeException;
 use InvalidArgumentException;
+use UnexpectedValueException;
 use Psr\Http\Message\UriInterface;
 use Psr\Http\Message\UploadedFileInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -348,9 +349,9 @@ class Request extends Message implements ServerRequestInterface{
         }
 
         $contentType = $this->getContentType();
-        $parts = explode('/',$contentType);
-        $type = array_shift($parts);
-        $subtype = array_pop($parts);
+        $parts = explode('/',$contentType,2);
+        $type = trim($parts[0],'/');
+        $subtype = trim($parts[1],'/');
 
         if(in_array(strtolower($type),['application','text']) && isset($this->bodyParsers[$subtype])){
             //调用body解析函数
@@ -584,23 +585,30 @@ class Request extends Message implements ServerRequestInterface{
     /**
      * 保持数据不变性
      *
+     * @param $value mixed
      * @param $instance Request
      * @param $attribute string
-     * @param $value mixed
      * @return Request
      */
     public function immutability(Request $instance,$attribute,$value)
     {
         $result = clone $instance;
-        if(is_array($attribute)){
-            $key = array_pop($attribute);
-            $array = array_shift($attribute);
 
-            $result->$array[$key] = $value;
-        }else{
+        if(is_string($attribute)){
             $result->$attribute = $value;
+
+            return $result;
         }
 
-        return $result;
+        if(is_array($attribute)){
+            $array = $attribute[0];
+            $key = $attribute[1];
+
+            $result->$array[$key] = $value;
+
+            return $result;
+        }
+
+        throw new UnexpectedValueException(' Param [$attribute] must be string or array');
     }
 }

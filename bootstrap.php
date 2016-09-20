@@ -15,19 +15,6 @@ if(version_compare(PHP_VERSION, '7.0.0', '<')){
 $app = new Ant\App();
 
 $app->addMiddleware(function ($request, $response) {
-    $startTime = microtime(true);
     yield;
-    $endTime = (microtime(true) - $startTime) * 1000;
-    $response->withHeader('x-run-time', (int) $endTime);
-});
-
-$app->addMiddleware(function ($request, $response) {
-    yield;
-});
-$app->addMiddleware(function ($request, $response) {
-    yield;
-});
-$app->addMiddleware(function ($request, $response) {
-    yield;
-    throw new Ant\Http\Exception(404);
+//    $response->withHeader('x-run-time', (int) $endTime);
 });

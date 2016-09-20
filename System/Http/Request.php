@@ -9,6 +9,8 @@ use Psr\Http\Message\UriInterface;
 use Psr\Http\Message\UploadedFileInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
+//TODO::添加COOKIE处理类
+//TODO::调整构造函数,将构造职责与通过环境构造进行分离
 /**
  * Class Request
  * @package Ant\Http
@@ -107,7 +109,6 @@ class Request extends Message implements ServerRequestInterface{
         'PATCH' => 1,
     ];
 
-    //TODO::调整构造函数,将构造职责与通过环境构造进行分离
     /**
      * @param Environment $server
      */
@@ -327,7 +328,12 @@ class Request extends Message implements ServerRequestInterface{
         return $this->uploadFiles;
     }
 
-    //添加上传文件信息
+    /**
+     * 添加上传文件信息
+     *
+     * @param array $uploadedFiles
+     * @return Request
+     */
     public function withUploadedFiles(array $uploadedFiles)
     {
         return $this->immutability($this,'uploadFiles',$uploadedFiles);

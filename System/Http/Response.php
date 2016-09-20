@@ -257,6 +257,9 @@ class Response extends Message implements ResponseInterface{
         return $this->getStatusCode() >= 500 && $this->getStatusCode() < 600;
     }
 
+    /***
+     * @return string
+     */
     public function __toString()
     {
         $output = sprintf(

@@ -14,8 +14,8 @@ class BaseServiceProvider implements ServiceProviderInterface
         /**
          * 按照顺序注册服务
          */
-        $this->registerOtherTypesService($container);
         $this->registerServiceNeedArguments($container);
+        $this->registerOtherTypesService($container);
         $this->registerClass($container);
         $this->registerServiceExtend($container);
     }

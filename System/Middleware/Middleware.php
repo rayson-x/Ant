@@ -46,7 +46,8 @@ trait Middleware{
     {
         if(is_callable($this->arguments)){
             return call_user_func($this->arguments,$arguments);
-        }elseif(is_array($this->arguments)){
+        }
+        if(is_array($this->arguments)){
             return $this->arguments;
         }
 

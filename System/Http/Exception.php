@@ -5,8 +5,8 @@ use RuntimeException;
 
 class Exception extends RuntimeException
 {
-    public function __construct($status,Exception $previous = null)
+    public static function factory($status, \Exception $previous = null)
     {
-        parent::__construct(StatusPhrase::getStatusPhrase($status), $status, $previous);
+        return new self(StatusPhrase::getStatusPhrase($status), $status, $previous);
     }
 }

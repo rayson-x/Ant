@@ -1,9 +1,10 @@
 <?php
 namespace Ant\Database;
 
-use Closure;
-use UnexpectedValueException;
-use InvalidArgumentException;
+use \Closure;
+use Ant\Exception;
+use \UnexpectedValueException;
+use \InvalidArgumentException;
 
 class SqlBuilder{
     /**
@@ -134,6 +135,7 @@ class SqlBuilder{
      * @param $where
      * @param null $params
      * @return SqlBuilder
+     * @throws Exception
      *
      * @example
      * 支持的以下语法类型
@@ -162,6 +164,7 @@ class SqlBuilder{
      * @param $where
      * @param null $params
      * @return SqlBuilder
+     * @throws Exception
      *
      * @example
      * 同上,只不过将条件表达式变为了OR
@@ -345,7 +348,7 @@ class SqlBuilder{
      * @param $params
      * @param $expr
      * @return $this
-     * @throws UnexpectedValueException
+     * @throws InvalidArgumentException
      */
     protected function parseWhereExp($where,$params,$expr){
         if(is_array($where)){

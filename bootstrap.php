@@ -13,8 +13,13 @@ if(version_compare(PHP_VERSION, '7.0.0', '<')){
 }
 
 $app = new Ant\App();
+$app->registerService();
 
-$app->addMiddleware(function ($request, $response) {
+$app->addMiddleware(function($request,$response){
+    $start = microtime(true);
+
     yield;
-//    $response->withHeader('x-run-time', (int) $endTime);
+
+    $end = (microtime(true) - $start) * 1000;
+    $response->withHeader('x-run-time',$end);
 });

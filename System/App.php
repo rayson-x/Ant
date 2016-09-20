@@ -1,8 +1,8 @@
 <?php
 namespace Ant;
 
-use Ant\Http\Response;
 use Ant\Container\Container;
+use Ant\Http\Response;
 use Ant\Middleware\Middleware;
 
 class App{
@@ -35,15 +35,17 @@ class App{
     public function __construct()
     {
         $this->container = Container::getInstance();
-        $this->container->registerService(new BaseServiceProvider());
     }
 
     /**
-     * 设置异常处理方式
-     *
-     * @param callable $handler
-     * @return $this
+     * 注册服务
      */
+    public function registerService()
+    {
+        $this->container->registerService(new BaseServiceProvider());
+    }
+
+
     public function setExceptionHandler(callable $handler)
     {
         $this->exceptionHandler = $handler;
@@ -51,11 +53,6 @@ class App{
         return $this;
     }
 
-    /**
-     * 获取异常处理方式
-     *
-     * @return callable|\Closure
-     */
     public function getExceptionHandler(){
         if(is_callable($this->exceptionHandler)){
             return $this->exceptionHandler;
@@ -71,10 +68,9 @@ class App{
 
             $response->withStatus($status);
 
-            foreach (exceptionHandle($exception) as $key => $value) {
-                //写入响应主体
-                $response->write("{$value} <br>");
-            }
+//            foreach (exceptionHandle($exception) as $key => $value) {
+//                $response->withHeader($key, $value);
+//            }
         };
     }
 
@@ -82,7 +78,6 @@ class App{
     {
         $request = $this->container['request'];
         $response = $this->container['response'];
-        /* @var $response Response*/
 
         /* 将中间件参数交给服务容器维护 */
         $this->withArguments(function()use($request,$response){

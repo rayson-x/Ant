@@ -153,8 +153,6 @@ class Response extends Message implements ResponseInterface{
 
                 header(sprintf('%s: %s',strtolower($name),$value));
             }
-
-            //TODO::响应cookie
         }
 
         //响应body内容

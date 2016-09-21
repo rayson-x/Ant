@@ -36,6 +36,17 @@ function safe_json_decode($json, $assoc = false, $depth = 512, $options = 0)
     return $value;
 }
 
+function contains($haystack, $needles)
+{
+    foreach ((array) $needles as $needle) {
+        if ($needle != '' && mb_strpos($haystack, $needle) !== false) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 function exceptionHandle($exception){
     if($exception->getPrevious()){
         return exceptionHandle($exception->getPrevious());

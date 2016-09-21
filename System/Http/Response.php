@@ -119,11 +119,7 @@ class Response extends Message implements ResponseInterface{
     public function setJson($data,$status = null,$encodingOptions = 0)
     {
         $this->getBody()->rewind();
-        $this->getBody()->write($json = json_encode($data, $encodingOptions));
-
-        if ($json === false) {
-            throw new \RuntimeException(json_last_error_msg(), json_last_error());
-        }
+        $this->getBody()->write($json = safe_json_encode($data, $encodingOptions));
 
         $this->withHeader('Content-Type', 'application/json;charset=utf-8');
         if (isset($status)) {
@@ -153,6 +149,8 @@ class Response extends Message implements ResponseInterface{
 
                 header(sprintf('%s: %s',strtolower($name),$value));
             }
+
+            //TODO::响应COOKIE
         }
 
         //响应body内容

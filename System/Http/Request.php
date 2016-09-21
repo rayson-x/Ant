@@ -354,9 +354,9 @@ class Request extends Message implements ServerRequestInterface{
         }
 
         $contentType = $this->getContentType();
-        $parts = explode('/',$contentType);
-        $type = array_shift($parts);
-        $subtype = array_pop($parts);
+        $parts = explode('/',$contentType,2);
+        $type = trim($parts[0],'/');
+        $subtype = trim($parts[1],'/');
 
         if(in_array(strtolower($type),['application','text']) && isset($this->bodyParsers[$subtype])){
             //调用body解析函数
@@ -599,8 +599,8 @@ class Request extends Message implements ServerRequestInterface{
     {
         $result = clone $instance;
         if(is_array($attribute)){
-            $key = array_pop($attribute);
-            $array = array_shift($attribute);
+            $array = $attribute[0];
+            $key = $attribute[1];
 
             $result->$array[$key] = $value;
         }else{

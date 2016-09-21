@@ -1,7 +1,7 @@
 <?php
 namespace Ant\Database;
 
-use \Closure;
+use Closure;
 
 class JoinClause{
 

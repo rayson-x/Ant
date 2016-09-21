@@ -13,7 +13,6 @@ if(version_compare(PHP_VERSION, '7.0.0', '<')){
 }
 
 $app = new Ant\App();
-$app->registerService();
 
 $app->addMiddleware(function($request,$response){
     $start = microtime(true);
@@ -23,3 +22,10 @@ $app->addMiddleware(function($request,$response){
     $end = (microtime(true) - $start) * 1000;
     $response->withHeader('x-run-time',$end);
 });
+$route = new Ant\Router\RouterRequest();
+
+$route->group([],function($app){
+
+});
+
+$app->addMiddleware([$route,'execute']);

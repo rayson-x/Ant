@@ -3,7 +3,6 @@ namespace Ant\Middleware;
 
 use Generator;
 
-//TODO::储存中间容器,对中间件进行统一管理 (视情况添加)
 trait Middleware{
     /**
      * 默认加载的中间件

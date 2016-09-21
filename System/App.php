@@ -1,9 +1,11 @@
 <?php
 namespace Ant;
 
-use Ant\Container\Container;
 use Ant\Http\Response;
+use Ant\Container\Container;
 use Ant\Middleware\Middleware;
+use Psr\Http\Message\RequestInterface;
+use Psr\Http\Message\ResponseInterface;
 
 class App{
     use Middleware;
@@ -35,17 +37,13 @@ class App{
     public function __construct()
     {
         $this->container = Container::getInstance();
-    }
-
-    /**
-     * 注册服务
-     */
-    public function registerService()
-    {
         $this->container->registerService(new BaseServiceProvider());
     }
 
-
+    /**
+     * @param callable $handler
+     * @return $this
+     */
     public function setExceptionHandler(callable $handler)
     {
         $this->exceptionHandler = $handler;
@@ -53,6 +51,9 @@ class App{
         return $this;
     }
 
+    /**
+     * @return callable|\Closure
+     */
     public function getExceptionHandler(){
         if(is_callable($this->exceptionHandler)){
             return $this->exceptionHandler;
@@ -79,7 +80,20 @@ class App{
         $request = $this->container['request'];
         $response = $this->container['response'];
 
-        /* 将中间件参数交给服务容器维护 */
+        $this->process($request,$response);
+
+        $response->send();
+    }
+
+    /**
+     * 处理一个请求
+     *
+     * @param RequestInterface $request
+     * @param ResponseInterface $response
+     */
+    public function process(RequestInterface $request,ResponseInterface $response)
+    {
+        // 将中间件参数交给服务容器维护
         $this->withArguments(function()use($request,$response){
             static $init = false;
             if($init){
@@ -97,7 +111,5 @@ class App{
         }catch(\Throwable $error){
             call_user_func($this->getExceptionHandler(),$error,$request,$response);
         }
-
-        $response->send();
     }
 }

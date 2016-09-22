@@ -1,5 +1,6 @@
 {
     "require": {
-        "psr/http-message": "^1.0"
+        "psr/http-message": "^1.0",
+        "nikic/fast-route": "^1.0"
     }
 }

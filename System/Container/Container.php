@@ -4,6 +4,8 @@ namespace Ant\Container;
 use Closure;
 use ArrayAccess;
 use ReflectionClass;
+use ReflectionMethod;
+use ReflectionFunction;
 use ReflectionParameter;
 use Ant\Traits\Singleton;
 use Ant\Interfaces\ContainerInterface;
@@ -578,6 +580,66 @@ class Container implements ContainerInterface,ArrayAccess{
 
             throw $e;
         }
+    }
+
+    public function call($callback,$parameters = [],$defaultMethod = null)
+    {
+        if($this->isCallableWithAtSign($callback)){
+            return $this->callClass($callback,$parameters,$defaultMethod );
+        }
+
+        return call_user_func_array($callback,$parameters);
+    }
+
+    public function isCallableWithAtSign($callback)
+    {
+        return is_string($callback) && strpos($callback,'@') !== false;
+    }
+
+    public function getMethodDependencies($callback,$parameters)
+    {
+        $dependence = [];
+
+        foreach(($this->getCallableReflection($callback)->getParameters()) as $parameter){
+            $this->addDependencyForCallParameter($parameter, $parameters, $dependence);
+        }
+
+        return array_merge($dependence, $parameters);
+    }
+
+    public function getCallableReflection($callback)
+    {
+        if(is_string($callback) && (strpos($callback,'::') !== false)){
+            $callback = explode($callback,"::");
+        }
+
+        if(is_array($callback)){
+            return new ReflectionMethod($callback[0],$callback[1]);
+        }
+
+        return new ReflectionFunction($callback);
+    }
+
+    protected function addDependencyForCallParameter(ReflectionParameter $parameter, array &$parameters, &$dependencies)
+    {
+        if(array_key_exists($parameter->name,$parameters)){
+            $dependencies[] = $parameters[$parameter->name];
+        }
+    }
+
+    public function callClass($callback,$parameters = [],$defaultMethod = null)
+    {
+        $segments = explode("@",$callback);
+
+        $method = count($segments) === 2 ? $segments[1] : $defaultMethod;
+
+        $object = $this->make($segments[0]);
+
+        if(is_null($method) || !method_exists($object,$method)){
+            throw new \BadMethodCallException('Method does not exist');
+        }
+
+        return $this->call([$object,$method],$parameters);
     }
 
     /**

@@ -4,100 +4,51 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "hash": "5fb6cac58287fdcabd7be4c7bbbb3018",
-    "content-hash": "73b87f3bda89131b4e5d51adebc0297b",
+    "hash": "640bfcb8500b8a01acc51f9779442da2",
+    "content-hash": "360e875b9da1d8e6c8c6db37d478431b",
     "packages": [
         {
-            "name": "oscarotero/psr7-middlewares",
-            "version": "v3.16.1",
+            "name": "nikic/fast-route",
+            "version": "v1.0.1",
             "source": {
                 "type": "git",
-                "url": "https://github.com/oscarotero/psr7-middlewares.git",
-                "reference": "f5591f0417d255d2cbc97cf0d2e0e42dc3c9ba2d"
+                "url": "https://github.com/nikic/FastRoute.git",
+                "reference": "8ea928195fa9b907f0d6e48312d323c1a13cc2af"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://packagist.phpcomposer.com/files/oscarotero/psr7-middlewares/f5591f0417d255d2cbc97cf0d2e0e42dc3c9ba2d.zip",
-                "reference": "f5591f0417d255d2cbc97cf0d2e0e42dc3c9ba2d",
+                "url": "https://packagist.phpcomposer.com/files/nikic/FastRoute/8ea928195fa9b907f0d6e48312d323c1a13cc2af.zip",
+                "reference": "8ea928195fa9b907f0d6e48312d323c1a13cc2af",
                 "shasum": ""
             },
             "require": {
-                "php": ">=5.5.0"
-            },
-            "require-dev": {
-                "aura/router": "^3.0",
-                "aura/session": "2.*",
-                "filp/whoops": "2.*",
-                "google/recaptcha": "^1.1",
-                "imagecow/imagecow": "^2.0",
-                "league/route": "^2.0",
-                "m6web/firewall": "~1.0",
-                "matthiasmullie/scrapbook": "^1.0",
-                "maximebf/debugbar": "~1.11",
-                "micheh/psr7-cache": "^0.3.0",
-                "mobiledetect/mobiledetectlib": "^2.8",
-                "monolog/monolog": "^1.17",
-                "mrclay/minify": "^2.2",
-                "neomerx/cors-psr7": "^1.0",
-                "nikic/fast-route": "0.*",
-                "paragonie/csp-builder": "^1.2",
-                "phpunit/phpunit": "*",
-                "piwik/referrer-spam-blacklist": "^1.0",
-                "ramsey/uuid": "^3.1",
-                "relay/relay": "1.*",
-                "willdurand/geocoder": "^3.2",
-                "willdurand/negotiation": "~2.0",
-                "zendframework/zend-diactoros": "1.*"
-            },
-            "suggest": {
-                "aura/router": "To use AuraRouter",
-                "aura/session": "To use AuraSession",
-                "filp/whoops": "To use Whoops",
-                "google/recaptcha": "To use Recaptcha",
-                "imagecow/imagecow": "To use ImageTransformer",
-                "league/route": "To use LeagueRoute",
-                "m6web/firewall": "To use Firewall",
-                "maximebf/debugbar": "To use DebugBar",
-                "micheh/psr7-cache": "To use Cache",
-                "mobiledetect/mobiledetectlib": "To use DetectDevice",
-                "mrclay/minify": "To use Minify",
-                "neomerx/cors-psr7": "To use Cors",
-                "nikic/fast-route": "To use FastRoute",
-                "paragonie/csp-builder": "To use Csp",
-                "piwik/referrer-spam-blacklist": "To use BlockSpam",
-                "psr/cache-implementation": "To use Cache",
-                "psr/log-implementation": "To use AccessLog",
-                "ramsey/uuid": "To use Uuid",
-                "willdurand/geocoder": "To use Geolocate",
-                "willdurand/negotiation": "To use FormatNegotiator, LanguageNegotiator and EncodingNegotiator"
+                "php": ">=5.4.0"
             },
             "type": "library",
             "autoload": {
                 "psr-4": {
-                    "Psr7Middlewares\\": "src/"
-                }
+                    "FastRoute\\": "src/"
+                },
+                "files": [
+                    "src/functions.php"
+                ]
             },
             "notification-url": "https://packagist.org/downloads/",
             "license": [
-                "MIT"
+                "BSD-3-Clause"
             ],
             "authors": [
                 {
-                    "name": "Oscar Otero",
-                    "email": "oom@oscarotero.com",
-                    "homepage": "http://oscarotero.com",
-                    "role": "Developer"
+                    "name": "Nikita Popov",
+                    "email": "nikic@php.net"
                 }
             ],
-            "description": "Collection of HTTP middlewares compatible with PSR-7",
-            "homepage": "https://github.com/oscarotero/psr7-middlewares",
+            "description": "Fast request router for PHP",
             "keywords": [
-                "http",
-                "middlewares",
-                "psr-7",
-                "psr-messages"
+                "router",
+                "routing"
             ],
-            "time": "2016-06-10 10:13:22"
+            "time": "2016-06-12 19:08:51"
         },
         {
             "name": "psr/http-message",

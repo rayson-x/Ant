@@ -6,25 +6,36 @@ namespace Composer\Autoload;
 
 class ComposerStaticInit6e27f74fc6ea6cea61263699f99666a5
 {
+    public static $files = array (
+        '253c157292f75eb38082b5acb06f3f01' => __DIR__ . '/..' . '/nikic/fast-route/src/functions.php',
+    );
+
     public static $prefixLengthsPsr4 = array (
+        'A' =>[
+            'Ant\\'                => 4,
+        ],
         'P' => 
         array (
             'Psr\\Http\\Message\\' => 17,
         ),
-        'A' =>[
-            'Ant\\'                => 4,
-        ],
-
+        'F' => 
+        array (
+            'FastRoute\\' => 10,
+        ),
     );
 
     public static $prefixDirsPsr4 = array (
+        'Ant\\'                =>[
+            0 => __DIR__.'/../..' .'/System',
+        ],
         'Psr\\Http\\Message\\' => 
         array (
             0 => __DIR__ . '/..' . '/psr/http-message/src',
         ),
-        'Ant\\'                =>[
-            0 => __DIR__.'/../..' .'/System',
-        ],
+        'FastRoute\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/nikic/fast-route/src',
+        ),
     );
 
     public static function getInitializer(ClassLoader $loader)

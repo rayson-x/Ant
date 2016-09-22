@@ -7,8 +7,5 @@ $baseDir = dirname($vendorDir);
 
 return array(
     'Psr\\Http\\Message\\' => array($vendorDir . '/psr/http-message/src'),
-    'Ant\\'                =>[
-        0 => __DIR__.'/../..' .'/System',
-    ],
-
+    'FastRoute\\' => array($vendorDir . '/nikic/fast-route/src'),
 );

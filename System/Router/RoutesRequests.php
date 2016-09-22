@@ -13,35 +13,35 @@ class RouterRequest
     }
 
     /**
-     * ÇëÇóµÄÂ·ÓÉ
+     * è¯·æ±‚çš„è·¯ç”±
      *
      * @var string
      */
     protected $routeRequest;
 
     /**
-     * ÓÅÏÈ¼ÓÔØÂ·ÓÉ
+     * ä¼˜å…ˆåŠ è½½è·¯ç”±
      *
      * @var array
      */
     protected $beforeRoute = [];
 
     /**
-     * Ä¬ÈÏ¼ÓÔØÂ·ÓÉ
+     * é»˜è®¤åŠ è½½è·¯ç”±
      *
      * @var array
      */
     protected $defaultRoute = [];
 
     /**
-     * ×îºó¼ÓÔØÂ·ÓÉ
+     * æœ€ååŠ è½½è·¯ç”±
      *
      * @var array
      */
     protected $afterRoute = [];
 
     /**
-     * Â·ÓÉ·Ö×é
+     * è·¯ç”±åˆ†ç»„
      *
      * @var array
      */
@@ -52,7 +52,7 @@ class RouterRequest
     ];
 
     /**
-     * ·Ö×éÊôĞÔ
+     * åˆ†ç»„å±æ€§
      *
      * @var
      */

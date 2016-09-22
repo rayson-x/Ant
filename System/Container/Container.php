@@ -12,6 +12,8 @@ use Ant\Interfaces\ContainerInterface;
 use Ant\Interfaces\ServiceProviderInterface;
 
 /**
+ * PS:这个是参考Laravel的服务容器进行的开发,相当于laravel的服务容器删减版
+ *
  * IoC容器,只要将服务注册到容器中,在有依赖关系时,容器便会会自动载入服务
  * 注意 : 当一个实例的构造函数需要大量参数时,推荐通过闭包函数生成实例,这样可以大幅度提升效率
  * 在实例需要6个参数时,手动生成比自动生成快了接近一倍
@@ -213,7 +215,6 @@ class Container implements ContainerInterface,ArrayAccess{
         return $results;
     }
 
-
     /**
      * 绑定服务到容器
      *
@@ -378,7 +379,7 @@ class Container implements ContainerInterface,ArrayAccess{
         if (isset($this->contextual[end($this->buildStack)][$serviceName])) {
             $concrete = $this->contextual[end($this->buildStack)][$serviceName];
             return ($concrete instanceof Closure)
-                ? call_user_func($concrete, $this)
+                ? $concrete($this)
                 : $concrete;
         }
     }
@@ -582,33 +583,71 @@ class Container implements ContainerInterface,ArrayAccess{
         }
     }
 
+    /**
+     * 执行函数
+     *
+     * @param $callback
+     * @param array $parameters
+     * @param null $defaultMethod
+     * @return mixed
+     */
     public function call($callback,$parameters = [],$defaultMethod = null)
     {
         if($this->isCallableWithAtSign($callback)){
             return $this->callClass($callback,$parameters,$defaultMethod );
         }
 
+        $parameters = $this->getMethodDependencies($callback,$parameters);
+
         return call_user_func_array($callback,$parameters);
     }
 
-    public function isCallableWithAtSign($callback)
+    /**
+     * 检查是否为 class @ method 格式
+     *
+     * @param $callback
+     * @return bool
+     */
+    protected function isCallableWithAtSign($callback)
     {
         return is_string($callback) && strpos($callback,'@') !== false;
     }
 
-    public function getMethodDependencies($callback,$parameters)
+    /**
+     * 获取方法依赖
+     *
+     * @param $callback
+     * @param $parameters
+     * @return array
+     */
+    protected function getMethodDependencies($callback,$parameters)
     {
         $dependence = [];
 
         foreach(($this->getCallableReflection($callback)->getParameters()) as $parameter){
-            $this->addDependencyForCallParameter($parameter, $parameters, $dependence);
+            if (array_key_exists($parameter->name, $parameters)) {
+                $dependence[] = $parameters[$parameter->name];
+
+                unset($parameters[$parameter->name]);
+            } elseif ($parameter->getClass()) {
+                $dependence[] = $this->make($parameter->getClass()->name);
+            } elseif ($parameter->isDefaultValueAvailable()) {
+                $dependence[] = $parameter->getDefaultValue();
+            }
         }
 
         return array_merge($dependence, $parameters);
     }
 
-    public function getCallableReflection($callback)
+    /**
+     * 反射方法
+     *
+     * @param $callback
+     * @return ReflectionFunction|ReflectionMethod
+     */
+    protected function getCallableReflection($callback)
     {
+        // ReflectionMethod构造函数支持 Class::Method 此处为了统一格式进行分割
         if(is_string($callback) && (strpos($callback,'::') !== false)){
             $callback = explode($callback,"::");
         }
@@ -620,13 +659,14 @@ class Container implements ContainerInterface,ArrayAccess{
         return new ReflectionFunction($callback);
     }
 
-    protected function addDependencyForCallParameter(ReflectionParameter $parameter, array &$parameters, &$dependencies)
-    {
-        if(array_key_exists($parameter->name,$parameters)){
-            $dependencies[] = $parameters[$parameter->name];
-        }
-    }
-
+    /**
+     * 用 Class @ method 的方式调用方法
+     *
+     * @param $callback
+     * @param array $parameters
+     * @param null $defaultMethod
+     * @return mixed
+     */
     public function callClass($callback,$parameters = [],$defaultMethod = null)
     {
         $segments = explode("@",$callback);
@@ -719,7 +759,7 @@ class Container implements ContainerInterface,ArrayAccess{
     /**
      * 服务提供者
      *
-     * @param ServiceProviderInterface $serviceProvider
+     * @param \Ant\Interfaces\ServiceProviderInterface $serviceProvider
      */
     public function registerService(ServiceProviderInterface $serviceProvider)
     {

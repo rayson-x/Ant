@@ -11,7 +11,7 @@ if(version_compare(PHP_VERSION, '7.0.0', '<')){
         throw new \ErrorException($errstr, 0, $errno, $errfile, $errline);
     });
 }
-
+//TODO::监听异常与错误输出
 $app = new Ant\App();
 
 $app->addMiddleware(function($request,$response){
@@ -22,10 +22,11 @@ $app->addMiddleware(function($request,$response){
     $end = (microtime(true) - $start) * 1000;
     $response->withHeader('x-run-time',$end);
 });
-$route = new Ant\Router\RouterRequest();
 
-$route->group([],function($app){
-
-});
-
-$app->addMiddleware([$route,'execute']);
+//$route = new Ant\Router\RouterRequest();
+//
+//$route->group([],function($app){
+//
+//});
+//
+//$app->addMiddleware([$route,'execute']);

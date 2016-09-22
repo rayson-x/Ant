@@ -1,12 +1,35 @@
 <?php
 namespace Ant;
 
-use Ant\Http\Response;
 use Ant\Container\Container;
 use Ant\Middleware\Middleware;
+use Ant\Interfaces\ServiceProviderInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 
+/**
+ * Class App
+ * @package Ant
+ *
+ * 重载了服务容器的方法
+ * @method Container bound($serviceName)
+ * @method Container resolved($serviceName)
+ * @method Container alias($serviceName, $alias)
+ * @method Container tag($serviceGroup, $tags)
+ * @method Container tagged($tag)
+ * @method Container bind($serviceName, $concrete = null, $shared = false)
+ * @method Container bindIf($serviceName, $concrete = null, $shared = false)
+ * @method Container singleton($serviceName, $concrete = null)
+ * @method Container instance($serviceName, $instance)
+ * @method Container extend($serviceName, \Closure $closure)
+ * @method Container when($concrete)
+ * @method Container make($serviceName, array $parameters = [])
+ * @method Container build($concrete, array $parameters = [])
+ * @method Container call($callback,$parameters = [],$defaultMethod = null)
+ * @method Container callClass($callback,$parameters = [],$defaultMethod = null)
+ * @method Container forgetService($name)
+ * @method Container registerService(ServiceProviderInterface $serviceProvider)
+ */
 class App{
     use Middleware;
 
@@ -25,6 +48,13 @@ class App{
     protected $container;
 
     /**
+     * 已注册服务提供者
+     *
+     * @var array
+     */
+    protected $loadedProviders = [];
+
+    /**
      * 异常处理函数
      *
      * @var callable
@@ -32,12 +62,43 @@ class App{
     protected $exceptionHandler;
 
     /**
+     * 创建Ant框架核心应用
+     *
      * App constructor.
      */
     public function __construct()
     {
         $this->container = Container::getInstance();
-        $this->container->registerService(new BaseServiceProvider());
+
+        $this->register(BaseServiceProvider::class);
+    }
+
+    public function __call($method,$args)
+    {
+        return $this->container->$method(...$args);
+    }
+
+    /**
+     * 注册服务提供者
+     *
+     * @param $provider
+     */
+    public function register($provider)
+    {
+        if(is_string($provider)){
+            $provider = new $provider;
+        }
+
+        if (array_key_exists($providerName = get_class($provider), $this->loadedProviders)) {
+            return;
+        }
+
+        $this->loadedProviders[$providerName] = true;
+
+        //TODO::遇到类型错误的服务容器在 抛出异常,跳过此服务 二者选一
+        if($provider instanceof ServiceProviderInterface){
+            $this->container->registerService($provider);
+        }
     }
 
     /**
@@ -60,7 +121,7 @@ class App{
         }
 
         return function($exception,$request,$response){
-            /* @var $response Response*/
+            /* @var $response \Ant\Http\Response */
             if ($exception instanceof \Ant\Http\Exception) {
                 $status = $exception->getCode();
             } else {
@@ -69,9 +130,9 @@ class App{
 
             $response->withStatus($status);
 
-//            foreach (exceptionHandle($exception) as $key => $value) {
-//                $response->withHeader($key, $value);
-//            }
+            foreach (exceptionHandle($exception) as $key => $value) {
+                $response->write($value."<br>");
+            }
         };
     }
 
@@ -88,20 +149,16 @@ class App{
     /**
      * 处理一个请求
      *
-     * @param RequestInterface $request
-     * @param ResponseInterface $response
+     * @param $request \Ant\Http\Request
+     * @param $response \Ant\Http\Response
      */
-    public function process(RequestInterface $request,ResponseInterface $response)
+    public function process($request,$response)
     {
-        // 将中间件参数交给服务容器维护
-        $this->withArguments(function()use($request,$response){
-            static $init = false;
-            if($init){
-                return $this->container['arguments']->all();
-            }
+        $this->container->make('arguments',[$request,$response]);
 
-            $init = true;
-            return $this->container->make('arguments',[$request,$response])->all();
+        // 将中间件参数交给服务容器维护
+        $this->withArguments(function(){
+            return $this->container['arguments']->all();
         });
 
         try{

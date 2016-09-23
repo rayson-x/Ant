@@ -82,6 +82,28 @@ class BaseServiceProvider implements ServiceProviderInterface
                 parse_str($input,$data);
                 return $data;
             });
+
+            //TODO::考虑给URI类添加新属性
+            //获取请求资源的虚拟路径
+            $requestScriptName = parse_url($request->getServerParam('SCRIPT_NAME'), PHP_URL_PATH);
+            $requestScriptDir = dirname($requestScriptName);
+
+            $requestUri = parse_url($request->getServerParam('REQUEST_URI'), PHP_URL_PATH);
+
+            $basePath = '';
+            $virtualPath = $requestUri;
+
+            if (stripos($requestUri, $requestScriptName) === 0) {
+                $basePath = $requestScriptName;
+            } elseif ($requestScriptDir !== '/' && stripos($requestUri, $requestScriptDir) === 0) {
+                $basePath = $requestScriptDir;
+            }
+
+            if ($basePath) {
+                $virtualPath = trim(substr($requestUri, strlen($basePath)), '/');
+            }
+
+            return $request->withAttribute('virtualPath',$virtualPath);
         });
     }
 

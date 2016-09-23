@@ -149,8 +149,8 @@ class App{
     /**
      * 处理一个请求
      *
-     * @param $request \Ant\Http\Request
-     * @param $response \Ant\Http\Response
+     * @param $request
+     * @param $response
      */
     public function process($request,$response)
     {

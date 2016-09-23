@@ -252,6 +252,19 @@ class Request extends Message implements ServerRequestInterface{
     }
 
     /**
+     * @param $key
+     * @return array|null
+     */
+    public function getServerParam($key = null)
+    {
+        if($key === null){
+            return $this->serverParams;
+        }
+
+        return isset($this->serverParams[$key]) ? $this->serverParams[$key] : null;
+    }
+
+    /**
      * 获取cookie参数
      *
      * @return array
@@ -349,7 +362,7 @@ class Request extends Message implements ServerRequestInterface{
             return $this->bodyParsed;
         }
 
-        if(!$this->body){
+        if(!(string) $this->body){
             return null;
         }
 

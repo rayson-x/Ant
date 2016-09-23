@@ -62,7 +62,7 @@ if (!function_exists('FastRoute\simpleDispatcher')) {
         $dispatchData = $routeCollector->getData();
         file_put_contents(
             $options['cacheFile'],
-            '<?php return ' . var_export($dispatchData, true) . ';'
+                '<?php return ' . var_export($dispatchData, true) . ';'
         );
 
         return new $options['dispatcher']($dispatchData);

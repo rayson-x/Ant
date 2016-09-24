@@ -14,7 +14,7 @@ use FastRoute\Dispatcher;
 use FastRoute\RouteCollector;
 use FastRoute\Dispatcher\GroupCountBased;
 
-//TODO::中间件加载过程
+//TODO::RESTful风格路由
 //TODO::路由缓存
 //TODO::通过反射生成路由缓存 需要Console支持
 class Router
@@ -29,6 +29,20 @@ class Router
      * @var Container
      */
     protected $container;
+
+    /**
+     * 路由启动开关
+     *
+     * @var bool
+     */
+    protected $routeStartEnable = false;
+
+    /**
+     * 异常处理函数
+     *
+     * @var false|callable
+     */
+    protected $exceptionHandle = false;
 
     /**
      * 请求的路由
@@ -57,7 +71,7 @@ class Router
      * @var array
      */
     protected $group = [
-        '/' =>  [], //默认关键值
+        '/' =>  [], //默认关键词
     ];
 
     /**
@@ -74,11 +88,20 @@ class Router
      */
     protected $cacheFile = false;
 
+    /**
+     * Router constructor.
+     */
     public function __construct()
     {
         $this->container = Container::getInstance();
     }
 
+    /**
+     * 设置缓存文件
+     *
+     * @param $cacheFile
+     * @return $this
+     */
     public function setCacheFile($cacheFile)
     {
         if (!is_string($cacheFile) && $cacheFile !== false) {
@@ -94,55 +117,145 @@ class Router
         return $this;
     }
 
+    /**
+     * 创建路由分组
+     *
+     * @param array $attributes
+     * @param Closure $action
+     */
     public function group(array $attributes, Closure $action)
     {
         $keyword = '/';
 
         if(isset($attributes['keyword'])){
+            //关键词覆盖分组前缀
             $keyword = '/'.trim($attributes['keyword']);
             $attributes['prefix'] = $keyword;
 
             unset($attributes['keyword']);
         }
 
-        $this->group[$keyword][] = [$attributes,$action];
+        $group = [$attributes,$action];
+
+        //开启路由之后,再进行路由分组会直接生成路由映射
+        if(!$this->routeStartEnable){
+            $this->group[$keyword][] = $group;
+        }else{
+            $this->parseRoute([$group]);
+        }
     }
 
+    /**
+     * 注册一个“GET”请求的路由
+     *
+     * @param $uri
+     * @param $action
+     * @return $this
+     */
     public function get($uri,$action)
     {
         $this->addRoute('GET',$uri,$action);
+
+        return $this;
     }
 
+    /**
+     * 注册一个“POST”请求的路由
+     *
+     * @param $uri
+     * @param $action
+     * @return $this
+     */
     public function post($uri,$action)
     {
         $this->addRoute('POST',$uri,$action);
+
+        return $this;
     }
 
+    /**
+     * 注册一个“PUT”请求的路由
+     *
+     * @param $uri
+     * @param $action
+     * @return $this
+     */
     public function put($uri,$action)
     {
         $this->addRoute('PUT',$uri,$action);
+
+        return $this;
     }
 
+    /**
+     * 注册一个“DELETE”请求的路由
+     *
+     * @param $uri
+     * @param $action
+     * @return $this
+     */
     public function delete($uri,$action)
     {
         $this->addRoute('DELETE',$uri,$action);
+
+        return $this;
     }
 
+    /**
+     * 注册一个“HEAD”请求的路由
+     *
+     * @param $uri
+     * @param $action
+     * @return $this
+     */
     public function head($uri,$action)
     {
         $this->addRoute('HEAD',$uri,$action);
+
+        return $this;
     }
 
+    /**
+     * 注册一个“PATCH”请求的路由
+     *
+     * @param $uri
+     * @param $action
+     * @return $this
+     */
     public function patch($uri,$action)
     {
         $this->addRoute('PATCH',$uri,$action);
+
+        return $this;
     }
 
+    /**
+     * 注册一个接收请求的路由
+     *
+     * @param $uri
+     * @param $action
+     * @return $this
+     */
+    public function any($uri,$action)
+    {
+        $this->addRoute(['GET','POST','PUT','DELETE','HEAD','PATCH'],$uri,$action);
+
+        return $this;
+    }
+
+    /**
+     * 注册一个路由映射
+     *
+     * @param $method array|string   请求方式
+     * @param $uri string            请求地址
+     * @param $action string|Closure 映射地址(控制器的方法或者一个闭包函数)
+     */
     public function addRoute($method,$uri,$action)
     {
         $action = $this->parseAction($action);
 
         if(isset($this->groupAttributes)){
+            //加载分组属性
             if(isset($this->groupAttributes['prefix'])){
                 $uri = trim($this->groupAttributes['prefix'],'/').rtrim($uri,'/');
             }
@@ -163,6 +276,12 @@ class Router
         }
     }
 
+    /**
+     * 解析行为
+     *
+     * @param $action
+     * @return array
+     */
     protected function parseAction($action)
     {
         if(is_string($action)){
@@ -178,6 +297,12 @@ class Router
         return $action;
     }
 
+    /**
+     * 合并分组命名空间
+     *
+     * @param $action
+     * @return mixed
+     */
     protected function mergeGroupNamespace($action)
     {
         if(isset($action['uses']) && isset($this->groupAttributes['namespace'])){
@@ -187,6 +312,12 @@ class Router
         return $action;
     }
 
+    /**
+     * 合并分组中间件
+     *
+     * @param $action
+     * @return mixed
+     */
     protected function mergeMiddlewareGroup($action)
     {
         if (isset($this->groupAttributes['middleware'])) {
@@ -200,12 +331,19 @@ class Router
         return $action;
     }
 
+    /**
+     * 处理映射成功的路由
+     *
+     * @param $action
+     * @param array $args
+     * @return array
+     */
     protected function handleFoundRoute($action,$args = [])
     {
         $handle = [];
 
         if(isset($action['middleware'])){
-            $handle = $this->getMiddleware($action['middleware']);
+            $handle = $this->gatMiddleware($action['middleware']);
         }
 
         $handle[] = function()use($action,$args){
@@ -215,7 +353,13 @@ class Router
         return $handle;
     }
 
-    protected function getMiddleware($middleware)
+    /**
+     * 加载路由使用的中间件
+     *
+     * @param $middleware
+     * @return array
+     */
+    protected function gatMiddleware($middleware)
     {
         $middleware = is_string($middleware) ? explode('|', $middleware) : (array) $middleware;
 
@@ -227,10 +371,18 @@ class Router
             }elseif($middleware instanceof Closure){
                 return $middleware;
             }
-            //TODO::异常
+
+            throw new InvalidArgumentException("Middleware [$middleware] does not exist");
         },$middleware);
     }
 
+    /**
+     * 调用基于数组的路由
+     *
+     * @param $action
+     * @param array $args
+     * @return mixed
+     */
     protected function callAction($action,$args = [])
     {
         if(isset($action['uses'])){
@@ -247,6 +399,13 @@ class Router
         return $this->container->call($closure,$args);
     }
 
+    /**
+     * 基于“控制器@方法”的方式调用
+     *
+     * @param $uses
+     * @param array $args
+     * @return mixed
+     */
     protected function callController($uses,$args = [])
     {
         if (is_string($uses) && ! strpos($uses, '@') === false) {
@@ -255,7 +414,7 @@ class Router
 
         list($controller, $method) = explode('@', $uses);
 
-        if (! method_exists($instance = $this->container->make($controller), $method)) {
+        if (!method_exists($instance = $this->container->make($controller), $method)) {
             throw new \Ant\Http\Exception(404);
         }
 
@@ -264,6 +423,12 @@ class Router
         );
     }
 
+    /**
+     * 处理路由调度器返回数据
+     *
+     * @param $routeInfo
+     * @return array
+     */
     protected function handleDispatcher($routeInfo)
     {
         switch ($routeInfo[0]) {
@@ -275,10 +440,19 @@ class Router
 
             case Dispatcher::FOUND:
                 return $this->handleFoundRoute($routeInfo[1],$routeInfo[2]);
+
+            default:
+                throw new RuntimeException('The dispatcher returns the invalid parameter');
         }
     }
 
-    protected function dispatch(RequestInterface $request)
+    /**
+     * 调度传入的请求
+     *
+     * @param Http\Request $request
+     * @return array
+     */
+    protected function dispatch(\Ant\Http\Request $request)
     {
         $this->addRouteFromGroup($request);
 
@@ -292,6 +466,11 @@ class Router
         ));
     }
 
+    /**
+     * 添加分组路由
+     *
+     * @param $request \Ant\Http\Request
+     */
     protected function addRouteFromGroup($request)
     {
         $method = $request->getMethod();
@@ -299,17 +478,19 @@ class Router
         $this->routeRequest = $method.$pathInfo;
 
         $default = array_shift($this->group);
-
+        //获取关键词
         $keywords = array_keys($this->group);
 
+        //进行关键词匹配
         foreach($keywords as $keyword){
-            if(stripos($keyword,$pathInfo) === 0){
+            if(stripos($pathInfo,$keyword) === 0){
                 $this->parseRoute($this->group[$keyword]);
 
                 return;
             }
         }
 
+        //使用默认路由组
         $this->parseRoute($default);
     }
 
@@ -321,6 +502,7 @@ class Router
     protected function parseRoute(array $group)
     {
         foreach($group as list($attributes,$action)){
+            //保留父级分组属性
             $parentGroupAttributes = $this->groupAttributes;
 
             if (isset($attributes['middleware']) && is_string($attributes['middleware'])) {
@@ -336,6 +518,8 @@ class Router
     }
 
     /**
+     * 获取路由调度器
+     *
      * @return false|GroupCountBased
      */
     public function createDispatcher()
@@ -345,11 +529,13 @@ class Router
         }
 
         $dispatcherCallable = function(RouteCollector $r){
+            //加载路由到路由控制器中
             foreach($this->routes as $route){
                 $r->addRoute($route['method'],$route['uri'],$route['action']);
             }
         };
 
+        //是否使用FastRoute路由缓存
         if($this->cacheFile){
             $this->dispatcher = \FastRoute\cachedDispatcher($dispatcherCallable,[
                 'cacheFile' => $this->cacheFile,
@@ -371,6 +557,11 @@ class Router
         $this->dispatcher = $dispatcher;
     }
 
+    /**
+     * 添加中间件
+     *
+     * @param $handlers
+     */
     public function addMiddleware($handlers)
     {
         if(!is_array($handlers)){
@@ -380,17 +571,58 @@ class Router
         $this->handlers = array_merge($this->handlers,$handlers);
     }
 
+    /**
+     * 设置异常处理
+     *
+     * @param callable $handle
+     */
+    public function setExceptionHandle(callable $handle)
+    {
+        $this->exceptionHandle = $handle;
+    }
+
+    /**
+     * 获取异常处理
+     *
+     * @return callable|Closure|false
+     */
+    public function getExceptionHandle()
+    {
+        if($this->exceptionHandle){
+            return $this->exceptionHandle;
+        }
+
+        return function($e){
+            throw $e;
+        };
+    }
+
+    /**
+     * 执行路由中间件
+     *
+     * @param $request
+     * @param $response
+     */
     public function execute($request,$response)
     {
-        $handlers = $this->dispatch($request);
-
-        $this->executeMiddleware($handlers,[$request,$response]);
-
         try{
+            //开启路由
+            $this->routeStartEnable = true;
+
+            //设置中间件参数
+            $this->withArguments(function(){
+                return $this->container['arguments']->all();
+            });
+
+            $handlers = $this->dispatch($request);
+
+            $this->executeMiddleware($handlers);
         }catch(Exception $exception){
-
+            call_user_func($this->getExceptionHandle(),$exception,$request,$response);
         }catch(Throwable $error){
-
+            call_user_func($this->getExceptionHandle(),$error,$request,$response);
+        }finally{
+            $this->routeStartEnable = false;
         }
     }
 }

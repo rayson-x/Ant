@@ -100,7 +100,7 @@ class BaseServiceProvider implements ServiceProviderInterface
             }
 
             if ($basePath) {
-                $virtualPath = trim(substr($requestUri, strlen($basePath)), '/');
+                $virtualPath = '/'.trim(substr($requestUri, strlen($basePath)), '/');
             }
 
             return $request->withAttribute('virtualPath',$virtualPath);

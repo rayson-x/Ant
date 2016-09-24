@@ -68,11 +68,14 @@ $router->group([],function(Ant\Router $router){
 
     });
 });
-$router->group(['namespace'=>'Ant','keyword'=>'admin'],function(Ant\Router $router){
-    $router->get('/','Collection');
+$router->group(['namespace'=>'Ant','keyword'=>'admin','middleware'=>'test'],function(Ant\Router $router){
+    $router->get('/',function(){
+        echo 456;
+    });
 });
 
-$router->execute($app->make('request'),$app->make('response'));
+
+$app->addMiddleware([$router,'execute']);
 //$route->group([],function($app){
 //
 //});

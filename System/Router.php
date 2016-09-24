@@ -6,9 +6,11 @@ use Exception;
 use Throwable;
 use RuntimeException;
 use InvalidArgumentException;
+use Ant\Container\Container;
 use Ant\Middleware\Middleware;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
+use FastRoute\Dispatcher;
 use FastRoute\RouteCollector;
 use FastRoute\Dispatcher\GroupCountBased;
 
@@ -20,6 +22,13 @@ class Router
     use Middleware{
         Middleware::execute as executeMiddleware;
     }
+
+    /**
+     * 服务容器
+     *
+     * @var Container
+     */
+    protected $container;
 
     /**
      * 请求的路由
@@ -48,7 +57,7 @@ class Router
      * @var array
      */
     protected $group = [
-        '/' =>  [],
+        '/' =>  [], //默认关键值
     ];
 
     /**
@@ -64,6 +73,11 @@ class Router
      * @var false|string
      */
     protected $cacheFile = false;
+
+    public function __construct()
+    {
+        $this->container = Container::getInstance();
+    }
 
     public function setCacheFile($cacheFile)
     {
@@ -85,7 +99,7 @@ class Router
         $keyword = '/';
 
         if(isset($attributes['keyword'])){
-            $keyword = $attributes['keyword'];
+            $keyword = '/'.trim($attributes['keyword']);
             $attributes['prefix'] = $keyword;
 
             unset($attributes['keyword']);
@@ -186,20 +200,96 @@ class Router
         return $action;
     }
 
+    protected function handleFoundRoute($action,$args = [])
+    {
+        $handle = [];
+
+        if(isset($action['middleware'])){
+            $handle = $this->getMiddleware($action['middleware']);
+        }
+
+        $handle[] = function()use($action,$args){
+            $this->callAction($action,$args);
+        };
+
+        return $handle;
+    }
+
+    protected function getMiddleware($middleware)
+    {
+        $middleware = is_string($middleware) ? explode('|', $middleware) : (array) $middleware;
+
+        return array_map(function($name){
+            $middleware = isset($this->handlers[$name]) ? $this->handlers[$name] : $name;
+
+            if(is_string($middleware)){
+                return $this->container->make($middleware);
+            }elseif($middleware instanceof Closure){
+                return $middleware;
+            }
+            //TODO::异常
+        },$middleware);
+    }
+
+    protected function callAction($action,$args = [])
+    {
+        if(isset($action['uses'])){
+            return $this->callController($action['uses'],$args);
+        }
+
+        foreach($action as $value){
+            if($value instanceof Closure){
+                $closure = $value;
+                break;
+            }
+        }
+
+        return $this->container->call($closure,$args);
+    }
+
+    protected function callController($uses,$args = [])
+    {
+        if (is_string($uses) && ! strpos($uses, '@') === false) {
+            $uses .= '@__invoke';
+        }
+
+        list($controller, $method) = explode('@', $uses);
+
+        if (! method_exists($instance = $this->container->make($controller), $method)) {
+            throw new \Ant\Http\Exception(404);
+        }
+
+        return $this->container->call(
+            [$instance, $method], $args
+        );
+    }
+
+    protected function handleDispatcher($routeInfo)
+    {
+        switch ($routeInfo[0]) {
+            case Dispatcher::NOT_FOUND:
+                throw new \Ant\Http\Exception(404);
+
+            case Dispatcher::METHOD_NOT_ALLOWED:
+                throw new \Ant\Http\Exception(405);
+
+            case Dispatcher::FOUND:
+                return $this->handleFoundRoute($routeInfo[1],$routeInfo[2]);
+        }
+    }
+
     protected function dispatch(RequestInterface $request)
     {
         $this->addRouteFromGroup($request);
-        return function()use($request){
-            if (isset($this->routes[$this->routeRequest])) {
-//                return $this->handleFoundRoute([true, $this->routes[$this->routeRequest]['action'], []]);
-            }
 
-            $this->createDispatcher()->dispatch(
-                $request->getMethod(),
-                $request->getAttribute('virtualPath')
-            );
-        };
+        if (isset($this->routes[$this->routeRequest])) {
+            return $this->handleFoundRoute($this->routes[$this->routeRequest]['action'],[]);
+        }
 
+        return $this->handleDispatcher($this->createDispatcher()->dispatch(
+            $request->getMethod(),
+            $request->getAttribute('virtualPath')
+        ));
     }
 
     protected function addRouteFromGroup($request)
@@ -255,8 +345,8 @@ class Router
         }
 
         $dispatcherCallable = function(RouteCollector $r){
-            foreach($this->routes as list($method,$path,$handle)){
-                $r->addRoute($method,$path,$handle);
+            foreach($this->routes as $route){
+                $r->addRoute($route['method'],$route['uri'],$route['action']);
             }
         };
 
@@ -292,8 +382,11 @@ class Router
 
     public function execute($request,$response)
     {
+        $handlers = $this->dispatch($request);
+
+        $this->executeMiddleware($handlers,[$request,$response]);
+
         try{
-            $this->dispatch($request);
         }catch(Exception $exception){
 
         }catch(Throwable $error){

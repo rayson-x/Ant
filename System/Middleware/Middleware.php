@@ -9,7 +9,7 @@ trait Middleware{
      *
      * @var array
      */
-    protected $handlers;
+    protected $handlers = [];
 
     /**
      * 执行时传递给每个中间件的参数

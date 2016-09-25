@@ -154,14 +154,14 @@ class App{
      */
     public function process($request,$response)
     {
-        $this->container->make('arguments',[$request,$response]);
-
-        // 将中间件参数交给服务容器维护
-        $this->withArguments(function(){
-            return $this->container['arguments']->all();
-        });
-
         try{
+            $this->container->make('arguments',[$request,$response]);
+
+            // 将中间件参数交给服务容器维护
+            $this->withArguments(function(){
+                return $this->container['arguments']->all();
+            });
+
             $this->execute();
         }catch(\Exception $exception){
             call_user_func($this->getExceptionHandler(),$exception,$request,$response);

@@ -83,19 +83,25 @@ class BaseServiceProvider implements ServiceProviderInterface
                 return $data;
             });
 
-            //TODO::考虑给URI类添加新属性
-            //获取请求资源的虚拟路径
+            /**
+             * TODO::考虑给URI类添加新属性
+             * 获取请求资源的虚拟路径
+             */
+            //获取脚本路径
             $requestScriptName = parse_url($request->getServerParam('SCRIPT_NAME'), PHP_URL_PATH);
             $requestScriptDir = dirname($requestScriptName);
 
+            //获取请求资源
             $requestUri = parse_url($request->getServerParam('REQUEST_URI'), PHP_URL_PATH);
 
             $basePath = '';
             $virtualPath = $requestUri;
 
             if (stripos($requestUri, $requestScriptName) === 0) {
+                //URI没有隐藏脚本文件
                 $basePath = $requestScriptName;
             } elseif ($requestScriptDir !== '/' && stripos($requestUri, $requestScriptDir) === 0) {
+                //请求路径与脚本文件路径一致
                 $basePath = $requestScriptDir;
             }
 
@@ -129,7 +135,7 @@ class BaseServiceProvider implements ServiceProviderInterface
          * 通过修改此服务实例来达到
          * 修改调用时传递给每个中间件的参数
          */
-        $container->bind('arguments',function(){
+        $container->bind('arguments',function(...$args){
             /* @var $this ContainerInterface */
             static $arguments = null;
             if(is_null($arguments)){
@@ -144,7 +150,7 @@ class BaseServiceProvider implements ServiceProviderInterface
                 $this->forgetService('newResponse');
             }
 
-            foreach(func_get_args() as $arg){
+            foreach($args as $arg){
                 $arguments[$arguments->count()] = $arg;
             }
 

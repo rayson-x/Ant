@@ -5,6 +5,11 @@ use Ant\Collection;
 
 class Header extends Collection{
 
+    /**
+     * 在“$_SERVER”中不是以“HTTP_”开头的Http头
+     *
+     * @var array
+     */
     protected static $special = [
         'CONTENT_TYPE' => 1,
         'CONTENT_LENGTH' => 1,
@@ -17,10 +22,10 @@ class Header extends Collection{
     /**
      * 获取header数据集
      *
-     * @param Collection $server
+     * @param Environment $server
      * @return static
      */
-    public static function createFromEnvironment(Collection $server)
+    public static function createFromEnvironment(Environment $server)
     {
         $headers = [];
         foreach ($server as $key => $value) {

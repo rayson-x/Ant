@@ -7,14 +7,23 @@ include 'system/Helper.php';
  */
 if(version_compare(PHP_VERSION, '7.0.0', '<')){
     set_error_handler(function($errno,$errstr,$errfile,$errline){
-        throw new \ErrorException($errstr, 0, $errno, $errfile, $errline);
+        throw new \ErrorException($errstr, $errno, $errno, $errfile, $errline);
     });
 }
 
 //TODO::监听异常与错误输出
+//TODO::日志功能 , psr-3 引入或自己开发
+//TODO::上下文处理,如cookie,session,
+//TODO::模板引擎,缓存视图
+//TODO::储存 Service ,如mysql,redis,memcache等服务
+//TODO::ORM
+//TODO::单元测试
+//TODO::Console
+//TODO::Config类
+//TODO::验证类
 $app = new Ant\App();
 
-$app->addMiddleware(function($request,$response){
+$app->addMiddleware(function ($request,$response){
     $start = microtime(true);
 
     yield;
@@ -23,18 +32,23 @@ $app->addMiddleware(function($request,$response){
     $response->withHeader('x-run-time',$end);
 });
 
-
 $router = new Ant\Router();
 
-$router->group(['keyword'=>'admin'],function(Ant\Router $router){
-    $router->any('/test/{id:\d+}',function($id,$request){
-//        echo $id;
-    });
-});
+$router->addMiddleware([
+    'test'  =>  function($request,$response){
+        /* @var $response Ant\Http\Response */
+        $response->withHeader('X-Powered-By','.net');
+    },
+]);
 
-$router->group(['prefix'=>'index'],function(Ant\Router $router){
-    $router->get('/',function(){
-        echo 'this is index';
+$router->group([
+    'keyword'=>'admin',
+    'middleware'=>'test',
+    'cacheFile' => __DIR__.'/admin.cache.php',
+],function(Ant\Router $router)use($app){
+    $router->any('/{id:\d+}',function($id)use($app){
+        $response = $app->make('response');
+        $response->setJson(['id' => $id]);
     });
 });
 

@@ -5,6 +5,7 @@ use Closure;
 use Exception;
 use Throwable;
 use RuntimeException;
+use BadFunctionCallException;
 use InvalidArgumentException;
 use Ant\Container\Container;
 use Ant\Middleware\Middleware;
@@ -102,7 +103,7 @@ class Router
      * @param $cacheFile
      * @return $this
      */
-    public function setCacheFile($cacheFile)
+    protected function setCacheFile($cacheFile)
     {
         if (!is_string($cacheFile) && $cacheFile !== false) {
             throw new InvalidArgumentException('Router cacheFile must be a string or false');
@@ -332,121 +333,6 @@ class Router
     }
 
     /**
-     * 处理映射成功的路由
-     *
-     * @param $action
-     * @param array $args
-     * @return array
-     */
-    protected function handleFoundRoute($action,$args = [])
-    {
-        $handle = [];
-
-        if(isset($action['middleware'])){
-            $handle = $this->gatMiddleware($action['middleware']);
-        }
-
-        $handle[] = function()use($action,$args){
-            $this->callAction($action,$args);
-        };
-
-        return $handle;
-    }
-
-    /**
-     * 加载路由使用的中间件
-     *
-     * @param $middleware
-     * @return array
-     */
-    protected function gatMiddleware($middleware)
-    {
-        $middleware = is_string($middleware) ? explode('|', $middleware) : (array) $middleware;
-
-        return array_map(function($name){
-            $middleware = isset($this->handlers[$name]) ? $this->handlers[$name] : $name;
-
-            if(is_string($middleware)){
-                return $this->container->make($middleware);
-            }elseif($middleware instanceof Closure){
-                return $middleware;
-            }
-
-            throw new InvalidArgumentException("Middleware [$middleware] does not exist");
-        },$middleware);
-    }
-
-    /**
-     * 调用基于数组的路由
-     *
-     * @param $action
-     * @param array $args
-     * @return mixed
-     */
-    protected function callAction($action,$args = [])
-    {
-        if(isset($action['uses'])){
-            return $this->callController($action['uses'],$args);
-        }
-
-        foreach($action as $value){
-            if($value instanceof Closure){
-                $closure = $value;
-                break;
-            }
-        }
-
-        return $this->container->call($closure,$args);
-    }
-
-    /**
-     * 基于“控制器@方法”的方式调用
-     *
-     * @param $uses
-     * @param array $args
-     * @return mixed
-     */
-    protected function callController($uses,$args = [])
-    {
-        if (is_string($uses) && ! strpos($uses, '@') === false) {
-            $uses .= '@__invoke';
-        }
-
-        list($controller, $method) = explode('@', $uses);
-
-        if (!method_exists($instance = $this->container->make($controller), $method)) {
-            throw new \Ant\Http\Exception(404);
-        }
-
-        return $this->container->call(
-            [$instance, $method], $args
-        );
-    }
-
-    /**
-     * 处理路由调度器返回数据
-     *
-     * @param $routeInfo
-     * @return array
-     */
-    protected function handleDispatcher($routeInfo)
-    {
-        switch ($routeInfo[0]) {
-            case Dispatcher::NOT_FOUND:
-                throw new \Ant\Http\Exception(404);
-
-            case Dispatcher::METHOD_NOT_ALLOWED:
-                throw new \Ant\Http\Exception(405);
-
-            case Dispatcher::FOUND:
-                return $this->handleFoundRoute($routeInfo[1],$routeInfo[2]);
-
-            default:
-                throw new RuntimeException('The dispatcher returns the invalid parameter');
-        }
-    }
-
-    /**
      * 调度传入的请求
      *
      * @param Http\Request $request
@@ -477,21 +363,17 @@ class Router
         $pathInfo = $request->getAttribute('virtualPath');
         $this->routeRequest = $method.$pathInfo;
 
-        $default = array_shift($this->group);
         //获取关键词
-        $keywords = array_keys($this->group);
+        $keywords = array_keys(array_reverse($this->group));
 
         //进行关键词匹配
         foreach($keywords as $keyword){
             if(stripos($pathInfo,$keyword) === 0){
                 $this->parseRoute($this->group[$keyword]);
 
-                return;
+                break;
             }
         }
-
-        //使用默认路由组
-        $this->parseRoute($default);
     }
 
     /**
@@ -509,6 +391,10 @@ class Router
                 $attributes['middleware'] = explode('|', $attributes['middleware']);
             }
 
+            if(isset($attributes['cacheFile'])){
+                $this->setCacheFile($attributes['cacheFile']);
+            }
+
             $this->groupAttributes = $attributes;
 
             call_user_func($action, $this);
@@ -518,11 +404,126 @@ class Router
     }
 
     /**
+     * 处理映射成功的路由
+     *
+     * @param $action
+     * @param array $args
+     * @return array
+     */
+    protected function handleFoundRoute($action,$args = [])
+    {
+        $handle = [];
+
+        if(isset($action['middleware'])){
+            $handle = $this->gatMiddleware($action['middleware']);
+        }
+
+        $handle[] = function()use($action,$args){
+            $this->callAction($action,$args);
+        };
+
+        return $handle;
+    }
+
+    /**
+     * 处理路由调度器返回数据
+     *
+     * @param $routeInfo
+     * @return array
+     */
+    protected function handleDispatcher($routeInfo)
+    {
+        switch ($routeInfo[0]) {
+            case Dispatcher::NOT_FOUND:
+                throw new \Ant\Http\Exception(404);
+
+            case Dispatcher::METHOD_NOT_ALLOWED:
+                throw new \Ant\Http\Exception(405);
+
+            case Dispatcher::FOUND:
+                return $this->handleFoundRoute($routeInfo[1],$routeInfo[2]);
+
+            default:
+                throw new RuntimeException('The dispatcher returns the invalid parameter');
+        }
+    }
+
+    /**
+     * 加载路由使用的中间件
+     *
+     * @param $middleware
+     * @return array
+     */
+    protected function gatMiddleware($middleware)
+    {
+        $middleware = is_string($middleware) ? explode('|', $middleware) : (array) $middleware;
+
+        return array_map(function($name){
+            $middleware = isset($this->handlers[$name]) ? $this->handlers[$name] : $name;
+
+            //获取可以回调的路由
+            if(is_string($middleware)){
+                return $this->container->make($middleware);
+            }elseif($middleware instanceof Closure){
+                return $middleware;
+            }
+
+            throw new InvalidArgumentException("Middleware [$middleware] does not exist");
+        },$middleware);
+    }
+
+    /**
+     * 调用基于数组的路由
+     *
+     * @param $action
+     * @param array $args
+     * @return mixed
+     */
+    protected function callAction($action,$args = [])
+    {
+        if(isset($action['uses'])){
+            return $this->callController($action['uses'],$args);
+        }
+
+        foreach($action as $value){
+            if($value instanceof Closure){
+                return $this->container->call($value,$args);
+            }
+        }
+
+        throw new BadFunctionCallException('Routing callback failed');
+    }
+
+    /**
+     * 基于“控制器@方法”的方式调用
+     *
+     * @param $uses
+     * @param array $args
+     * @return mixed
+     */
+    protected function callController($uses,$args = [])
+    {
+        if (is_string($uses) && ! strpos($uses, '@') === false) {
+            $uses .= '@__invoke';
+        }
+
+        list($controller, $method) = explode('@', $uses);
+
+        if (!method_exists($instance = $this->container->make($controller), $method)) {
+            throw new \Ant\Http\Exception(404);
+        }
+
+        return $this->container->call(
+            [$instance, $method], $args
+        );
+    }
+
+    /**
      * 获取路由调度器
      *
      * @return false|GroupCountBased
      */
-    public function createDispatcher()
+    protected function createDispatcher()
     {
         if($this->dispatcher){
             return $this->dispatcher;
@@ -539,6 +540,7 @@ class Router
         if($this->cacheFile){
             $this->dispatcher = \FastRoute\cachedDispatcher($dispatcherCallable,[
                 'cacheFile' => $this->cacheFile,
+                'cacheDisabled' => true,
             ]);
         }else{
             $this->dispatcher = \FastRoute\simpleDispatcher($dispatcherCallable);
@@ -606,7 +608,7 @@ class Router
     public function execute($request,$response)
     {
         try{
-            //开启路由
+            //启动路由器
             $this->routeStartEnable = true;
 
             //设置中间件参数

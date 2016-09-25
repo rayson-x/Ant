@@ -39,7 +39,11 @@ class Stream implements StreamInterface
      */
     protected $isWritable = false;
 
-    //可用写模式
+    /**
+     * 可用写模式
+     *
+     * @var array
+     */
     protected $readMode = [
         'r' => true, 'w+' => true, 'r+' => true, 'x+' => true, 'c+' => true,
         'rb' => true, 'w+b' => true, 'r+b' => true, 'x+b' => true,
@@ -47,7 +51,11 @@ class Stream implements StreamInterface
         'x+t' => true, 'c+t' => true, 'a+' => true,
     ];
 
-    //可用读模式
+    /**
+     * 可用读模式
+     *
+     * @var array
+     */
     protected $writeMode = [
         'w' => true, 'w+' => true, 'rw' => true, 'r+' => true, 'x+' => true,
         'c+' => true, 'wb' => true, 'w+b' => true, 'r+b' => true,
@@ -91,6 +99,7 @@ class Stream implements StreamInterface
             $this->rewind();
             return $this->getContents();
         } catch (RuntimeException $e) {
+            //如果不可读返回空字符串
             return '';
         }
     }

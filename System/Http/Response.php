@@ -125,6 +125,7 @@ class Response extends Message implements ResponseInterface{
         if (isset($status)) {
             return $this->withStatus($status);
         }
+
         return $this;
     }
 
@@ -147,7 +148,8 @@ class Response extends Message implements ResponseInterface{
                     $value = implode(',', $value);
                 }
 
-                header(sprintf('%s: %s',strtolower($name),$value));
+                $name = implode('-',array_map('ucfirst',explode('-',$name)));
+                header(sprintf('%s: %s',$name,$value));
             }
 
             //TODO::响应COOKIE

@@ -121,7 +121,6 @@ abstract class Message implements MessageInterface{
     public function withHeader($name, $value)
     {
         $result = $this->immutability ? clone $this : $this;
-        $name = strtolower($name);
 
         $value = is_array($value) ? $value : explode(',',$value);
         $result->headers->set($name,$value);

@@ -1,52 +1,76 @@
 <?php
 namespace Ant\Http;
 
-use Ant\Collection;
 use InvalidArgumentException;
 use Psr\Http\Message\UriInterface;
 
-class Uri implements UriInterface{
-
+class Uri implements UriInterface
+{
+    /**
+     * 标准端口
+     *
+     * @var array
+     */
     protected $standardPort = [
         'http'  =>  80,
         'https' =>  443,
     ];
 
+    /**
+     * 连接方式
+     *
+     * @var string
+     */
     protected $scheme;
-    protected $host;
-    protected $port;
-    protected $user;
-    protected $password;
-    protected $path;
-    protected $query;
-    protected $fragment;
 
     /**
-     * @param Collection $server
-     * @return static
+     * 请求主机地址
+     *
+     * @var string
      */
-    public static function createFromEnvironment(Collection $server)
-    {
-        $scheme = (empty($scheme) || $server->get('HTTPS') === 'off') ? 'http' : 'https';
-        $user = $server->get('PHP_AUTH_USER','');
-        $password = $server->get('PHP_AUTH_PW','');
+    protected $host;
 
-        //HTTP_HOST在http1.0下可以返回空
-        if($httpHost = $server->get('HTTP_HOST',false)){
-            if(strpos($httpHost,':')){
-                list($host,$port) = explode(':',$httpHost,2);
-                $port = intval($port);
-            }else{
-                $host = $httpHost;
-                $port = null;
-            }
-        }else{
-            $host = $server->get('SERVER_NAME')?:$server->get('SERVER_ADDR');
-            $port = $server->get('SERVER_PORT');
-        }
+    /**
+     * 请求的端口号
+     *
+     * @var null|int
+     */
+    protected $port;
 
-        return new static($scheme,$host,$server->get('REQUEST_URI','/'),$port,$user,$password);
-    }
+    /**
+     * http用户
+     *
+     * @var string
+     */
+    protected $user;
+
+    /**
+     * http用户连接密码
+     *
+     * @var string
+     */
+    protected $password;
+
+    /**
+     * 请求资源路径
+     *
+     * @var string
+     */
+    protected $path;
+
+    /**
+     * 查询参数
+     *
+     * @var string
+     */
+    protected $query;
+
+    /**
+     * 分段
+     *
+     * @var string
+     */
+    protected $fragment;
 
     /**
      * 初始化Uri类
@@ -87,7 +111,7 @@ class Uri implements UriInterface{
     }
 
     /**
-     * 指定协议
+     * 指定连接方式
      *
      * @param string $scheme
      * @return Uri
@@ -101,7 +125,7 @@ class Uri implements UriInterface{
     }
 
     /**
-     * 返回[user-info@]host[:port] user-info，port为可选输出
+     * 获取授权信息,返回[user-info@]host[:port] user-info
      *
      * @return string
      */

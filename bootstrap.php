@@ -1,6 +1,6 @@
 <?php
 include 'vendor/autoload.php';
-include 'system/Helper.php';
+include 'system/Support/Helper.php';
 
 /**
  * php7错误跟异常都继承于Throwable,可以用try...catch的方式来捕获程序中的错误
@@ -11,45 +11,35 @@ if(version_compare(PHP_VERSION, '7.0.0', '<')){
     });
 }
 
-//TODO::监听异常与错误输出
+//基础功能
+//TODO::Config类
 //TODO::日志功能 , psr-3 引入或自己开发
-//TODO::上下文处理,如cookie,session,
-//TODO::模板引擎,缓存视图
+//TODO::监听异常与错误输出
+//TODO::验证类
+//TODO::字符处理,数组处理类
+
+//重要功能
 //TODO::储存 Service ,如mysql,redis,memcache等服务
 //TODO::ORM
+
+//依赖前两者功能
+//TODO::上下文处理,如cookie,session,
+//TODO::模板引擎,缓存视图
 //TODO::单元测试
 //TODO::Console
-//TODO::Config类
-//TODO::验证类
+
 $app = new Ant\App();
 
 $app->addMiddleware(function ($request,$response){
-    $start = microtime(true);
+    yield ;
 
-    yield;
-
-    $end = (microtime(true) - $start) * 1000;
-    $response->withHeader('x-run-time',$end);
+    $response->withHeader('x-run-time',(microtime(true) - START) * 1000);
 });
 
 $router = new Ant\Router();
 
-$router->addMiddleware([
-    'test'  =>  function($request,$response){
-        /* @var $response Ant\Http\Response */
-        $response->withHeader('X-Powered-By','.net');
-    },
-]);
-
-$router->group([
-    'keyword'=>'admin',
-    'middleware'=>'test',
-    'cacheFile' => __DIR__.'/admin.cache.php',
-],function(Ant\Router $router)use($app){
-    $router->any('/{id:\d+}',function($id)use($app){
-        $response = $app->make('response');
-        $response->setJson(['id' => $id]);
-    });
+$router->any('/',function(){
+    echo "hello world";
 });
 
 $app->addMiddleware([$router,'execute']);

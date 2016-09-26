@@ -348,7 +348,7 @@ class Router
 
         return $this->handleDispatcher($this->createDispatcher()->dispatch(
             $request->getMethod(),
-            $request->getAttribute('virtualPath')
+            $request->getRequestRoute()
         ));
     }
 
@@ -360,7 +360,7 @@ class Router
     protected function addRouteFromGroup($request)
     {
         $method = $request->getMethod();
-        $pathInfo = $request->getAttribute('virtualPath');
+        $pathInfo = $request->getRequestRoute();
         $this->routeRequest = $method.$pathInfo;
 
         //获取关键词
@@ -418,8 +418,8 @@ class Router
             $handle = $this->gatMiddleware($action['middleware']);
         }
 
-        $handle[] = function()use($action,$args){
-            $this->callAction($action,$args);
+        $handle[] = function(...$params)use($action,$args){
+            $this->callAction($action,array_merge($args,$params));
         };
 
         return $handle;
@@ -613,7 +613,7 @@ class Router
 
             //设置中间件参数
             $this->withArguments(function(){
-                return $this->container['arguments']->all();
+                return $this->container['arguments'];
             });
 
             $handlers = $this->dispatch($request);

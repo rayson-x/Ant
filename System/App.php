@@ -159,7 +159,7 @@ class App{
 
             // 将中间件参数交给服务容器维护
             $this->withArguments(function(){
-                return $this->container['arguments']->all();
+                return $this->container['arguments'];
             });
 
             $this->execute();

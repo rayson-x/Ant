@@ -1,9 +1,10 @@
 <?php
 namespace Ant;
 
-use Ant\Http\Request;
 use Ant\Http\Response;
-use Ant\Http\Environment;
+use Ant\Support\Collection;
+use Ant\Support\Http\Request;
+use Ant\Support\Http\Environment;
 use Ant\Interfaces\ContainerInterface;
 use Ant\Interfaces\ServiceProviderInterface;
 
@@ -42,7 +43,7 @@ class BaseServiceProvider implements ServiceProviderInterface
          * @return Request
          */
         $container->bindIf([Request::class => 'request'],function(){
-            return new Request($this['environment']);
+            return Request::createRequestFromEnvironment($this['environment']);
         },true);
 
         /**
@@ -82,34 +83,6 @@ class BaseServiceProvider implements ServiceProviderInterface
                 parse_str($input,$data);
                 return $data;
             });
-
-            /**
-             * TODO::考虑给URI类添加新属性
-             * 获取请求资源的虚拟路径
-             */
-            //获取脚本路径
-            $requestScriptName = parse_url($request->getServerParam('SCRIPT_NAME'), PHP_URL_PATH);
-            $requestScriptDir = dirname($requestScriptName);
-
-            //获取请求资源
-            $requestUri = parse_url($request->getServerParam('REQUEST_URI'), PHP_URL_PATH);
-
-            $basePath = '';
-            $virtualPath = $requestUri;
-
-            if (stripos($requestUri, $requestScriptName) === 0) {
-                //URI没有隐藏脚本文件
-                $basePath = $requestScriptName;
-            } elseif ($requestScriptDir !== '/' && stripos($requestUri, $requestScriptDir) === 0) {
-                //请求路径与脚本文件路径一致
-                $basePath = $requestScriptDir;
-            }
-
-            if ($basePath) {
-                $virtualPath = '/'.trim(substr($requestUri, strlen($basePath)), '/');
-            }
-
-            return $request->withAttribute('virtualPath',$virtualPath);
         });
     }
 
@@ -137,10 +110,8 @@ class BaseServiceProvider implements ServiceProviderInterface
          */
         $container->bind('arguments',function(...$args){
             /* @var $this ContainerInterface */
-            static $arguments = null;
-            if(is_null($arguments)){
-                $arguments = new Collection();
-            }
+            static $arguments = [];
+
             if(isset($this['newRequest'])){
                 $arguments[0] = $this['newRequest'];
                 $this->forgetService('newRequest');
@@ -151,7 +122,7 @@ class BaseServiceProvider implements ServiceProviderInterface
             }
 
             foreach($args as $arg){
-                $arguments[$arguments->count()] = $arg;
+                $arguments[] = $arg;
             }
 
             return $arguments;

@@ -1,5 +1,5 @@
 <?php
-namespace Ant;
+namespace Ant\Support;
 
 use ArrayIterator;
 use Ant\Interfaces\CollectionInterface;

@@ -1,15 +1,14 @@
 <?php
 namespace Ant\Http;
 
-use Ant\Collection;
 use RuntimeException;
 use InvalidArgumentException;
 use Psr\Http\Message\UriInterface;
+use Psr\Http\Message\StreamInterface;
 use Psr\Http\Message\UploadedFileInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
 //TODO::添加COOKIE处理类
-//TODO::调整构造函数,将构造职责与通过环境构造进行分离
 /**
  * Class Request
  * @package Ant\Http
@@ -95,6 +94,13 @@ class Request extends Message implements ServerRequestInterface{
     protected $attributes = [];
 
     /**
+     * 请求的路由
+     *
+     * @var bool
+     */
+    protected $requestRoute = false;
+
+    /**
      * 支持的http请求方式
      *
      * @var array
@@ -109,19 +115,31 @@ class Request extends Message implements ServerRequestInterface{
     ];
 
     /**
-     * @param Environment $server
+     * Request constructor.
+     * @param UriInterface $uri
+     * @param array $headers
+     * @param array $cookieParams
+     * @param array $serverParams
+     * @param StreamInterface|null $body
+     * @param array $uploadFiles
      */
-    public function __construct(Environment $server)
+    public function __construct(
+        UriInterface $uri,
+        array $headers,
+        array $cookieParams,
+        array $serverParams,
+        StreamInterface $body = null,
+        array $uploadFiles = [])
     {
-        $this->uri = Uri::createFromEnvironment($server);
-        $this->serverParams = $server->all();
-        $this->headers = Header::createFromEnvironment($server);
-        $this->cookieParams = $_COOKIE;
-        $this->body = new RequestBody();
-        $this->attributes = new Collection();
+        $this->uri = $uri;
+        $this->headers = $headers;
+        $this->cookieParams = $cookieParams;
+        $this->serverParams = $serverParams;
+        $this->uploadFiles = $uploadFiles;
+        $this->body = $body ?:new RequestBody();
 
         $type = ['application/x-www-form-urlencoded','multipart/form-data'];
-        if($server['REQUEST_METHOD'] === 'POST' && in_array($this->getContentType(),$type)){
+        if($serverParams['REQUEST_METHOD'] === 'POST' && in_array($this->getContentType(),$type)){
             $this->bodyParsed = $_POST;
         }
     }
@@ -334,9 +352,6 @@ class Request extends Message implements ServerRequestInterface{
      */
     public function getUploadedFiles()
     {
-        if(!$this->uploadFiles){
-            $this->uploadFiles = UploadedFile::parseUploadedFiles($_FILES);
-        }
         return $this->uploadFiles;
     }
 
@@ -408,7 +423,7 @@ class Request extends Message implements ServerRequestInterface{
      */
     public function getAttributes()
     {
-        return $this->attributes->all();
+        return $this->attributes;
     }
 
     /**
@@ -420,7 +435,7 @@ class Request extends Message implements ServerRequestInterface{
      */
     public function getAttribute($name, $default = null)
     {
-        return $this->attributes->get($name,$default);
+        return $this->attributes[$name];
     }
 
     /**
@@ -432,9 +447,7 @@ class Request extends Message implements ServerRequestInterface{
      */
     public function withAttribute($name, $value)
     {
-        $result = clone $this;
-        $result->attributes->set($name, $value);
-        return $result;
+        return $this->immutability($this,['attributes',$name],$value);
     }
 
     /**
@@ -447,8 +460,47 @@ class Request extends Message implements ServerRequestInterface{
     public function withoutAttribute($name)
     {
         $result = clone $this;
-        $result->attributes->remove($name);
+        if(array_key_exists($name,$result->attributes)){
+            unset($result->attributes[$name]);
+        }
+
         return $result;
+    }
+
+    /**
+     * 获取路由
+     *
+     * @return mixed|string
+     */
+    public function getRequestRoute()
+    {
+        if($this->requestRoute === false){
+            //获取脚本路径
+            $requestScriptName = parse_url($this->getServerParam('SCRIPT_NAME'), PHP_URL_PATH);
+            $requestScriptDir = dirname($requestScriptName);
+
+            //获取请求资源
+            $requestUri = parse_url($this->getServerParam('REQUEST_URI'), PHP_URL_PATH);
+
+            $basePath = '';
+            $virtualPath = $requestUri;
+
+            if (stripos($requestUri, $requestScriptName) === 0) {
+                //URI没有隐藏脚本文件
+                $basePath = $requestScriptName;
+            } elseif ($requestScriptDir !== '/' && stripos($requestUri, $requestScriptDir) === 0) {
+                //请求路径与脚本文件路径一致
+                $basePath = $requestScriptDir;
+            }
+
+            if ($basePath) {
+                $virtualPath = '/'.trim(substr($requestUri, strlen($basePath)), '/');
+            }
+
+            $this->requestRoute = $virtualPath;
+        }
+
+        return $this->requestRoute;
     }
 
     /**

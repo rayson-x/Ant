@@ -22,7 +22,7 @@ abstract class Message implements MessageInterface{
     /**
      * HTTP头信息
      *
-     * @var Header
+     * @var array
      */
     protected $headers;
 
@@ -64,7 +64,7 @@ abstract class Message implements MessageInterface{
      */
     public function getHeaders()
     {
-        return $this->headers->all();
+        return $this->headers;
     }
 
 
@@ -78,7 +78,7 @@ abstract class Message implements MessageInterface{
     {
         $name = strtolower($name);
 
-        return $this->headers->has($name);
+        return array_key_exists($name,$this->headers);
     }
 
     /**
@@ -95,7 +95,7 @@ abstract class Message implements MessageInterface{
             return [];
         }
 
-        return $this->headers->get($name);
+        return $this->headers[$name];
     }
 
     /**
@@ -123,7 +123,7 @@ abstract class Message implements MessageInterface{
         $result = $this->immutability ? clone $this : $this;
 
         $value = is_array($value) ? $value : explode(',',$value);
-        $result->headers->set($name,$value);
+        $result->headers[$name] = $value;
 
         return $result;
     }
@@ -161,7 +161,7 @@ abstract class Message implements MessageInterface{
         $result = $this->immutability ? clone $this : $this;
         $name = strtolower($name);
 
-        $result->headers->remove($name);
+        unset($result->headers[$name]);
 
         return $result;
     }

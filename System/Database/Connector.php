@@ -23,6 +23,13 @@ abstract class Connector{
     //日志驱动
     protected $log = '';
 
+    protected $options = [
+        PDO::ATTR_CASE               => PDO::CASE_NATURAL,
+        PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+        PDO::ATTR_STATEMENT_CLASS    => ['Ant\\Database\\Statement'],
+    ];
+
     /**
      * 获取最后一个自增ID
      *
@@ -111,10 +118,7 @@ abstract class Connector{
         $options    = $this->getConfig('options') ?: [];
 
         //设置PDO默认参数
-        $options[PDO::ATTR_CASE] = isset($options[PDO::ATTR_CASE]) ? $options[PDO::ATTR_CASE] : PDO::CASE_NATURAL;
-        $options[PDO::ATTR_ERRMODE] = isset($options[PDO::ATTR_ERRMODE]) ? $options[PDO::ATTR_ERRMODE] : PDO::ERRMODE_EXCEPTION;
-        $options[PDO::ATTR_DEFAULT_FETCH_MODE] = isset($options[PDO::ATTR_DEFAULT_FETCH_MODE]) ? $options[PDO::ATTR_DEFAULT_FETCH_MODE] : PDO::FETCH_ASSOC;
-        $options[PDO::ATTR_STATEMENT_CLASS] = isset($options[PDO::ATTR_STATEMENT_CLASS]) ? $options[PDO::ATTR_STATEMENT_CLASS] : ['Ant\\Database\\Statement'];
+        $options = array_merge($this->options,$options);
 
         //TODO::日志,记录连接
         try{

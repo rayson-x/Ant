@@ -1,7 +1,7 @@
 <?php
-namespace Ant\Http;
+namespace Ant\Support\Http;
 
-use Ant\Collection;
+use Ant\Support\Collection;
 
 class Environment extends Collection
 {

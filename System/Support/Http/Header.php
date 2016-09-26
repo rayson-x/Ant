@@ -1,9 +1,8 @@
 <?php
-namespace Ant\Http;
+namespace Ant\Support\Http;
 
-use Ant\Collection;
 
-class Header extends Collection{
+class Header{
 
     /**
      * 在“$_SERVER”中不是以“HTTP_”开头的Http头
@@ -23,7 +22,7 @@ class Header extends Collection{
      * 获取header数据集
      *
      * @param Environment $server
-     * @return static
+     * @return array
      */
     public static function createFromEnvironment(Environment $server)
     {
@@ -37,6 +36,6 @@ class Header extends Collection{
             }
         }
 
-        return new static($headers);
+        return $headers;
     }
 }

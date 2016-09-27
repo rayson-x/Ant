@@ -50,6 +50,7 @@ if (!function_exists('FastRoute\simpleDispatcher')) {
             if (!is_array($dispatchData)) {
                 throw new \RuntimeException('Invalid cache file "' . $options['cacheFile'] . '"');
             }
+
             return new $options['dispatcher']($dispatchData);
         }
 

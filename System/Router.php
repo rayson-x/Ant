@@ -16,7 +16,7 @@ use FastRoute\RouteCollector;
 use FastRoute\Dispatcher\GroupCountBased;
 
 //TODO::RESTful风格路由
-//TODO::路由缓存
+//TODO::路由缓存，跳过路由组装部分
 //TODO::通过反射生成路由缓存 需要Console支持
 class Router
 {
@@ -80,14 +80,16 @@ class Router
      *
      * @var
      */
-    protected $groupAttributes;
+    protected $groupAttributes = null;
 
     /**
-     * 路由缓存路径
+     * FastRoute 路由缓存路径
      *
      * @var false|string
      */
-    protected $cacheFile = false;
+    protected $FastRouteCacheFile = false;
+
+    protected $routeCacheFile = false;
 
     /**
      * Router constructor.
@@ -95,27 +97,6 @@ class Router
     public function __construct()
     {
         $this->container = Container::getInstance();
-    }
-
-    /**
-     * 设置缓存文件
-     *
-     * @param $cacheFile
-     * @return $this
-     */
-    protected function setCacheFile($cacheFile)
-    {
-        if (!is_string($cacheFile) && $cacheFile !== false) {
-            throw new InvalidArgumentException('Router cacheFile must be a string or false');
-        }
-
-        $this->cacheFile = $cacheFile;
-
-        if ($cacheFile !== false && !is_writable(dirname($cacheFile))) {
-            throw new RuntimeException('Router cacheFile directory must be writable');
-        }
-
-        return $this;
     }
 
     /**
@@ -128,7 +109,8 @@ class Router
     {
         $keyword = '/';
 
-        if(isset($attributes['keyword'])){
+        //路由器开始时禁用关键词功能
+        if(!$this->routeStartEnable && isset($attributes['keyword'])){
             //关键词覆盖分组前缀
             $keyword = '/'.trim($attributes['keyword']);
             $attributes['prefix'] = $keyword;
@@ -256,14 +238,7 @@ class Router
         $action = $this->parseAction($action);
 
         if(isset($this->groupAttributes)){
-            //加载分组属性
-            if(isset($this->groupAttributes['prefix'])){
-                $uri = trim($this->groupAttributes['prefix'],'/').rtrim($uri,'/');
-            }
-
-            if(isset($this->groupAttributes['suffix'])){
-                $uri = trim($uri,'/').'/'.rtrim($this->groupAttributes['suffix'],'/');
-            }
+            $uri = $this->mergeGroupPrefixAndSuffix($uri);
 
             $action = $this->mergeGroupNamespace(
                 $this->mergeMiddlewareGroup($action)
@@ -298,6 +273,19 @@ class Router
         return $action;
     }
 
+    protected function mergeGroupPrefixAndSuffix($uri)
+    {
+        if(isset($this->groupAttributes['prefix'])){
+            $uri = trim($this->groupAttributes['prefix'],'/').'/'.trim($uri,'/');
+        }
+
+        if(isset($this->groupAttributes['suffix'])){
+            $uri = trim($uri,'/').'/'.trim($this->groupAttributes['suffix'],'/');
+        }
+
+        return $uri;
+    }
+
     /**
      * 合并分组命名空间
      *
@@ -323,7 +311,7 @@ class Router
     {
         if (isset($this->groupAttributes['middleware'])) {
             if (isset($action['middleware'])) {
-                $action['middleware'] = array_merge($this->groupAttributes['middleware'], $action['middleware']);
+                $action['middleware'] = array_merge($this->groupAttributes['middleware'], (array)$action['middleware']);
             } else {
                 $action['middleware'] = $this->groupAttributes['middleware'];
             }
@@ -343,13 +331,31 @@ class Router
         $this->addRouteFromGroup($request);
 
         if (isset($this->routes[$this->routeRequest])) {
+            //使用自身路由进行匹配
             return $this->handleFoundRoute($this->routes[$this->routeRequest]['action'],[]);
         }
 
+        //使用FastRoute调度器处理请求
         return $this->handleDispatcher($this->createDispatcher()->dispatch(
             $request->getMethod(),
             $request->getRequestRoute()
         ));
+    }
+
+    protected function getRouteFromCache()
+    {
+        if(file_exists($this->routeCacheFile)){
+            $this->routes = require $this->routeCacheFile;
+        }else{
+            foreach($this->group as $group){
+                $this->parseRoute($group);
+            }
+
+            file_put_contents(
+                $this->routeCacheFile,
+                '<?php return ' . var_export($this->routes, true) . ';'
+            );
+        }
     }
 
     /**
@@ -395,12 +401,48 @@ class Router
                 $this->setCacheFile($attributes['cacheFile']);
             }
 
-            $this->groupAttributes = $attributes;
+            if(! isset($attributes['extend'])){
+                $attributes['extend'] = true;
+            }
+
+            $this->groupAttributes = ($attributes['extend'] === false) ? $attributes : $this->extendParentGroupAttributes($attributes);
 
             call_user_func($action, $this);
 
             $this->groupAttributes = $parentGroupAttributes;
         }
+    }
+
+    /**
+     * 继承父级分组属性
+     *
+     * @param array $attributes
+     * @return array
+     */
+    protected function extendParentGroupAttributes(array $attributes)
+    {
+        if($this->groupAttributes === null){
+            return $attributes;
+        }
+
+        $attributes = array_merge([
+            'prefix'    => '',
+            'suffix'    => '',
+            'namespace' => '',
+            'middleware'=> [],
+        ],$attributes);
+
+        $fix = $this->mergeGroupPrefixAndSuffix(implode('-',[$attributes['prefix'],$attributes['suffix'],]));
+
+        list($attributes['prefix'],$attributes['suffix']) = explode('-',$fix);
+
+        $attributes = $this->mergeMiddlewareGroup($attributes);
+
+        if(isset($this->groupAttributes['namespace'])){
+            $attributes['namespace'] = rtrim($this->groupAttributes['namespace'],'\\').'\\'.trim($attributes['namespace'],'\\');
+        }
+
+        return $attributes;
     }
 
     /**
@@ -537,9 +579,9 @@ class Router
         };
 
         //是否使用FastRoute路由缓存
-        if($this->cacheFile){
+        if($this->FastRouteCacheFile){
             $this->dispatcher = \FastRoute\cachedDispatcher($dispatcherCallable,[
-                'cacheFile' => $this->cacheFile,
+                'cacheFile' => $this->FastRouteCacheFile,
                 'cacheDisabled' => true,
             ]);
         }else{
@@ -557,6 +599,27 @@ class Router
     public function setDispatcher(\FastRoute\Dispatcher $dispatcher)
     {
         $this->dispatcher = $dispatcher;
+    }
+
+    /**
+     * 设置缓存文件
+     *
+     * @param $cacheFile
+     * @return $this
+     */
+    protected function setCacheFile($cacheFile)
+    {
+        if (!is_string($cacheFile) && $cacheFile !== false) {
+            throw new InvalidArgumentException('Router cacheFile must be a string or false');
+        }
+
+        $this->FastRouteCacheFile = $cacheFile;
+
+        if ($cacheFile !== false && !is_writable(dirname($cacheFile))) {
+            throw new RuntimeException('Router cacheFile directory must be writable');
+        }
+
+        return $this;
     }
 
     /**

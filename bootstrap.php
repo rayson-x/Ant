@@ -40,11 +40,19 @@ $router = new Ant\Router();
 
 $app->addMiddleware([$router,'execute']);
 
-$router->get('/',function($request,$response){
-    $response->write("Ant-Framework");
-});
+$router->addMiddleware([
+    'test' => function(Ant\Http\Request $request,Ant\Http\Response $response){
+        $response->withHeader('x-test','test');
+    }
+]);
 
-$router->any('/hello[/{name:\w+}]',function($name = 'world',$request,$response){
-    $response->write("hello {$name}");
+$router->group(['middleware'=>'test','prefix'=>'index','namespace'=>'app\\'],function($router){
+    $router->get('/',function($request,$response){
+        $response->write("Ant-Framework");
+    });
+
+    $router->any('/hello[/{name:\w+}]',function($name = 'world',$request,$response){
+        $response->write("hello {$name}");
+    });
 });
 

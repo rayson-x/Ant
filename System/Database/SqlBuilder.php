@@ -153,7 +153,7 @@ class SqlBuilder{
     {
         $params = ($params === null)
             ? []
-            : ( is_array($params) ? $params : array_slice(func_get_args(),1) );
+            : ( is_array($params) ? $params : array_slice(func_get_args(),1));
 
         return $this->parseWhereExp($where,$params, 'AND');
     }

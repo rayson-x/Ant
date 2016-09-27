@@ -33,14 +33,28 @@ $app = new Ant\App('App',realpath(__DIR__.'/app'));
 $router = new Ant\Router();
 
 $router->group(['namespace'=>'App\\Controller\\'],function(Ant\Router $router){
-    $router->get('/index','IndexController@Index');
-
     $router->any('/',function($request,$response){
         $response->write("Ant-Framework");
     });
 
     $router->any('/hello[/{name:\w+}]',function($name = 'world',$request,$response){
         $response->write("hello {$name}");
+    });
+
+    $router->group(['prefix'=>'test'],function($router){
+        $router->group(['prefix' => 'demo'],function($router){
+            $router->group(['prefix' => 'index'],function($router){
+                $router->any('/{name:\w+}',function($name){
+                    echo $name;
+                });
+
+                foreach(range(1,10000) as $value){
+                    $router->get("/index{$value}/{name:\\w+}",function($name){
+                        echo $name;
+                    });
+                }
+            });
+        });
     });
 });
 

@@ -83,13 +83,18 @@ class Router
     protected $groupAttributes = null;
 
     /**
-     * FastRoute 路由缓存路径
+     * 一级路由缓存,属于Ant框架的缓存,所有路由路由拼装完成,然后缓存起来
+     *
+     * @var bool
+     */
+    protected $routeCacheFile = false;
+
+    /**
+     * 二级路由缓存,是 FastRoute 的路由缓存,将正则缓存
      *
      * @var false|string
      */
     protected $FastRouteCacheFile = false;
-
-    protected $routeCacheFile = false;
 
     /**
      * Router constructor.
@@ -238,6 +243,7 @@ class Router
         $action = $this->parseAction($action);
 
         if(isset($this->groupAttributes)){
+            //继承路由组信息
             $uri = $this->mergeGroupPrefixAndSuffix($uri);
 
             $action = $this->mergeGroupNamespace(
@@ -247,6 +253,7 @@ class Router
 
         $uri = '/'.trim($uri,'/');
 
+        //注册路由
         foreach ((array) $method as $verb) {
             $this->routes[$verb.$uri] = ['method' => $verb, 'uri' => $uri, 'action' => $action];
         }
@@ -273,6 +280,12 @@ class Router
         return $action;
     }
 
+    /**
+     * 合并请求资源前缀与后缀
+     *
+     * @param $uri
+     * @return string
+     */
     protected function mergeGroupPrefixAndSuffix($uri)
     {
         if(isset($this->groupAttributes['prefix'])){
@@ -328,47 +341,82 @@ class Router
      */
     protected function dispatch(\Ant\Http\Request $request)
     {
-        $this->addRouteFromGroup($request);
+        $method = $request->getMethod();
+        $pathInfo = $request->getRequestRoute();
+        $this->routeRequest = $method.$pathInfo;
 
-        if (isset($this->routes[$this->routeRequest])) {
-            //使用自身路由进行匹配
-            return $this->handleFoundRoute($this->routes[$this->routeRequest]['action'],[]);
+        //是否使用路由缓存
+        if(!$this->routeCacheFile){
+            $this->addRouteFromGroup($pathInfo);
+
+            //进行简单路由匹配
+            if (isset($this->routes[$this->routeRequest])) {
+                return $this->handleFoundRoute($this->routes[$this->routeRequest]['action'],[]);
+            }
+
+            //使用FastRoute调度器处理请求
+            return $this->handleDispatcher($this->createDispatcher()->dispatch(
+                $request->getMethod(),
+                $request->getRequestRoute()
+            ));
+        }else{
+            //TODO::使用协同注册路由,数据量太大时,copy将会耗费大量时间与内存
+            $this->routes = $this->getRouteFromCache();
         }
-
-        //使用FastRoute调度器处理请求
-        return $this->handleDispatcher($this->createDispatcher()->dispatch(
-            $request->getMethod(),
-            $request->getRequestRoute()
-        ));
     }
 
+    /**
+     * 从缓存中获取路由
+     */
     protected function getRouteFromCache()
     {
         if(file_exists($this->routeCacheFile)){
-            $this->routes = require $this->routeCacheFile;
+            return require $this->routeCacheFile;
         }else{
+            set_time_limit(0);
+            //生成缓存文件
             foreach($this->group as $group){
                 $this->parseRoute($group);
             }
+
+            $this->routes = $this->serializeClosureFromRoute($this->routes);
 
             file_put_contents(
                 $this->routeCacheFile,
                 '<?php return ' . var_export($this->routes, true) . ';'
             );
+
+            set_time_limit(30);
+            return $this->routes;
         }
+    }
+
+    /**
+     * 将路由中闭包进行序列化
+     */
+    protected function serializeClosureFromRoute($routes)
+    {
+        return array_map(function($route){
+            foreach($route['action'] as $key => $value){
+                if($value instanceof Closure){
+                    //将闭包函数序列化并保存到数组中
+                    ArraySetIn($route,'action.closure',serializeClosure($route['action'][$key]));
+
+                    unset($route['action'][$key]);
+                    break;
+                }
+            }
+            return $route;
+        },$routes);
     }
 
     /**
      * 添加分组路由
      *
-     * @param $request \Ant\Http\Request
+     * @param $pathInfo
      */
-    protected function addRouteFromGroup($request)
+    protected function addRouteFromGroup($pathInfo)
     {
-        $method = $request->getMethod();
-        $pathInfo = $request->getRequestRoute();
-        $this->routeRequest = $method.$pathInfo;
-
         //获取关键词
         $keywords = array_keys(array_reverse($this->group));
 
@@ -397,15 +445,17 @@ class Router
                 $attributes['middleware'] = explode('|', $attributes['middleware']);
             }
 
+            //设置二级缓存
             if(isset($attributes['cacheFile'])){
                 $this->setCacheFile($attributes['cacheFile']);
             }
 
-            if(! isset($attributes['extend'])){
-                $attributes['extend'] = true;
+            //是否继承父级分组属性
+            if(isset($attributes['extend']) && $attributes['extend'] === false){
+                $this->groupAttributes = $attributes;
+            }else{
+                $this->groupAttributes = $this->extendParentGroupAttributes($attributes);
             }
-
-            $this->groupAttributes = ($attributes['extend'] === false) ? $attributes : $this->extendParentGroupAttributes($attributes);
 
             call_user_func($action, $this);
 
@@ -432,12 +482,15 @@ class Router
             'middleware'=> [],
         ],$attributes);
 
+        //获取父级分组uri前缀与后缀
         $fix = $this->mergeGroupPrefixAndSuffix(implode('-',[$attributes['prefix'],$attributes['suffix'],]));
 
         list($attributes['prefix'],$attributes['suffix']) = explode('-',$fix);
 
+        //获取父级分组中间件
         $attributes = $this->mergeMiddlewareGroup($attributes);
 
+        //获取父级分组命名空间
         if(isset($this->groupAttributes['namespace'])){
             $attributes['namespace'] = rtrim($this->groupAttributes['namespace'],'\\').'\\'.trim($attributes['namespace'],'\\');
         }
@@ -460,6 +513,7 @@ class Router
             $handle = $this->gatMiddleware($action['middleware']);
         }
 
+        //添加为最后一节中间件
         $handle[] = function(...$params)use($action,$args){
             $this->callAction($action,array_merge($args,$params));
         };
@@ -523,6 +577,11 @@ class Router
      */
     protected function callAction($action,$args = [])
     {
+        if(isset($action['closure'])){
+            //反序列化闭包函数
+            $action['closure'] = unserializeClosure($action['closure']);
+        }
+
         if(isset($action['uses'])){
             return $this->callController($action['uses'],$args);
         }

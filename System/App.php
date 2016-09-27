@@ -70,7 +70,7 @@ class App{
     {
         $this->container = Container::getInstance();
 
-        $this->register(HttpServiceProvider::class);
+        $this->register(BaseServiceProvider::class);
     }
 
     public function __call($method,$args)

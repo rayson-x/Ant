@@ -1,4 +1,5 @@
 <?php
+use Ant\Support\ArrayHandle;
 use Ant\Container\Container;
 use Psr\Http\Message\ServerRequestInterface;
 
@@ -22,6 +23,33 @@ function show($msg)
     echo "</pre>";
 }
 
+function ArraySetIn(&$array,$path,$value)
+{
+    if(is_string($path)){
+        $path = explode('.',$path);
+    }
+
+    ArrayHandle::setIn($array,$path,$value);
+}
+
+function container($serviceName = null, $parameters = [])
+{
+    if (is_null($serviceName)) {
+        return Container::getInstance();
+    }
+
+    return Container::getInstance()->make($serviceName, $parameters);
+}
+
+function serializeClosure(Closure $closure)
+{
+    return container('serialize')->serialize($closure);
+}
+
+function unserializeClosure($closure)
+{
+    return container('serialize')->unserialize($closure);
+}
 
 /**
  * 保证json编码不会出错

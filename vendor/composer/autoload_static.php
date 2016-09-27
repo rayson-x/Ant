@@ -11,9 +11,6 @@ class ComposerStaticInit6e27f74fc6ea6cea61263699f99666a5
     );
 
     public static $prefixLengthsPsr4 = array (
-        'A' =>[
-            'Ant\\'                => 4,
-        ],
         'P' => 
         array (
             'Psr\\Http\\Message\\' => 17,
@@ -22,12 +19,13 @@ class ComposerStaticInit6e27f74fc6ea6cea61263699f99666a5
         array (
             'FastRoute\\' => 10,
         ),
+        'A' => 
+        array (
+            'Ant\\' => 4,
+        ),
     );
 
     public static $prefixDirsPsr4 = array (
-        'Ant\\'                =>[
-            0 => __DIR__.'/../..' .'/system',
-        ],
         'Psr\\Http\\Message\\' => 
         array (
             0 => __DIR__ . '/..' . '/psr/http-message/src',
@@ -35,6 +33,10 @@ class ComposerStaticInit6e27f74fc6ea6cea61263699f99666a5
         'FastRoute\\' => 
         array (
             0 => __DIR__ . '/..' . '/nikic/fast-route/src',
+        ),
+        'Ant\\' => 
+        array (
+            0 => __DIR__ . '/../..' . '/system',
         ),
     );
 

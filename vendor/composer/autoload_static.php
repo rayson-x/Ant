@@ -26,7 +26,7 @@ class ComposerStaticInit6e27f74fc6ea6cea61263699f99666a5
 
     public static $prefixDirsPsr4 = array (
         'Ant\\'                =>[
-            0 => __DIR__.'/../..' .'/System',
+            0 => __DIR__.'/../..' .'/system',
         ],
         'Psr\\Http\\Message\\' => 
         array (

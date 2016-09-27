@@ -28,26 +28,14 @@ if(version_compare(PHP_VERSION, '7.0.0', '<')){
 //TODO::单元测试
 //TODO::Console
 
-$app = new Ant\App();
+$app = new Ant\App('App',realpath(__DIR__.'/app'));
 
-$app->addMiddleware(function (Ant\Http\Request $request,Ant\Http\Response $response){
-    yield ;
-
-    $response->withHeader('x-run-time',(microtime(true) - START) * 1000);
-});
-/* 将路由中间件装载到应用中 */
 $router = new Ant\Router();
 
-$app->addMiddleware([$router,'execute']);
+$router->group(['namespace'=>'App\\Controller\\'],function(Ant\Router $router){
+    $router->get('/index','IndexController@Index');
 
-$router->addMiddleware([
-    'test' => function(Ant\Http\Request $request,Ant\Http\Response $response){
-        $response->withHeader('x-test','test');
-    }
-]);
-
-$router->group(['middleware'=>'test','prefix'=>'index','namespace'=>'app\\'],function($router){
-    $router->get('/',function($request,$response){
+    $router->any('/',function($request,$response){
         $response->write("Ant-Framework");
     });
 
@@ -56,3 +44,11 @@ $router->group(['middleware'=>'test','prefix'=>'index','namespace'=>'app\\'],fun
     });
 });
 
+/* 将中间件装载到应用中 */
+$app->addMiddleware(function (Ant\Http\Request $request,Ant\Http\Response $response){
+    yield ;
+
+    $response->withHeader('x-run-time',(microtime(true) - START) * 1000);
+});
+
+$app->addMiddleware([$router,'execute']);

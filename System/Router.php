@@ -611,12 +611,9 @@ class Router
             //启动路由器
             $this->routeStartEnable = true;
 
-            //设置中间件参数
-            $this->withArguments(function(){
-                return $this->container['arguments'];
-            });
-
             $handlers = $this->dispatch($request);
+
+            $this->withArguments([$request,$response]);
 
             $this->executeMiddleware($handlers);
         }catch(Exception $exception){

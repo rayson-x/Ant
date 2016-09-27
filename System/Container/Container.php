@@ -551,7 +551,9 @@ class Container implements ContainerInterface,ArrayAccess{
             return $parameter->getDefaultValue();
         }
 
-        throw new ContainerValueNotFoundException("Unresolvable dependency resolving [$parameter] in class {$parameter->getDeclaringClass()->getName()}");
+        throw new ContainerValueNotFoundException(
+            "Unresolvable dependency resolving [$parameter] in class {$parameter->getDeclaringClass()->getName()}"
+        );
     }
 
     /**

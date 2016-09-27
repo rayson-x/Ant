@@ -30,16 +30,21 @@ if(version_compare(PHP_VERSION, '7.0.0', '<')){
 
 $app = new Ant\App();
 
-$app->addMiddleware(function ($request,$response){
+$app->addMiddleware(function (Ant\Http\Request $request,Ant\Http\Response $response){
     yield ;
 
     $response->withHeader('x-run-time',(microtime(true) - START) * 1000);
 });
-
+/* 将路由中间件装载到应用中 */
 $router = new Ant\Router();
 
-$router->any('/',function(){
-    echo "hello world";
+$app->addMiddleware([$router,'execute']);
+
+$router->get('/',function($request,$response){
+    $response->write("Ant-Framework");
 });
 
-$app->addMiddleware([$router,'execute']);
+$router->any('/hello[/{name:\w+}]',function($name = 'world',$request,$response){
+    $response->write("hello {$name}");
+});
+

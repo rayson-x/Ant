@@ -2,21 +2,18 @@
 namespace Ant;
 
 use Ant\Http\Response;
-use Ant\Support\Collection;
-use Ant\Support\Http\Request;
+use Ant\Http\Request;
 use Ant\Support\Http\Environment;
 use Ant\Interfaces\ContainerInterface;
 use Ant\Interfaces\ServiceProviderInterface;
 
-class BaseServiceProvider implements ServiceProviderInterface
+class HttpServiceProvider implements ServiceProviderInterface
 {
     public function register(ContainerInterface $container)
     {
         /**
          * 按照顺序注册服务
          */
-        $this->registerServiceNeedArguments($container);
-        $this->registerOtherTypesService($container);
         $this->registerClass($container);
         $this->registerServiceExtend($container);
     }
@@ -43,7 +40,7 @@ class BaseServiceProvider implements ServiceProviderInterface
          * @return Request
          */
         $container->bindIf([Request::class => 'request'],function(){
-            return Request::createRequestFromEnvironment($this['environment']);
+            return \Ant\Support\Http\Request::createRequestFromEnvironment($this['environment']);
         },true);
 
         /**
@@ -83,49 +80,6 @@ class BaseServiceProvider implements ServiceProviderInterface
                 parse_str($input,$data);
                 return $data;
             });
-        });
-    }
-
-    /**
-     * 给服务注册依赖参数
-     *
-     * @param ContainerInterface $container
-     */
-    protected function registerServiceNeedArguments(ContainerInterface $container)
-    {
-
-    }
-
-    /**
-     * 注册各种数据类型的服务
-     *
-     * @param ContainerInterface $container
-     */
-    protected function registerOtherTypesService(ContainerInterface $container)
-    {
-        /**
-         * 将中间件参数托管至此服务
-         * 通过修改此服务实例来达到
-         * 修改调用时传递给每个中间件的参数
-         */
-        $container->bind('arguments',function(...$args){
-            /* @var $this ContainerInterface */
-            static $arguments = [];
-
-            if(isset($this['newRequest'])){
-                $arguments[0] = $this['newRequest'];
-                $this->forgetService('newRequest');
-            }
-            if(isset($this['newResponse'])) {
-                $arguments[1] = $this['newResponse'];
-                $this->forgetService('newResponse');
-            }
-
-            foreach($args as $arg){
-                $arguments[] = $arg;
-            }
-
-            return $arguments;
         });
     }
 }

@@ -70,7 +70,7 @@ class App{
     {
         $this->container = Container::getInstance();
 
-        $this->register(BaseServiceProvider::class);
+        $this->register(HttpServiceProvider::class);
     }
 
     public function __call($method,$args)
@@ -155,12 +155,7 @@ class App{
     public function process($request,$response)
     {
         try{
-            $this->container->make('arguments',[$request,$response]);
-
-            // 将中间件参数交给服务容器维护
-            $this->withArguments(function(){
-                return $this->container['arguments'];
-            });
+            $this->withArguments([$request,$response]);
 
             $this->execute();
         }catch(\Exception $exception){

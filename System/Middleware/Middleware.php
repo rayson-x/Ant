@@ -67,12 +67,13 @@ trait Middleware{
             return ;
         }
 
+
         //函数栈
         $stack = [];
         $result = null;
+        $args = $this->getArguments($arguments);
+
         foreach ($handlers as $handler) {
-            //获取中间件参数
-            $args = $this->getArguments($arguments);
             // 每次循环之前重置，只能保存最后一个处理程序的返回值
             $result = null;
             $generator = call_user_func_array($handler, $args);
@@ -84,6 +85,8 @@ trait Middleware{
 
                 if ($yieldValue === false) {
                     break;
+                }elseif($yieldValue instanceof Arguments){
+                    $args = $yieldValue;
                 }
             } elseif ($generator !== null) {
                 // 回调参数

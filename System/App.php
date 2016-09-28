@@ -66,13 +66,21 @@ class App{
      *
      * App constructor.
      */
-    public function __construct()
+    public function __construct($namespache = '/',$path = '/')
     {
         $this->container = Container::getInstance();
 
-        $this->register(HttpServiceProvider::class);
+        $this->register(BaseServiceProvider::class);
+
+        //注册应用程序命名空间
+        $this->registerNamespace($namespache,$path);
     }
 
+    /**
+     * @param $method
+     * @param $args
+     * @return mixed
+     */
     public function __call($method,$args)
     {
         return $this->container->$method(...$args);
@@ -98,6 +106,54 @@ class App{
         //TODO::遇到类型错误的服务容器在 抛出异常,跳过此服务 二者选一
         if($provider instanceof ServiceProviderInterface){
             $this->container->registerService($provider);
+        }
+    }
+
+    /**
+     * 注册命名空间
+     *
+     * @param $namespace
+     * @param $path
+     * @param null $classname
+     * @return mixed
+     */
+    public function registerNamespace($namespace, $path, $classname = null)
+    {
+        $namespace = trim($namespace, '\\');
+        $path = rtrim($path, '/\\');
+
+        $loader = function ($classname, $return_filename = false) use ($namespace, $path) {
+            if (class_exists($classname, false) || interface_exists($classname, false)) {
+                return true;
+            }
+
+            $classname = trim($classname, '\\');
+
+            if ($namespace && stripos($classname, $namespace) !== 0) {
+                return false;
+            } else {
+                $filename = trim(substr($classname, strlen($namespace)), '\\');
+            }
+
+            $filename = $path.DIRECTORY_SEPARATOR.str_replace('\\', DIRECTORY_SEPARATOR, $filename).'.php';
+
+            if ($return_filename) {
+                return $filename;
+            } else {
+                if (!file_exists($filename)) {
+                    return false;
+                }
+
+                require $filename;
+
+                return class_exists($classname, false) || interface_exists($classname, false);
+            }
+        };
+
+        if ($classname === null) {
+            spl_autoload_register($loader);
+        } else {
+            return $loader($classname, true);
         }
     }
 
@@ -136,6 +192,9 @@ class App{
         };
     }
 
+    /**
+     * 启动框架
+     */
     public function run()
     {
         $request = $this->container['request'];

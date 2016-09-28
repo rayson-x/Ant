@@ -28,23 +28,40 @@ if(version_compare(PHP_VERSION, '7.0.0', '<')){
 //TODO::单元测试
 //TODO::Console
 
-$app = new Ant\App();
+$app = new Ant\App('App',realpath(__DIR__.'/app'));
 
+$router = new Ant\Router();
+
+$router->group(['namespace'=>'App\\Controller\\'],function(Ant\Router $router){
+    $router->any('/',function($request,$response){
+        $response->write("Ant-Framework");
+    });
+
+    $router->any('/hello[/{name:\w+}]',function($name = 'world',$request,$response){
+        $response->write("hello {$name}");
+    });
+
+    $router->group(['prefix'=>'test'],function($router){
+        $router->group(['prefix' => 'demo'],function($router){
+            foreach(range(1,5000) as $value){
+                $router->get("index{$value}/{name:\\w+}",function($name){
+                    echo $name;
+                });
+            }
+            $router->group(['prefix' => 'index'],function($router){
+                $router->any('/',function(){
+                    echo 1223;
+                });
+            });
+        });
+    });
+});
+
+/* 将中间件装载到应用中 */
 $app->addMiddleware(function (Ant\Http\Request $request,Ant\Http\Response $response){
     yield ;
 
     $response->withHeader('x-run-time',(microtime(true) - START) * 1000);
 });
-/* 将路由中间件装载到应用中 */
-$router = new Ant\Router();
 
 $app->addMiddleware([$router,'execute']);
-
-$router->get('/',function($request,$response){
-    $response->write("Ant-Framework");
-});
-
-$router->any('/hello[/{name:\w+}]',function($name = 'world',$request,$response){
-    $response->write("hello {$name}");
-});
-

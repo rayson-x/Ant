@@ -7,7 +7,7 @@ use Ant\Support\Http\Environment;
 use Ant\Interfaces\ContainerInterface;
 use Ant\Interfaces\ServiceProviderInterface;
 
-class HttpServiceProvider implements ServiceProviderInterface
+class BaseServiceProvider implements ServiceProviderInterface
 {
     public function register(ContainerInterface $container)
     {
@@ -49,6 +49,8 @@ class HttpServiceProvider implements ServiceProviderInterface
         $container->bindIf([Response::class => 'response'],function(){
             return new Response();
         },true);
+
+        $container->singleton([\SuperClosure\Serializer::class => 'serialize']);
     }
 
     /**

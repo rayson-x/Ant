@@ -1,4 +1,5 @@
 <?php
+use Ant\Support\ArrayHandle;
 use Ant\Container\Container;
 use Psr\Http\Message\ServerRequestInterface;
 
@@ -22,6 +23,33 @@ function show($msg)
     echo "</pre>";
 }
 
+function ArraySetIn(&$array,$path,$value)
+{
+    if(is_string($path)){
+        $path = explode('.',$path);
+    }
+
+    ArrayHandle::setIn($array,$path,$value);
+}
+
+function container($serviceName = null, $parameters = [])
+{
+    if (is_null($serviceName)) {
+        return Container::getInstance();
+    }
+
+    return Container::getInstance()->make($serviceName, $parameters);
+}
+
+function serializeClosure(Closure $closure)
+{
+    return container('serialize')->serialize($closure);
+}
+
+function unserializeClosure($closure)
+{
+    return container('serialize')->unserialize($closure);
+}
 
 /**
  * 保证json编码不会出错
@@ -77,6 +105,15 @@ function contains($haystack, $needles)
     return false;
 }
 
+function test(){
+    static $time = false;
+    if(!$time){
+        $time = microtime(true);
+    }elseif(isset($time)){
+        container('response')->withHeader('x-test-time',(microtime(true) - $time) * 1000);
+    }
+}
+
 /**
  * 获取错误信息
  * @param $exception
@@ -88,7 +125,7 @@ function exceptionHandle($exception){
     }
 
     $exceptionInfo = [];
-    $exceptionInfo['Exception'] = sprintf('%s(%d) %s',get_class($exception),$exception->getCode(),$exception->getMessage());
+    $exceptionInfo['Exception'] = sprintf($exception->getLine().'%s(%d) %s',get_class($exception),$exception->getCode(),$exception->getMessage());
 
     foreach(explode("\n",$exception->getTraceAsString()) as $index => $line){
         $key           = sprintf('X-Exception-Trace-%02d', $index);

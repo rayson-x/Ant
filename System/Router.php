@@ -9,14 +9,16 @@ use BadFunctionCallException;
 use InvalidArgumentException;
 use Ant\Container\Container;
 use Ant\Middleware\Middleware;
+use Ant\Support\JsonFileIterator;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use FastRoute\Dispatcher;
 use FastRoute\RouteCollector;
 use FastRoute\Dispatcher\GroupCountBased;
 
-//TODO::RESTful风格路由
-//TODO::路由缓存
+//TODO::分离为多个类,以满足单一职责原则
+//TODO::RESTful风格路由,添加创建资源的方式
+//TODO::路由缓存，跳过路由组装部分
 //TODO::通过反射生成路由缓存 需要Console支持
 class Router
 {
@@ -80,14 +82,22 @@ class Router
      *
      * @var
      */
-    protected $groupAttributes;
+    protected $groupAttributes = null;
 
     /**
-     * 路由缓存路径
+     * 一级路由缓存,属于Ant框架的缓存,所有路由路由拼装完成,然后缓存起来
+     *
+     * @var bool
+     */
+    protected $routeCacheFile = false;
+//    protected $routeCacheFile = 'route.cache.json';
+
+    /**
+     * 二级路由缓存,是 FastRoute 的路由缓存,将正则缓存
      *
      * @var false|string
      */
-    protected $cacheFile = false;
+    protected $FastRouteCacheFile = false;
 
     /**
      * Router constructor.
@@ -95,27 +105,6 @@ class Router
     public function __construct()
     {
         $this->container = Container::getInstance();
-    }
-
-    /**
-     * 设置缓存文件
-     *
-     * @param $cacheFile
-     * @return $this
-     */
-    protected function setCacheFile($cacheFile)
-    {
-        if (!is_string($cacheFile) && $cacheFile !== false) {
-            throw new InvalidArgumentException('Router cacheFile must be a string or false');
-        }
-
-        $this->cacheFile = $cacheFile;
-
-        if ($cacheFile !== false && !is_writable(dirname($cacheFile))) {
-            throw new RuntimeException('Router cacheFile directory must be writable');
-        }
-
-        return $this;
     }
 
     /**
@@ -128,7 +117,8 @@ class Router
     {
         $keyword = '/';
 
-        if(isset($attributes['keyword'])){
+        //路由器开始时禁用关键词功能
+        if(!$this->routeStartEnable && isset($attributes['keyword'])){
             //关键词覆盖分组前缀
             $keyword = '/'.trim($attributes['keyword']);
             $attributes['prefix'] = $keyword;
@@ -256,14 +246,8 @@ class Router
         $action = $this->parseAction($action);
 
         if(isset($this->groupAttributes)){
-            //加载分组属性
-            if(isset($this->groupAttributes['prefix'])){
-                $uri = trim($this->groupAttributes['prefix'],'/').rtrim($uri,'/');
-            }
-
-            if(isset($this->groupAttributes['suffix'])){
-                $uri = trim($uri,'/').'/'.rtrim($this->groupAttributes['suffix'],'/');
-            }
+            //继承路由组信息
+            $uri = $this->mergeGroupPrefixAndSuffix($uri);
 
             $action = $this->mergeGroupNamespace(
                 $this->mergeMiddlewareGroup($action)
@@ -272,6 +256,7 @@ class Router
 
         $uri = '/'.trim($uri,'/');
 
+        //注册路由
         foreach ((array) $method as $verb) {
             $this->routes[$verb.$uri] = ['method' => $verb, 'uri' => $uri, 'action' => $action];
         }
@@ -299,6 +284,25 @@ class Router
     }
 
     /**
+     * 合并请求资源前缀与后缀
+     *
+     * @param $uri
+     * @return string
+     */
+    protected function mergeGroupPrefixAndSuffix($uri)
+    {
+        if(isset($this->groupAttributes['prefix'])){
+            $uri = trim($this->groupAttributes['prefix'],'/').'/'.trim($uri,'/');
+        }
+
+        if(isset($this->groupAttributes['suffix'])){
+            $uri = trim($uri,'/').'/'.trim($this->groupAttributes['suffix'],'/');
+        }
+
+        return $uri;
+    }
+
+    /**
      * 合并分组命名空间
      *
      * @param $action
@@ -323,7 +327,7 @@ class Router
     {
         if (isset($this->groupAttributes['middleware'])) {
             if (isset($action['middleware'])) {
-                $action['middleware'] = array_merge($this->groupAttributes['middleware'], $action['middleware']);
+                $action['middleware'] = array_merge($this->groupAttributes['middleware'], (array)$action['middleware']);
             } else {
                 $action['middleware'] = $this->groupAttributes['middleware'];
             }
@@ -340,29 +344,53 @@ class Router
      */
     protected function dispatch(\Ant\Http\Request $request)
     {
-        $this->addRouteFromGroup($request);
+        //TODO::将一些重复代码分离出来
+        //TODO::缓存完成一半
+        $method = $request->getMethod();
+        $pathInfo = $request->getRequestRoute();
+        $this->routeRequest = $method.$pathInfo;
 
-        if (isset($this->routes[$this->routeRequest])) {
-            return $this->handleFoundRoute($this->routes[$this->routeRequest]['action'],[]);
+        //是否使用路由缓存
+        if(!$this->routeCacheFile){
+            $this->addRouteFromGroup($pathInfo);
+
+            //进行简单路由匹配
+            if (isset($this->routes[$this->routeRequest])) {
+                return $this->handleFoundRoute($this->routes[$this->routeRequest]['action'],[]);
+            }
+
+            //使用FastRoute调度器处理请求
+            return $this->handleDispatcher($this->createDispatcher()->dispatch(
+                $request->getMethod(),
+                $request->getRequestRoute()
+            ));
+        }else{
+            foreach($this->routeCollector() as $this->routes){
+                try{
+                    if (isset($this->routes[$this->routeRequest])) {
+                        return $this->handleFoundRoute($this->routes[$this->routeRequest]['action'],[]);
+                    }
+
+                    return $this->handleDispatcher($this->createDispatcher()->dispatch(
+                        $request->getMethod(),
+                        $request->getRequestRoute()
+                    ));
+                }catch(\Ant\Http\Exception $e){
+                    // 捕获HTTP异常防止迭代失败
+                }
+            }
+
+            throw new \Ant\Http\Exception(404);
         }
-
-        return $this->handleDispatcher($this->createDispatcher()->dispatch(
-            $request->getMethod(),
-            $request->getRequestRoute()
-        ));
     }
 
     /**
      * 添加分组路由
      *
-     * @param $request \Ant\Http\Request
+     * @param $pathInfo
      */
-    protected function addRouteFromGroup($request)
+    protected function addRouteFromGroup($pathInfo)
     {
-        $method = $request->getMethod();
-        $pathInfo = $request->getRequestRoute();
-        $this->routeRequest = $method.$pathInfo;
-
         //获取关键词
         $keywords = array_keys(array_reverse($this->group));
 
@@ -391,16 +419,57 @@ class Router
                 $attributes['middleware'] = explode('|', $attributes['middleware']);
             }
 
+            //设置二级缓存
             if(isset($attributes['cacheFile'])){
                 $this->setCacheFile($attributes['cacheFile']);
             }
 
-            $this->groupAttributes = $attributes;
+            //是否继承父级分组属性
+            if(isset($attributes['extend']) && $attributes['extend'] === false){
+                $this->groupAttributes = $attributes;
+            }else{
+                $this->groupAttributes = $this->extendParentGroupAttributes($attributes);
+            }
 
             call_user_func($action, $this);
 
             $this->groupAttributes = $parentGroupAttributes;
         }
+    }
+
+    /**
+     * 继承父级分组属性
+     *
+     * @param array $attributes
+     * @return array
+     */
+    protected function extendParentGroupAttributes(array $attributes)
+    {
+        if($this->groupAttributes === null){
+            return $attributes;
+        }
+
+        $attributes = array_merge([
+            'prefix'    => '',
+            'suffix'    => '',
+            'namespace' => '',
+            'middleware'=> [],
+        ],$attributes);
+
+        //获取父级分组uri前缀与后缀
+        $fix = $this->mergeGroupPrefixAndSuffix(implode('-',[$attributes['prefix'],$attributes['suffix'],]));
+
+        list($attributes['prefix'],$attributes['suffix']) = explode('-',$fix);
+
+        //获取父级分组中间件
+        $attributes = $this->mergeMiddlewareGroup($attributes);
+
+        //获取父级分组命名空间
+        if(isset($this->groupAttributes['namespace'])){
+            $attributes['namespace'] = rtrim($this->groupAttributes['namespace'],'\\').'\\'.trim($attributes['namespace'],'\\');
+        }
+
+        return $attributes;
     }
 
     /**
@@ -418,6 +487,7 @@ class Router
             $handle = $this->gatMiddleware($action['middleware']);
         }
 
+        //添加为最后一节中间件
         $handle[] = function(...$params)use($action,$args){
             $this->callAction($action,array_merge($args,$params));
         };
@@ -481,6 +551,11 @@ class Router
      */
     protected function callAction($action,$args = [])
     {
+        if(isset($action['closure'])){
+            //反序列化闭包函数
+            $action['closure'] = unserializeClosure($action['closure']);
+        }
+
         if(isset($action['uses'])){
             return $this->callController($action['uses'],$args);
         }
@@ -537,9 +612,9 @@ class Router
         };
 
         //是否使用FastRoute路由缓存
-        if($this->cacheFile){
+        if($this->FastRouteCacheFile){
             $this->dispatcher = \FastRoute\cachedDispatcher($dispatcherCallable,[
-                'cacheFile' => $this->cacheFile,
+                'cacheFile' => $this->FastRouteCacheFile,
                 'cacheDisabled' => true,
             ]);
         }else{
@@ -557,6 +632,106 @@ class Router
     public function setDispatcher(\FastRoute\Dispatcher $dispatcher)
     {
         $this->dispatcher = $dispatcher;
+    }
+
+    /**
+     * 设置缓存文件
+     *
+     * @param $cacheFile
+     * @return $this
+     */
+    protected function setCacheFile($cacheFile)
+    {
+        if (!is_string($cacheFile) && $cacheFile !== false) {
+            throw new InvalidArgumentException('Router cacheFile must be a string or false');
+        }
+
+        $this->FastRouteCacheFile = $cacheFile;
+
+        if ($cacheFile !== false && !is_writable(dirname($cacheFile))) {
+            throw new RuntimeException('Router cacheFile directory must be writable');
+        }
+
+        return $this;
+    }
+
+    /**
+     * 创建路由缓存
+     */
+    public function createRouteCacheFile()
+    {
+        set_time_limit(0);
+        //生成缓存文件
+        foreach($this->group as $group){
+            $this->parseRoute($group);
+        }
+
+        $this->routes = $this->serializeClosureFromRoute($this->routes);
+
+        $array = array_map(function($array){
+            return safe_json_encode($array);
+        },$this->routes);
+
+        file_put_contents($this->routeCacheFile,implode("\n",$array)."\n");
+
+        set_time_limit(30);
+    }
+
+    /**
+     * 路由迭代器
+     *
+     * @return \Generator
+     */
+    protected function routeCollector()
+    {
+        $routes = [];
+        foreach($this->getRouteFromCache() as $routePath => $routeInfo){
+            //一次获取50条路由
+            if(count($routes) == 50){
+                yield $routes;
+                $routes = [];
+            }
+
+            $routes[$routePath] = $routeInfo;
+        }
+
+        //返回剩余所有路由
+        if(isset($routes)){
+            yield $routes;
+        }
+    }
+
+    /**
+     * 从缓存中获取路由
+     */
+    protected function getRouteFromCache()
+    {
+        if(file_exists($this->routeCacheFile)){
+            return new JsonFileIterator($this->routeCacheFile);
+        }else{
+            $this->createRouteCacheFile();
+
+            return $this->getRouteFromCache();
+        }
+    }
+
+    /**
+     * 将路由中闭包进行序列化
+     */
+    protected function serializeClosureFromRoute($routes)
+    {
+        return array_map(function($route){
+            foreach($route['action'] as $key => $value){
+                if($value instanceof Closure){
+                    //将闭包函数序列化并保存到数组中
+                    ArraySetIn($route,'action.closure',serializeClosure($route['action'][$key]));
+
+                    unset($route['action'][$key]);
+                    break;
+                }
+            }
+            return $route;
+        },$routes);
     }
 
     /**

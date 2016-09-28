@@ -43,16 +43,15 @@ $router->group(['namespace'=>'App\\Controller\\'],function(Ant\Router $router){
 
     $router->group(['prefix'=>'test'],function($router){
         $router->group(['prefix' => 'demo'],function($router){
-            $router->group(['prefix' => 'index'],function($router){
-                $router->any('/{name:\w+}',function($name){
+            foreach(range(1,5000) as $value){
+                $router->get("index{$value}/{name:\\w+}",function($name){
                     echo $name;
                 });
-
-                foreach(range(1,10000) as $value){
-                    $router->get("/index{$value}/{name:\\w+}",function($name){
-                        echo $name;
-                    });
-                }
+            }
+            $router->group(['prefix' => 'index'],function($router){
+                $router->any('/',function(){
+                    echo 1223;
+                });
             });
         });
     });

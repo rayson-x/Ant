@@ -9,13 +9,15 @@ use BadFunctionCallException;
 use InvalidArgumentException;
 use Ant\Container\Container;
 use Ant\Middleware\Middleware;
+use Ant\Support\JsonFileIterator;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use FastRoute\Dispatcher;
 use FastRoute\RouteCollector;
 use FastRoute\Dispatcher\GroupCountBased;
 
-//TODO::RESTful风格路由
+//TODO::分离为多个类,以满足单一职责原则
+//TODO::RESTful风格路由,添加创建资源的方式
 //TODO::路由缓存，跳过路由组装部分
 //TODO::通过反射生成路由缓存 需要Console支持
 class Router
@@ -88,6 +90,7 @@ class Router
      * @var bool
      */
     protected $routeCacheFile = false;
+//    protected $routeCacheFile = 'route.cache.json';
 
     /**
      * 二级路由缓存,是 FastRoute 的路由缓存,将正则缓存
@@ -341,6 +344,8 @@ class Router
      */
     protected function dispatch(\Ant\Http\Request $request)
     {
+        //TODO::将一些重复代码分离出来
+        //TODO::缓存完成一半
         $method = $request->getMethod();
         $pathInfo = $request->getRequestRoute();
         $this->routeRequest = $method.$pathInfo;
@@ -360,54 +365,23 @@ class Router
                 $request->getRequestRoute()
             ));
         }else{
-            //TODO::使用协同注册路由,数据量太大时,copy将会耗费大量时间与内存
-            $this->routes = $this->getRouteFromCache();
-        }
-    }
+            foreach($this->routeCollector() as $this->routes){
+                try{
+                    if (isset($this->routes[$this->routeRequest])) {
+                        return $this->handleFoundRoute($this->routes[$this->routeRequest]['action'],[]);
+                    }
 
-    /**
-     * 从缓存中获取路由
-     */
-    protected function getRouteFromCache()
-    {
-        if(file_exists($this->routeCacheFile)){
-            return require $this->routeCacheFile;
-        }else{
-            set_time_limit(0);
-            //生成缓存文件
-            foreach($this->group as $group){
-                $this->parseRoute($group);
-            }
-
-            $this->routes = $this->serializeClosureFromRoute($this->routes);
-
-            file_put_contents(
-                $this->routeCacheFile,
-                '<?php return ' . var_export($this->routes, true) . ';'
-            );
-
-            set_time_limit(30);
-            return $this->routes;
-        }
-    }
-
-    /**
-     * 将路由中闭包进行序列化
-     */
-    protected function serializeClosureFromRoute($routes)
-    {
-        return array_map(function($route){
-            foreach($route['action'] as $key => $value){
-                if($value instanceof Closure){
-                    //将闭包函数序列化并保存到数组中
-                    ArraySetIn($route,'action.closure',serializeClosure($route['action'][$key]));
-
-                    unset($route['action'][$key]);
-                    break;
+                    return $this->handleDispatcher($this->createDispatcher()->dispatch(
+                        $request->getMethod(),
+                        $request->getRequestRoute()
+                    ));
+                }catch(\Ant\Http\Exception $e){
+                    // 捕获HTTP异常防止迭代失败
                 }
             }
-            return $route;
-        },$routes);
+
+            throw new \Ant\Http\Exception(404);
+        }
     }
 
     /**
@@ -679,6 +653,85 @@ class Router
         }
 
         return $this;
+    }
+
+    /**
+     * 创建路由缓存
+     */
+    public function createRouteCacheFile()
+    {
+        set_time_limit(0);
+        //生成缓存文件
+        foreach($this->group as $group){
+            $this->parseRoute($group);
+        }
+
+        $this->routes = $this->serializeClosureFromRoute($this->routes);
+
+        $array = array_map(function($array){
+            return safe_json_encode($array);
+        },$this->routes);
+
+        file_put_contents($this->routeCacheFile,implode("\n",$array)."\n");
+
+        set_time_limit(30);
+    }
+
+    /**
+     * 路由迭代器
+     *
+     * @return \Generator
+     */
+    protected function routeCollector()
+    {
+        $routes = [];
+        foreach($this->getRouteFromCache() as $routePath => $routeInfo){
+            //一次获取50条路由
+            if(count($routes) == 50){
+                yield $routes;
+                $routes = [];
+            }
+
+            $routes[$routePath] = $routeInfo;
+        }
+
+        //返回剩余所有路由
+        if(isset($routes)){
+            yield $routes;
+        }
+    }
+
+    /**
+     * 从缓存中获取路由
+     */
+    protected function getRouteFromCache()
+    {
+        if(file_exists($this->routeCacheFile)){
+            return new JsonFileIterator($this->routeCacheFile);
+        }else{
+            $this->createRouteCacheFile();
+
+            return $this->getRouteFromCache();
+        }
+    }
+
+    /**
+     * 将路由中闭包进行序列化
+     */
+    protected function serializeClosureFromRoute($routes)
+    {
+        return array_map(function($route){
+            foreach($route['action'] as $key => $value){
+                if($value instanceof Closure){
+                    //将闭包函数序列化并保存到数组中
+                    ArraySetIn($route,'action.closure',serializeClosure($route['action'][$key]));
+
+                    unset($route['action'][$key]);
+                    break;
+                }
+            }
+            return $route;
+        },$routes);
     }
 
     /**

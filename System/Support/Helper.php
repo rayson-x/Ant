@@ -105,6 +105,15 @@ function contains($haystack, $needles)
     return false;
 }
 
+function test(){
+    static $time = false;
+    if(!$time){
+        $time = microtime(true);
+    }elseif(isset($time)){
+        container('response')->withHeader('x-test-time',(microtime(true) - $time) * 1000);
+    }
+}
+
 /**
  * 获取错误信息
  * @param $exception
@@ -116,7 +125,7 @@ function exceptionHandle($exception){
     }
 
     $exceptionInfo = [];
-    $exceptionInfo['Exception'] = sprintf('%s(%d) %s',get_class($exception),$exception->getCode(),$exception->getMessage());
+    $exceptionInfo['Exception'] = sprintf($exception->getLine().'%s(%d) %s',get_class($exception),$exception->getCode(),$exception->getMessage());
 
     foreach(explode("\n",$exception->getTraceAsString()) as $index => $line){
         $key           = sprintf('X-Exception-Trace-%02d', $index);

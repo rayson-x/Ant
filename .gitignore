@@ -1,6 +1,6 @@
 .idea
 composer.lock
 *.log
-vendor/
+vendor
 test.php
 *.cache.php

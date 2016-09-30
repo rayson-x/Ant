@@ -16,6 +16,12 @@ use FastRoute\Dispatcher;
 use FastRoute\RouteCollector;
 use FastRoute\Dispatcher\GroupCountBased;
 
+/**
+ * 从两个点着手优化,使用路由信息添加到路由数据集中
+ * 路由集重载FastRouteCollector
+ * 将一级缓存与二级缓存合并
+ */
+
 //TODO::分离为多个类,以满足单一职责原则
 //TODO::RESTful风格路由,添加创建资源的方式
 //TODO::路由缓存，跳过路由组装部分
@@ -89,8 +95,8 @@ class Router
      *
      * @var bool
      */
-    protected $routeCacheFile = false;
-//    protected $routeCacheFile = 'route.cache.json';
+//    protected $routeCacheFile = false;
+    protected $routeCacheFile = 'route.cache.json';
 
     /**
      * 二级路由缓存,是 FastRoute 的路由缓存,将正则缓存
@@ -339,7 +345,7 @@ class Router
     /**
      * 调度传入的请求
      *
-     * @param Http\Request $request
+     * @param \Ant\Http\Request $request
      * @return array
      */
     protected function dispatch(\Ant\Http\Request $request)

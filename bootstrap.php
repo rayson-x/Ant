@@ -30,40 +30,21 @@ if(version_compare(PHP_VERSION, '7.0.0', '<')){
 
 $app = new Ant\App('App',realpath(__DIR__.'/app'));
 
-//$app->when(\FastRoute\RouteCollector::class)->needs(\FastRoute\RouteParser::class)->give(function(){
-//    return new \FastRoute\RouteParser\Std;
-//});
-//$app->when(\FastRoute\RouteCollector::class)->needs(\FastRoute\DataGenerator::class)->give(function(){
-//    return new \FastRoute\DataGenerator\GroupCountBased;
-//});
+$app->when(\FastRoute\RouteCollector::class)->needs(\FastRoute\RouteParser::class)->give(function(){
+    return new \FastRoute\RouteParser\Std;
+});
+$app->when(\FastRoute\RouteCollector::class)->needs(\FastRoute\DataGenerator::class)->give(function(){
+    return new \FastRoute\DataGenerator\GroupCountBased;
+});
+$router = new Ant\Router\Router();
 
-$router = new Ant\SimpleRouter\Router();
-//$router = new Ant\Router\Router();
+//$router = new Ant\SimpleRouter\Router();
 
-
-$router->group(['namespace'=>'App\\Controller\\'],function($router){
-    $router->get('/',function($request,$response){
-        $response->write("Ant-Framework");
-    });
-
-//    $router->any('/hello[/{name:\w+}]',function($name = 'world',$request,$response){
-//        $response->write("hello {$name}");
-//    });
-//
-//    $router->group(['prefix'=>'test'],function($router){
-//        $router->group(['prefix' => 'demo'],function($router){
-//            foreach(range(1,5000) as $value){
-//                $router->get("index{$value}/{name:\\w+}",function($name){
-//                    echo $name;
-//                });
-//            }
-//            $router->group(['prefix' => 'index'],function($router){
-//                $router->any('/',function(){
-//                    echo 1223;
-//                });
-//            });
-//        });
-//    });
+$router->get('/',function($request,$response){
+    $response->write("Ant-Framework");
+});
+$router->get('/test/{test:\w+}',function($test){
+    echo $test;
 });
 
 /* 将中间件装载到应用中 */

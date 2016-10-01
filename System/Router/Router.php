@@ -65,7 +65,7 @@ class Router implements RouterInterface
      *
      * @var
      */
-    protected $groupAttributes = null;
+    protected $groupAttributes = [];
 
     public function __construct()
     {
@@ -180,18 +180,20 @@ class Router implements RouterInterface
     {
         $route = $this->newRoute($methods, $uri, $action);
 
-        $this->routes->addRoute(
-            $route->getMethod(),
-            $route->getUri(),
-            $route->getAction()
-        );
+        foreach((array) $methods as $method){
+            $this->routes->addRoute(
+                $method,
+                $route->getUri(),
+                $route->getAction()
+            );
+        }
 
         return $route;
     }
 
     public function newRoute($method, $uri, $action)
     {
-        return new Route($method, $uri, $action,$this->groupAttributes);
+        return new Route($method, $uri, $action, $this->groupAttributes);
     }
 
     public function setDispatcher(\FastRoute\Dispatcher $dispatcher)

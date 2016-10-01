@@ -16,15 +16,11 @@ use FastRoute\RouteCollector;
 use FastRoute\Dispatcher\GroupCountBased;
 
 /**
- * 从两个点着手优化,使用路由信息添加到路由数据集中
- * 路由集重载FastRouteCollector
- * 将一级缓存与二级缓存合并
+ * 简单快捷的路由器
+ *
+ * Class Router
+ * @package Ant\SimpleRouter
  */
-
-//TODO::分离为多个类,以满足单一职责原则
-//TODO::RESTful风格路由,添加创建资源的方式
-//TODO::路由缓存，跳过路由组装部分
-//TODO::通过反射生成路由缓存 需要Console支持
 class Router
 {
     use Middleware{
@@ -237,7 +233,13 @@ class Router
 
         if(isset($this->groupAttributes)){
             //继承路由组信息
-            $uri = $this->mergeGroupPrefixAndSuffix($uri);
+            if(isset($this->groupAttributes['prefix'])){
+                $uri = trim($this->groupAttributes['prefix'],'/').'/'.trim($uri,'/');
+            }
+
+            if(isset($this->groupAttributes['suffix'])){
+                $uri = trim($uri,'/').'/'.trim($this->groupAttributes['suffix'],'/');
+            }
 
             $action = $this->mergeGroupNamespace(
                 $this->mergeMiddlewareGroup($action)
@@ -271,25 +273,6 @@ class Router
         }
 
         return $action;
-    }
-
-    /**
-     * 合并请求资源前缀与后缀
-     *
-     * @param $uri
-     * @return string
-     */
-    protected function mergeGroupPrefixAndSuffix($uri)
-    {
-        if(isset($this->groupAttributes['prefix'])){
-            $uri = trim($this->groupAttributes['prefix'],'/').'/'.trim($uri,'/');
-        }
-
-        if(isset($this->groupAttributes['suffix'])){
-            $uri = trim($uri,'/').'/'.trim($this->groupAttributes['suffix'],'/');
-        }
-
-        return $uri;
     }
 
     /**
@@ -520,6 +503,8 @@ class Router
             if(isset($attributes['cacheFile'])){
                 $this->setCacheFile($attributes['cacheFile']);
             }
+
+            $this->groupAttributes = $attributes;
 
             call_user_func($action, $this);
 

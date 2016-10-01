@@ -3,6 +3,12 @@ namespace Ant\Middleware;
 
 use Generator;
 
+/**
+ * 责任链模式
+ *
+ * Class Middleware
+ * @package Ant\Middleware
+ */
 trait Middleware{
     /**
      * 默认加载的中间件

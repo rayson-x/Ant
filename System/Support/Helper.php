@@ -105,15 +105,6 @@ function contains($haystack, $needles)
     return false;
 }
 
-function test(){
-    static $time = false;
-    if(!$time){
-        $time = microtime(true);
-    }elseif(isset($time)){
-        container('response')->withHeader('x-test-time',(microtime(true) - $time) * 1000);
-    }
-}
-
 /**
  * 获取错误信息
  * @param $exception

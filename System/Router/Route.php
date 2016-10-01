@@ -1,10 +1,12 @@
 <?php
 namespace Ant\Router;
 
+use BadFunctionCallException;
 use Ant\Interfaces\Router\RouteInterface;
 
 class Route implements RouteInterface
 {
+    use ParseGroupAttributes;
     /**
      * Http 请求
      *
@@ -34,12 +36,12 @@ class Route implements RouteInterface
     protected $middleware;
 
     /**
-     * 路由分组属性
-     *
-     * @var array
+     * Route constructor.
+     * @param $method
+     * @param $uri
+     * @param $action
+     * @param array $groupAttributes
      */
-    protected $groupAttributes;
-
     public function __construct($method,$uri,$action,array $groupAttributes = [])
     {
         $action = $this->parseAction($action);
@@ -47,34 +49,31 @@ class Route implements RouteInterface
 
         if(isset($groupAttributes)){
             //继承路由组信息
-            if(isset($this->groupAttributes['prefix'])){
-                $uri = trim($this->groupAttributes['prefix'],'/').'/'.trim($uri,'/');
-            }
-
-            if(isset($this->groupAttributes['suffix'])){
-                $uri = trim($uri,'/').'/'.trim($this->groupAttributes['suffix'],'/');
-            }
+            $uri = $this->mergeGroupPrefixAndSuffix($uri);
 
             $action = $this->mergeGroupNamespace(
                 $this->mergeMiddlewareGroup($action)
             );
         }
 
-        if(empty($action['use'])){
+        //获取路由映射的回调函数
+        if(!isset($action['use'])){
             foreach($action as $value){
                 if($value instanceof \Closure){
                     $action['use'] = $value;
                     break;
                 }
+
+                throw new BadFunctionCallException('Routing callback failed');
             }
         }
 
-        $this->uri = '/'.trim($uri,'/');
         $this->method = $method;
+        $this->uri = '/'.trim($uri,'/');
         $this->callback = $action['use'];
-        $this->middleware = $action['middleware'] ?: [];
+        $this->middleware = isset($action['middleware']) ? $action['middleware'] : [];
     }
-
+    
     /**
      * 解析行为
      *
@@ -97,40 +96,8 @@ class Route implements RouteInterface
     }
 
     /**
-     * 合并分组命名空间
+     * 获取请求方式
      *
-     * @param $action
-     * @return mixed
-     */
-    protected function mergeGroupNamespace($action)
-    {
-        if(isset($action['uses']) && isset($this->groupAttributes['namespace'])){
-            $action['uses'] = rtrim($this->groupAttributes['namespace'],'\\').'\\'.trim($action['uses'],'\\');
-        }
-
-        return $action;
-    }
-
-    /**
-     * 合并分组中间件
-     *
-     * @param $action
-     * @return mixed
-     */
-    protected function mergeMiddlewareGroup($action)
-    {
-        if (isset($this->groupAttributes['middleware'])) {
-            if (isset($action['middleware'])) {
-                $action['middleware'] = array_merge($this->groupAttributes['middleware'], (array)$action['middleware']);
-            } else {
-                $action['middleware'] = $this->groupAttributes['middleware'];
-            }
-        }
-
-        return $action;
-    }
-
-    /**
      * @return array
      */
     public function getMethod()
@@ -139,6 +106,8 @@ class Route implements RouteInterface
     }
 
     /**
+     * 获取路由Uri
+     *
      * @return string
      */
     public function getUri()
@@ -147,7 +116,17 @@ class Route implements RouteInterface
     }
 
     /**
-     * 获取用户行为
+     * 获取行为
+     *
+     * @return $this
+     */
+    public function getAction()
+    {
+        return $this;
+    }
+
+    /**
+     * 获取路由回调
      *
      * @return array
      */

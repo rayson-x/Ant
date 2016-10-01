@@ -7,7 +7,5 @@ interface RouteInterface
 
     public function getUri();
 
-    public function getCallable();
-
-    public function getMiddleware();
+    public function getAction();
 }

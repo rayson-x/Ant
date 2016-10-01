@@ -1,5 +1,5 @@
 <?php
-namespace Ant;
+namespace Ant\SimpleRouter;
 
 use Closure;
 use Exception;
@@ -9,7 +9,6 @@ use BadFunctionCallException;
 use InvalidArgumentException;
 use Ant\Container\Container;
 use Ant\Middleware\Middleware;
-use Ant\Support\JsonFileIterator;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use FastRoute\Dispatcher;
@@ -79,9 +78,7 @@ class Router
      *
      * @var array
      */
-    protected $group = [
-        '/' =>  [], //默认关键词
-    ];
+    protected $group = [];
 
     /**
      * 分组属性
@@ -91,16 +88,6 @@ class Router
     protected $groupAttributes = null;
 
     /**
-     * 一级路由缓存,属于Ant框架的缓存,所有路由路由拼装完成,然后缓存起来
-     *
-     * @var bool
-     */
-//    protected $routeCacheFile = false;
-    protected $routeCacheFile = 'route.cache.json';
-
-    /**
-     * 二级路由缓存,是 FastRoute 的路由缓存,将正则缓存
-     *
      * @var false|string
      */
     protected $FastRouteCacheFile = false;
@@ -121,24 +108,21 @@ class Router
      */
     public function group(array $attributes, Closure $action)
     {
-        $keyword = '/';
-
-        //路由器开始时禁用关键词功能
-        if(!$this->routeStartEnable && isset($attributes['keyword'])){
-            //关键词覆盖分组前缀
-            $keyword = '/'.trim($attributes['keyword']);
-            $attributes['prefix'] = $keyword;
-
-            unset($attributes['keyword']);
-        }
-
-        $group = [$attributes,$action];
-
         //开启路由之后,再进行路由分组会直接生成路由映射
         if(!$this->routeStartEnable){
-            $this->group[$keyword][] = $group;
+            $keyword = '#/#';
+
+            //路由器开始时禁用关键词功能
+            if(isset($attributes['keyword'])){
+                //关键词覆盖分组前缀
+                $keyword = $attributes['keyword'];
+            }
+
+            $this->group[$keyword][] = [$attributes,$action];
         }else{
-            $this->parseRoute([$group]);
+            $this->compileRoute([
+                [$attributes,$action]
+            ]);
         }
     }
 
@@ -342,262 +326,7 @@ class Router
         return $action;
     }
 
-    /**
-     * 调度传入的请求
-     *
-     * @param \Ant\Http\Request $request
-     * @return array
-     */
-    protected function dispatch(\Ant\Http\Request $request)
-    {
-        //TODO::将一些重复代码分离出来
-        //TODO::缓存完成一半
-        $method = $request->getMethod();
-        $pathInfo = $request->getRequestRoute();
-        $this->routeRequest = $method.$pathInfo;
 
-        //是否使用路由缓存
-        if(!$this->routeCacheFile){
-            $this->addRouteFromGroup($pathInfo);
-
-            //进行简单路由匹配
-            if (isset($this->routes[$this->routeRequest])) {
-                return $this->handleFoundRoute($this->routes[$this->routeRequest]['action'],[]);
-            }
-
-            //使用FastRoute调度器处理请求
-            return $this->handleDispatcher($this->createDispatcher()->dispatch(
-                $request->getMethod(),
-                $request->getRequestRoute()
-            ));
-        }else{
-            foreach($this->routeCollector() as $this->routes){
-                try{
-                    if (isset($this->routes[$this->routeRequest])) {
-                        return $this->handleFoundRoute($this->routes[$this->routeRequest]['action'],[]);
-                    }
-
-                    return $this->handleDispatcher($this->createDispatcher()->dispatch(
-                        $request->getMethod(),
-                        $request->getRequestRoute()
-                    ));
-                }catch(\Ant\Http\Exception $e){
-                    // 捕获HTTP异常防止迭代失败
-                }
-            }
-
-            throw new \Ant\Http\Exception(404);
-        }
-    }
-
-    /**
-     * 添加分组路由
-     *
-     * @param $pathInfo
-     */
-    protected function addRouteFromGroup($pathInfo)
-    {
-        //获取关键词
-        $keywords = array_keys(array_reverse($this->group));
-
-        //进行关键词匹配
-        foreach($keywords as $keyword){
-            if(stripos($pathInfo,$keyword) === 0){
-                $this->parseRoute($this->group[$keyword]);
-
-                break;
-            }
-        }
-    }
-
-    /**
-     * 解析路由
-     *
-     * @param array $group
-     */
-    protected function parseRoute(array $group)
-    {
-        foreach($group as list($attributes,$action)){
-            //保留父级分组属性
-            $parentGroupAttributes = $this->groupAttributes;
-
-            if (isset($attributes['middleware']) && is_string($attributes['middleware'])) {
-                $attributes['middleware'] = explode('|', $attributes['middleware']);
-            }
-
-            //设置二级缓存
-            if(isset($attributes['cacheFile'])){
-                $this->setCacheFile($attributes['cacheFile']);
-            }
-
-            //是否继承父级分组属性
-            if(isset($attributes['extend']) && $attributes['extend'] === false){
-                $this->groupAttributes = $attributes;
-            }else{
-                $this->groupAttributes = $this->extendParentGroupAttributes($attributes);
-            }
-
-            call_user_func($action, $this);
-
-            $this->groupAttributes = $parentGroupAttributes;
-        }
-    }
-
-    /**
-     * 继承父级分组属性
-     *
-     * @param array $attributes
-     * @return array
-     */
-    protected function extendParentGroupAttributes(array $attributes)
-    {
-        if($this->groupAttributes === null){
-            return $attributes;
-        }
-
-        $attributes = array_merge([
-            'prefix'    => '',
-            'suffix'    => '',
-            'namespace' => '',
-            'middleware'=> [],
-        ],$attributes);
-
-        //获取父级分组uri前缀与后缀
-        $fix = $this->mergeGroupPrefixAndSuffix(implode('-',[$attributes['prefix'],$attributes['suffix'],]));
-
-        list($attributes['prefix'],$attributes['suffix']) = explode('-',$fix);
-
-        //获取父级分组中间件
-        $attributes = $this->mergeMiddlewareGroup($attributes);
-
-        //获取父级分组命名空间
-        if(isset($this->groupAttributes['namespace'])){
-            $attributes['namespace'] = rtrim($this->groupAttributes['namespace'],'\\').'\\'.trim($attributes['namespace'],'\\');
-        }
-
-        return $attributes;
-    }
-
-    /**
-     * 处理映射成功的路由
-     *
-     * @param $action
-     * @param array $args
-     * @return array
-     */
-    protected function handleFoundRoute($action,$args = [])
-    {
-        $handle = [];
-
-        if(isset($action['middleware'])){
-            $handle = $this->gatMiddleware($action['middleware']);
-        }
-
-        //添加为最后一节中间件
-        $handle[] = function(...$params)use($action,$args){
-            $this->callAction($action,array_merge($args,$params));
-        };
-
-        return $handle;
-    }
-
-    /**
-     * 处理路由调度器返回数据
-     *
-     * @param $routeInfo
-     * @return array
-     */
-    protected function handleDispatcher($routeInfo)
-    {
-        switch ($routeInfo[0]) {
-            case Dispatcher::NOT_FOUND:
-                throw new \Ant\Http\Exception(404);
-
-            case Dispatcher::METHOD_NOT_ALLOWED:
-                throw new \Ant\Http\Exception(405);
-
-            case Dispatcher::FOUND:
-                return $this->handleFoundRoute($routeInfo[1],$routeInfo[2]);
-
-            default:
-                throw new RuntimeException('The dispatcher returns the invalid parameter');
-        }
-    }
-
-    /**
-     * 加载路由使用的中间件
-     *
-     * @param $middleware
-     * @return array
-     */
-    protected function gatMiddleware($middleware)
-    {
-        $middleware = is_string($middleware) ? explode('|', $middleware) : (array) $middleware;
-
-        return array_map(function($name){
-            $middleware = isset($this->handlers[$name]) ? $this->handlers[$name] : $name;
-
-            //获取可以回调的路由
-            if(is_string($middleware)){
-                return $this->container->make($middleware);
-            }elseif($middleware instanceof Closure){
-                return $middleware;
-            }
-
-            throw new InvalidArgumentException("Middleware [$middleware] does not exist");
-        },$middleware);
-    }
-
-    /**
-     * 调用基于数组的路由
-     *
-     * @param $action
-     * @param array $args
-     * @return mixed
-     */
-    protected function callAction($action,$args = [])
-    {
-        if(isset($action['closure'])){
-            //反序列化闭包函数
-            $action['closure'] = unserializeClosure($action['closure']);
-        }
-
-        if(isset($action['uses'])){
-            return $this->callController($action['uses'],$args);
-        }
-
-        foreach($action as $value){
-            if($value instanceof Closure){
-                return $this->container->call($value,$args);
-            }
-        }
-
-        throw new BadFunctionCallException('Routing callback failed');
-    }
-
-    /**
-     * 基于“控制器@方法”的方式调用
-     *
-     * @param $uses
-     * @param array $args
-     * @return mixed
-     */
-    protected function callController($uses,$args = [])
-    {
-        if (is_string($uses) && ! strpos($uses, '@') === false) {
-            $uses .= '@__invoke';
-        }
-
-        list($controller, $method) = explode('@', $uses);
-
-        if (!method_exists($instance = $this->container->make($controller), $method)) {
-            throw new \Ant\Http\Exception(404);
-        }
-
-        return $this->container->call(
-            [$instance, $method], $args
-        );
-    }
 
     /**
      * 获取路由调度器
@@ -662,85 +391,6 @@ class Router
     }
 
     /**
-     * 创建路由缓存
-     */
-    public function createRouteCacheFile()
-    {
-        set_time_limit(0);
-        //生成缓存文件
-        foreach($this->group as $group){
-            $this->parseRoute($group);
-        }
-
-        $this->routes = $this->serializeClosureFromRoute($this->routes);
-
-        $array = array_map(function($array){
-            return safe_json_encode($array);
-        },$this->routes);
-
-        file_put_contents($this->routeCacheFile,implode("\n",$array)."\n");
-
-        set_time_limit(30);
-    }
-
-    /**
-     * 路由迭代器
-     *
-     * @return \Generator
-     */
-    protected function routeCollector()
-    {
-        $routes = [];
-        foreach($this->getRouteFromCache() as $routePath => $routeInfo){
-            //一次获取50条路由
-            if(count($routes) == 50){
-                yield $routes;
-                $routes = [];
-            }
-
-            $routes[$routePath] = $routeInfo;
-        }
-
-        //返回剩余所有路由
-        if(isset($routes)){
-            yield $routes;
-        }
-    }
-
-    /**
-     * 从缓存中获取路由
-     */
-    protected function getRouteFromCache()
-    {
-        if(file_exists($this->routeCacheFile)){
-            return new JsonFileIterator($this->routeCacheFile);
-        }else{
-            $this->createRouteCacheFile();
-
-            return $this->getRouteFromCache();
-        }
-    }
-
-    /**
-     * 将路由中闭包进行序列化
-     */
-    protected function serializeClosureFromRoute($routes)
-    {
-        return array_map(function($route){
-            foreach($route['action'] as $key => $value){
-                if($value instanceof Closure){
-                    //将闭包函数序列化并保存到数组中
-                    ArraySetIn($route,'action.closure',serializeClosure($route['action'][$key]));
-
-                    unset($route['action'][$key]);
-                    break;
-                }
-            }
-            return $route;
-        },$routes);
-    }
-
-    /**
      * 添加中间件
      *
      * @param $handlers
@@ -786,7 +436,7 @@ class Router
      * @param $request
      * @param $response
      */
-    public function execute($request,$response)
+    public function run($request,$response)
     {
         try{
             //启动路由器
@@ -804,5 +454,192 @@ class Router
         }finally{
             $this->routeStartEnable = false;
         }
+    }
+
+    /**
+     * 调度传入的请求
+     *
+     * @param \Ant\Http\Request $request
+     * @return array
+     */
+    protected function dispatch(\Ant\Http\Request $request)
+    {
+        $method = $request->getMethod();
+        $pathInfo = $request->getRequestRoute();
+        $this->routeRequest = $method.$pathInfo;
+
+        $this->addRouteFromGroup($pathInfo);
+
+        //进行简单路由匹配
+        if (isset($this->routes[$this->routeRequest])) {
+            return $this->handleFoundRoute($this->routes[$this->routeRequest]['action'],[]);
+        }
+
+        //使用FastRoute调度器处理请求
+        return $this->handleDispatcher(
+            $this->createDispatcher()->dispatch($method,$pathInfo)
+        );
+    }
+
+    /**
+     * 添加分组路由
+     *
+     * @param $pathInfo
+     */
+    protected function addRouteFromGroup($pathInfo)
+    {
+        //获取关键词
+        $keywords = array_keys(array_reverse($this->group));
+
+        //进行关键词匹配
+        foreach($keywords as $keyword){
+            if(preg_match($keyword,$pathInfo) === 1) {
+                $this->compileRoute($this->group[$keyword]);
+
+                break;
+            }
+        }
+    }
+
+    /**
+     * 解析路由
+     *
+     * @param array $group
+     */
+    protected function compileRoute(array $group)
+    {
+        foreach($group as list($attributes,$action)){
+            //保留父级分组属性
+            $parentGroupAttributes = $this->groupAttributes;
+
+            if (isset($attributes['middleware']) && is_string($attributes['middleware'])) {
+                $attributes['middleware'] = explode('|', $attributes['middleware']);
+            }
+
+            //设置二级缓存
+            if(isset($attributes['cacheFile'])){
+                $this->setCacheFile($attributes['cacheFile']);
+            }
+
+            call_user_func($action, $this);
+
+            $this->groupAttributes = $parentGroupAttributes;
+        }
+    }
+
+    /**
+     * 处理映射成功的路由
+     *
+     * @param $action
+     * @param array $args
+     * @return array
+     */
+    protected function handleFoundRoute($action,$args = [])
+    {
+        $handle = [];
+
+        if(isset($action['middleware'])){
+            $handle = $this->createMiddleware($action['middleware']);
+        }
+
+        //添加为最后一节中间件
+        $handle[] = function(...$params)use($action,$args){
+            $this->callAction($action,array_merge($args,$params));
+        };
+
+        return $handle;
+    }
+
+    /**
+     * 处理路由调度器返回数据
+     *
+     * @param $routeInfo
+     * @return array
+     */
+    protected function handleDispatcher($routeInfo)
+    {
+        switch ($routeInfo[0]) {
+            case Dispatcher::NOT_FOUND:
+                throw new \Ant\Http\Exception(404);
+
+            case Dispatcher::METHOD_NOT_ALLOWED:
+                throw new \Ant\Http\Exception(405);
+
+            case Dispatcher::FOUND:
+                return $this->handleFoundRoute($routeInfo[1],$routeInfo[2]);
+
+            default:
+                throw new RuntimeException('The dispatcher returns the invalid parameter');
+        }
+    }
+
+    /**
+     * 加载路由使用的中间件
+     *
+     * @param $middleware
+     * @return array
+     */
+    protected function createMiddleware($middleware)
+    {
+        $middleware = is_string($middleware) ? explode('|', $middleware) : (array) $middleware;
+
+        return array_map(function($name){
+            $middleware = isset($this->handlers[$name]) ? $this->handlers[$name] : $name;
+
+            //获取可以回调的路由
+            if(is_string($middleware)){
+                return $this->container->make($middleware);
+            }elseif($middleware instanceof Closure){
+                return $middleware;
+            }
+
+            throw new InvalidArgumentException("Middleware [$middleware] does not exist");
+        },$middleware);
+    }
+
+    /**
+     * 调用基于数组的路由
+     *
+     * @param $action
+     * @param array $args
+     * @return mixed
+     */
+    protected function callAction($action,$args = [])
+    {
+        if(isset($action['uses'])){
+            return $this->callController($action['uses'],$args);
+        }
+
+        foreach($action as $value){
+            if($value instanceof Closure){
+                return $this->container->call($value,$args);
+            }
+        }
+
+        throw new BadFunctionCallException('Routing callback failed');
+    }
+
+    /**
+     * 基于“控制器@方法”的方式调用
+     *
+     * @param $uses
+     * @param array $args
+     * @return mixed
+     */
+    protected function callController($uses,$args = [])
+    {
+        if (is_string($uses) && ! strpos($uses, '@') === false) {
+            $uses .= '@__invoke';
+        }
+
+        list($controller, $method) = explode('@', $uses);
+
+        if (!method_exists($instance = $this->container->make($controller), $method)) {
+            throw new \Ant\Http\Exception(404);
+        }
+
+        return $this->container->call(
+            [$instance, $method], $args
+        );
     }
 }

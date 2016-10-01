@@ -5,7 +5,7 @@ Interface RouterInterface
 {
     public function group(array $attributes,\Closure $action);
 
-    public function addRoute($method,$uri,$action);
+    public function map($method,$uri,$action);
 
     public function setDispatcher(\FastRoute\Dispatcher $dispatcher);
 

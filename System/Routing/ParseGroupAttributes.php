@@ -1,5 +1,5 @@
 <?php
-namespace Ant\Router;
+namespace Ant\Routing;
 
 
 trait ParseGroupAttributes

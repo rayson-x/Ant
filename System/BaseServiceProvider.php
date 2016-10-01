@@ -49,8 +49,6 @@ class BaseServiceProvider implements ServiceProviderInterface
         $container->bindIf([Response::class => 'response'],function(){
             return new Response();
         },true);
-
-        $container->singleton([\SuperClosure\Serializer::class => 'serialize']);
     }
 
     /**

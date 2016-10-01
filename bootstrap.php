@@ -28,23 +28,23 @@ if(version_compare(PHP_VERSION, '7.0.0', '<')){
 //TODO::单元测试
 //TODO::Console
 
-$app = new Ant\App('App',realpath(__DIR__.'/app'));
+$app = new Ant\App(
+    realpath(__DIR__.'/app')
+);
 
-$app->when(\FastRoute\RouteCollector::class)->needs(\FastRoute\RouteParser::class)->give(function(){
-    return new \FastRoute\RouteParser\Std;
-});
-$app->when(\FastRoute\RouteCollector::class)->needs(\FastRoute\DataGenerator::class)->give(function(){
-    return new \FastRoute\DataGenerator\GroupCountBased;
-});
-$router = new Ant\Router\Router();
+$router = new Ant\Routing\Router();
 
 //$router = new Ant\SimpleRouter\Router();
+$router->group(['namespace' => 'App\\Controller'],function($router){
+    $router->get('/',"IndexController@index");
 
-$router->get('/',function($request,$response){
-    $response->write("Ant-Framework");
-});
-$router->get('/test/{test:\w+}',function($test){
-    echo $test;
+    $router->get('/test/{test:\w+}',function($test){
+        echo $test;
+    });
+
+    foreach(range(0,5000) as $num){
+        $router->get("/index{$num}","IndexController@index");
+    }
 });
 
 /* 将中间件装载到应用中 */

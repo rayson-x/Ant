@@ -62,18 +62,18 @@ class App{
     protected $exceptionHandler;
 
     /**
-     * 创建Ant框架核心应用
-     *
      * App constructor.
+     * @param string $namespace
+     * @param string $path
      */
-    public function __construct($namespache = '/',$path = '/')
+    public function __construct($path = '/')
     {
         $this->container = Container::getInstance();
 
         $this->register(BaseServiceProvider::class);
 
         //注册应用程序命名空间
-        $this->registerNamespace($namespache,$path);
+        $this->registerNamespace('App',$path);
     }
 
     /**

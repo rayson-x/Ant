@@ -1,9 +1,15 @@
 <?php
-namespace Ant\Router;
+namespace Ant\Routing;
 
 use BadFunctionCallException;
 use Ant\Interfaces\Router\RouteInterface;
 
+/**
+ * TODO::更灵活的路由,可以修改路由任意属性
+ *
+ * Class Route
+ * @package Ant\Routing
+ */
 class Route implements RouteInterface
 {
     use ParseGroupAttributes;
@@ -57,10 +63,10 @@ class Route implements RouteInterface
         }
 
         //获取路由映射的回调函数
-        if(!isset($action['use'])){
+        if(!isset($action['uses'])){
             foreach($action as $value){
                 if($value instanceof \Closure){
-                    $action['use'] = $value;
+                    $action['uses'] = $value;
                     break;
                 }
 
@@ -70,7 +76,7 @@ class Route implements RouteInterface
 
         $this->method = $method;
         $this->uri = '/'.trim($uri,'/');
-        $this->callback = $action['use'];
+        $this->callback = $action['uses'];
         $this->middleware = isset($action['middleware']) ? $action['middleware'] : [];
     }
     

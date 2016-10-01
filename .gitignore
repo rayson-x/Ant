@@ -4,3 +4,4 @@ composer.lock
 vendor
 test.php
 *.cache.php
+app

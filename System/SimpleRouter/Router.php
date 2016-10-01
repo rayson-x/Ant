@@ -18,7 +18,7 @@ use FastRoute\Dispatcher\GroupCountBased;
 /**
  * 简单快捷的路由器
  *
- * Class Router
+ * Class Routing
  * @package Ant\SimpleRouter
  */
 class Router
@@ -89,7 +89,7 @@ class Router
     protected $FastRouteCacheFile = false;
 
     /**
-     * Router constructor.
+     * Routing constructor.
      */
     public function __construct()
     {
@@ -361,13 +361,13 @@ class Router
     protected function setCacheFile($cacheFile)
     {
         if (!is_string($cacheFile) && $cacheFile !== false) {
-            throw new InvalidArgumentException('Router cacheFile must be a string or false');
+            throw new InvalidArgumentException('Routing cacheFile must be a string or false');
         }
 
         $this->FastRouteCacheFile = $cacheFile;
 
         if ($cacheFile !== false && !is_writable(dirname($cacheFile))) {
-            throw new RuntimeException('Router cacheFile directory must be writable');
+            throw new RuntimeException('Routing cacheFile directory must be writable');
         }
 
         return $this;

@@ -1,13 +1,20 @@
 <?php
-namespace Ant\Router;
+namespace Ant\Routing;
 
 use RuntimeException;
 use InvalidArgumentException;
 use FastRoute\Dispatcher;
+use FastRoute\RouteCollector;
 use Ant\Container\Container;
 use Ant\Middleware\Middleware;
 use Ant\Interfaces\Router\RouterInterface;
 
+/**
+ * TODO::待重构“关键词”功能
+ *
+ * Class Routing
+ * @package Ant\Routing
+ */
 class Router implements RouterInterface
 {
     use Middleware,ParseGroupAttributes;
@@ -26,13 +33,6 @@ class Router implements RouterInterface
     protected $routeStartEnable = false;
 
     /**
-     * 异常处理函数
-     *
-     * @var false|callable
-     */
-    protected $exceptionHandle = false;
-
-    /**
      * 请求的路由
      *
      * @var string
@@ -42,9 +42,16 @@ class Router implements RouterInterface
     /**
      * 路由
      *
-     * @var RouteCollector
+     * @var array
      */
-    protected $routes;
+    protected $routes = [];
+
+    /**
+     * 快速匹配路由
+     *
+     * @var array
+     */
+    protected $fastRoute = [];
 
     /**
      * 调度器
@@ -67,24 +74,25 @@ class Router implements RouterInterface
      */
     protected $groupAttributes = [];
 
+    /**
+     * @var bool
+     */
+    protected $cacheFile = false;
+
     public function __construct()
     {
         $this->container = Container::getInstance();
-        $this->routes = $this->container->make(\FastRoute\RouteCollector::class);
     }
 
+    /**
+     * @param array $attributes
+     * @param \Closure $action
+     */
     public function group(array $attributes, \Closure $action)
     {
         //开启路由之后,再进行路由分组会直接生成路由映射
         if(!$this->routeStartEnable){
-            $keyword = '##';
-
-            //路由器开始时禁用关键词功能
-            if(isset($attributes['keyword'])){
-                $keyword = $attributes['keyword'];
-            }
-
-            $this->group[$keyword][] = [$attributes,$action];
+            $this->group[] = [$attributes,$action];
         }else{
             $this->compileRoute([
                 [$attributes,$action]
@@ -176,80 +184,107 @@ class Router implements RouterInterface
         return $this->map(['GET','POST','PUT','DELETE','HEAD','PATCH'],$uri,$action);
     }
 
+    /**
+     * @param $methods
+     * @param $uri
+     * @param $action
+     * @return Route
+     */
     public function map($methods, $uri, $action)
     {
         $route = $this->newRoute($methods, $uri, $action);
 
+        $this->routes[] = $route;
+
         foreach((array) $methods as $method){
-            $this->routes->addRoute(
-                $method,
-                $route->getUri(),
-                $route->getAction()
-            );
+            $this->fastRoute[$method.$route->getUri()] = $route;
         }
 
         return $route;
     }
 
-    public function newRoute($method, $uri, $action)
+    /**
+     * @param $methods
+     * @param $uri
+     * @param $action
+     * @return Route
+     */
+    public function newRoute($methods, $uri, $action)
     {
-        return new Route($method, $uri, $action, $this->groupAttributes);
-    }
-
-    public function setDispatcher(\FastRoute\Dispatcher $dispatcher)
-    {
-
-    }
-
-    public function createDispatcher()
-    {
-        return new \FastRoute\Dispatcher\GroupCountBased($this->routes->getData());
+        return new Route($methods, $uri, $action, $this->groupAttributes);
     }
 
     /**
-     * @param \Psr\Http\Message\ServerRequestInterface $request
-     * @return array
+     * @param Dispatcher $dispatcher
      */
-    public function dispatch(\Psr\Http\Message\ServerRequestInterface $request)
+    public function setDispatcher(Dispatcher $dispatcher)
     {
-        $this->routeRequest = $request->getMethod().$request->getRequestRoute();
-
-        $this->addRouteFromGroup($request->getRequestRoute());
-
-        return $this->handleDispatcher($this->createDispatcher()->dispatch(
-            $request->getMethod(),
-            $request->getRequestRoute()
-        ));
+        $this->dispatcher = $dispatcher;
     }
 
     /**
-     * 添加分组路由
-     *
-     * @param $pathInfo
+     * @return \FastRoute\Dispatcher\GroupCountBased
      */
-    protected function addRouteFromGroup($pathInfo)
+    protected function createDispatcher()
     {
-        //获取关键词
-        $keywords = array_keys(array_reverse($this->group));
+        if (!$this->dispatcher) {
+            $routeDefinitionCallback = function (RouteCollector $r) {
+                foreach ($this->routes as $route) {
+                    $r->addRoute($route->getMethod(), $route->getUri(), $route->getAction());
+                }
+            };
 
-        //进行关键词匹配
-        foreach($keywords as $keyword){
-            if(preg_match($keyword,$pathInfo) === 1){
-                $this->compileRoute($this->group[$keyword]);
-
-                break;
+            if ($this->cacheFile) {
+                $this->dispatcher = \FastRoute\cachedDispatcher($routeDefinitionCallback,[
+                    'cacheDisabled' => true,
+                    'cacheFile' => $this->cacheFile,
+                ]);
+            } else {
+                $this->dispatcher = \FastRoute\simpleDispatcher($routeDefinitionCallback);
             }
         }
+
+        return $this->dispatcher;
+    }
+
+    /**
+     * @param $request
+     * @return array
+     */
+    public function dispatch($request = null)
+    {
+        list($method,$pathInfo) = $this->parseIncomingRequest($request);
+
+        $this->compileRoute($this->group);
+
+        if(isset($this->fastRoute[$method.$pathInfo])){
+            return $this->handleFoundRoute(
+                $this->fastRoute[$method.$pathInfo]
+            );
+        }
+
+        return $this->handleDispatcher(
+            $this->createDispatcher()->dispatch($method,$pathInfo)
+        );
+    }
+
+    /**
+     * @param $request
+     * @return array
+     */
+    protected function parseIncomingRequest($request)
+    {
+        return [$request->getMethod(),$request->getRequestRoute()];
     }
 
     /**
      * 将分组编译为符合规范的路由
      *
-     * @param array $group
+     * @param $routeGroup array
      */
-    protected function compileRoute(array $group)
+    protected function compileRoute(array $routeGroup)
     {
-        foreach($group as list($attributes,$action)){
+        foreach($routeGroup as list($attributes,$action)){
             //保留父级分组属性
             $parentGroupAttributes = $this->groupAttributes;
 
@@ -386,7 +421,7 @@ class Router implements RouterInterface
     {
         $callback = $action->getCallable();
 
-        if (is_string($callback) && ! strpos($callback, '@') === false) {
+        if (is_string($callback) && strpos($callback, '@') === false) {
             $callback .= '@__invoke';
         }
 
@@ -397,13 +432,19 @@ class Router implements RouterInterface
         }
     }
 
-    public function run(\Ant\Http\Request $req,$res)
+    /**
+     * @param $req
+     * @param $res
+     */
+    public function run($req,$res)
     {
-        $this->routeStartEnable = true;
+        try{
+            //启动路由器
+            $this->routeStartEnable = true;
 
-        $this->execute(
-            $this->dispatch($req),
-            [$req,$res]
-        );
+            $this->execute($this->dispatch($req),[$req,$res]);
+        }finally{
+            $this->routeStartEnable = false;
+        }
     }
 }

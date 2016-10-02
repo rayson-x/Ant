@@ -30,7 +30,7 @@ class Route implements RouteInterface
     /**
      * 回调的函数
      *
-     * @var callable
+     * @var callable|string
      */
     protected $callback;
 
@@ -39,7 +39,14 @@ class Route implements RouteInterface
      *
      * @var array
      */
-    protected $middleware;
+    protected $middleware = [];
+
+    /**
+     * 参数
+     *
+     * @var array
+     */
+    protected $arguments = [];
 
     /**
      * Route constructor.
@@ -149,5 +156,78 @@ class Route implements RouteInterface
     public function getMiddleware()
     {
         return $this->middleware;
+    }
+
+    /**
+     * 替换现有中间件
+     *
+     * @param $middleware
+     */
+    public function replaceMiddleware($middleware)
+    {
+        $this->middleware = $middleware;
+    }
+
+    /**
+     * 添加一个中间件
+     *
+     * @param $middleware
+     */
+    public function setMiddleware($middleware)
+    {
+        $this->middleware[] = $middleware;
+    }
+
+    /**
+     * 重置中间件
+     */
+    public function resetMiddleware()
+    {
+        $this->middleware = [];
+    }
+
+    /**
+     * 获取一个默认路由参数
+     *
+     * @param $name
+     * @param null $default
+     * @return mixed|null
+     */
+    public function getArgument($name, $default = null)
+    {
+        return array_key_exists($name,$this->arguments)
+            ? $this->arguments[$name]
+            : $default;
+    }
+
+    /**
+     * 获取所有默认路由参数
+     *
+     * @return array
+     */
+    public function getArguments()
+    {
+        return $this->arguments;
+    }
+
+    /**
+     * 设置一个默认的路由参数
+     *
+     * @param $name
+     * @param null $default
+     */
+    public function setArgument($name, $default = null)
+    {
+        $this->arguments[$name] = $default;
+    }
+
+    /**
+     * 设置一组默认的路由参数
+     *
+     * @param array $arguments
+     */
+    public function setArguments(array $arguments)
+    {
+        $this->arguments = $arguments;
     }
 }

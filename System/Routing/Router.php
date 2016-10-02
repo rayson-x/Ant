@@ -420,6 +420,7 @@ class Router implements RouterInterface
     protected function callAction(Route $action,$args = [])
     {
         $callback = $action->getCallable();
+        $args = array_merge($action->getArguments(),$args);
 
         if (is_string($callback) && strpos($callback, '@') === false) {
             $callback .= '@__invoke';

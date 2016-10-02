@@ -40,11 +40,7 @@ $router->group(['namespace' => 'App\\Controller'],function($router){
 
     $router->get('/test/{test:\w+}',function($test){
         echo $test;
-    });
-
-    foreach(range(0,5000) as $num){
-        $router->get("/index{$num}","IndexController@index");
-    }
+    })->setArgument('test','test');
 });
 
 /* 将中间件装载到应用中 */

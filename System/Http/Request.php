@@ -381,10 +381,7 @@ class Request extends Message implements ServerRequestInterface{
             return null;
         }
 
-        $contentType = $this->getContentType();
-        $parts = explode('/',$contentType,2);
-        $type = trim($parts[0],'/');
-        $subtype = trim($parts[1],'/');
+        list($type,$subtype) = explode('/',$this->getContentType(),2);
 
         if(in_array(strtolower($type),['application','text']) && isset($this->bodyParsers[$subtype])){
             //调用body解析函数

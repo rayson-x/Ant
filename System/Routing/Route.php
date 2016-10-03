@@ -5,8 +5,6 @@ use BadFunctionCallException;
 use Ant\Interfaces\Router\RouteInterface;
 
 /**
- * TODO::更灵活的路由,可以修改路由任意属性
- *
  * Class Route
  * @package Ant\Routing
  */
@@ -162,28 +160,35 @@ class Route implements RouteInterface
      * 替换现有中间件
      *
      * @param $middleware
+     * @return self $this
      */
     public function replaceMiddleware($middleware)
     {
         $this->middleware = $middleware;
+        return $this;
     }
 
     /**
      * 添加一个中间件
      *
      * @param $middleware
+     * @return self $this
      */
     public function setMiddleware($middleware)
     {
         $this->middleware[] = $middleware;
+        return $this;
     }
 
     /**
      * 重置中间件
+     *
+     * @return self $this;
      */
     public function resetMiddleware()
     {
         $this->middleware = [];
+        return $this;
     }
 
     /**
@@ -215,10 +220,12 @@ class Route implements RouteInterface
      *
      * @param $name
      * @param null $default
+     * @return static $this
      */
     public function setArgument($name, $default = null)
     {
         $this->arguments[$name] = $default;
+        return $this;
     }
 
     /**

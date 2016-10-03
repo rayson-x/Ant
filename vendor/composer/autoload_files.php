@@ -8,4 +8,5 @@ $baseDir = dirname($vendorDir);
 return array(
     'bd9634f2d41831496de0d3dfe4c94881' => $vendorDir . '/symfony/polyfill-php56/bootstrap.php',
     '253c157292f75eb38082b5acb06f3f01' => $vendorDir . '/nikic/fast-route/src/functions.php',
+    '28a36ef88cebfa6ce46eb4c5cbec9c19' => $baseDir . '/system/Support/Helper.php',
 );

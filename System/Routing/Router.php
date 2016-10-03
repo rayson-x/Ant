@@ -17,7 +17,7 @@ use Ant\Interfaces\Router\RouterInterface;
  */
 class Router implements RouterInterface
 {
-    use Middleware,ParseGroupAttributes;
+    use ParseGroupAttributes;
     /**
      * 服务容器
      *
@@ -66,6 +66,20 @@ class Router implements RouterInterface
      * @var array
      */
     protected $group = [];
+
+    /**
+     * 装载的中间件
+     *
+     * @var array
+     */
+    protected $middleware = [];
+
+    /**
+     *
+     *
+     * @var array
+     */
+    protected $routeMiddleware = [];
 
     /**
      * 分组属性
@@ -248,8 +262,8 @@ class Router implements RouterInterface
     }
 
     /**
-     * @param $request
-     * @return array
+     * @param null $request
+     * @return \Closure
      */
     public function dispatch($request = null)
     {
@@ -274,7 +288,11 @@ class Router implements RouterInterface
      */
     protected function parseIncomingRequest($request)
     {
-        return [$request->getMethod(),$request->getRequestRoute()];
+        if($request instanceof \Ant\Http\Request){
+            return [$request->getMethod(),$request->getRequestRoute()];
+        }else{
+            //TODO::通过自己的处理方式获取请求信息
+        }
     }
 
     /**
@@ -344,7 +362,7 @@ class Router implements RouterInterface
      * 处理路由调度器返回数据
      *
      * @param $routeInfo
-     * @return array
+     * @return \Closure
      */
     protected function handleDispatcher($routeInfo)
     {
@@ -366,24 +384,19 @@ class Router implements RouterInterface
     /**
      * 处理映射成功的路由
      *
-     * @param $action Route
+     * @param Route $action
      * @param array $args
-     * @return array
+     * @return \Closure
      */
     protected function handleFoundRoute(Route $action,$args = [])
     {
-        $handle = [];
-
-        if($action->getMiddleware()){
-            $handle = $this->createMiddleware($action->getMiddleware());
+        if($handle = $action->getMiddleware()){
+            $this->routeMiddleware = $this->createMiddleware($action->getMiddleware());
         }
 
-        //添加为最后一节中间件
-        $handle[] = function(...$params)use($action,$args){
+        return function(...$params)use($action,$args){
             $this->callAction($action,array_merge($args,$params));
         };
-
-        return $handle;
     }
 
     /**
@@ -396,11 +409,11 @@ class Router implements RouterInterface
     {
         $middleware = is_string($middleware) ? explode('|', $middleware) : (array) $middleware;
 
-        return array_map(function($name){
-            $middleware = isset($this->handlers[$name]) ? $this->handlers[$name] : $name;
-
+        return array_map(function($middleware){
             //获取可以回调的路由
             if(is_string($middleware)){
+                $middleware = isset($this->$middleware[$middleware]) ? $this->$middleware[$middleware] : $middleware;
+
                 return $this->container->make($middleware);
             }elseif($middleware instanceof \Closure){
                 return $middleware;
@@ -436,14 +449,20 @@ class Router implements RouterInterface
     /**
      * @param $req
      * @param $res
+     * @return null|mixed
      */
     public function run($req,$res)
     {
         try{
             //启动路由器
             $this->routeStartEnable = true;
+            
+            $routeCallback = $this->dispatch($req);
 
-            $this->execute($this->dispatch($req),[$req,$res]);
+            return (new Middleware)
+                ->send($req,$res)
+                ->through($this->routeMiddleware)
+                ->then($routeCallback);
         }finally{
             $this->routeStartEnable = false;
         }

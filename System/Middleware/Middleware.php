@@ -4,12 +4,13 @@ namespace Ant\Middleware;
 use Generator;
 
 /**
- * 责任链模式
+ * 管道模式,并非责任链模式
+ * 此模式中除非打断调用链,不然每个回调都必将执行
  *
  * Class Middleware
  * @package Ant\Middleware
  */
-trait Middleware{
+class Middleware{
     /**
      * 默认加载的中间件
      *
@@ -24,89 +25,62 @@ trait Middleware{
      */
     protected $arguments;
 
-    public function addMiddleware(callable $handler)
+    /**
+     * 设置在中间件中传输的参数
+     *
+     * @param $arguments
+     * @return self $this
+     */
+    public function send(...$arguments)
     {
-        $this->handlers[] = $handler;
-
+        $this->arguments = $arguments;
         return $this;
     }
 
     /**
-     * 设置中间件传输参数
+     * 设置经过的中间件
      *
-     * @param $arguments
+     * @param $handle
+     * @return $this
      */
-    public function withArguments($arguments)
+    public function through($handle)
     {
-        $this->arguments = $arguments;
+        $this->handlers = is_array($handle) ? $handle : func_get_args();
+        return $this;
     }
 
     /**
-     * 获取传递给每个中间件的参数
+     * 运行中间件到达最后回调函数
      *
-     * @param array $arguments
-     * @return array
+     * @param \Closure $destination
+     * @return null|mixed
      */
-    public function getArguments($arguments = [])
+    public function then(\Closure $destination)
     {
-        if(is_callable($this->arguments)){
-            return call_user_func($this->arguments,$arguments);
-        }
-        if(is_array($this->arguments)){
-            return $this->arguments;
-        }
-
-        return array_merge((array)$this->arguments ,$arguments);
-    }
-
-    /**
-     * 执行中间件
-     *
-     * @param array $handlers
-     * @param array $arguments
-     * @return null|void
-     */
-    public function execute($handlers = [] , $arguments = [])
-    {
-        $handlers = $handlers ?: $this->handlers;
-        if (!$handlers) {
-            return ;
-        }
-
-
-        //函数栈
         $stack = [];
-        $result = null;
-        $args = $this->getArguments($arguments);
-
-        foreach ($handlers as $handler) {
-            // 每次循环之前重置，只能保存最后一个处理程序的返回值
-            $result = null;
-            $generator = call_user_func_array($handler, $args);
+        foreach ($this->handlers as $handler) {
+            $generator = call_user_func_array($handler, $this->arguments);
 
             if ($generator instanceof Generator) {
                 $stack[] = $generator;
 
                 $yieldValue = $generator->current();
-
                 if ($yieldValue === false) {
                     break;
                 }elseif($yieldValue instanceof Arguments){
-                    $args = $yieldValue;
+                    //替换传递参数
+                    $this->arguments = $yieldValue->toArray();
                 }
-            } elseif ($generator !== null) {
-                // 回调参数
-                $result = $generator;
             }
         }
 
-        $return = ($result !== null);
-
+        $result = $destination(...$this->arguments);
+        $isSend = ($result !== null);
         $getReturnValue = version_compare(PHP_VERSION, '7.0.0', '>=');
         //重入函数栈
         while ($generator = array_pop($stack)) {
             /* @var $generator Generator */
-            if ($return) {
+            if ($isSend) {
                 $generator->send($result);
             }else{
                 $generator->next();
@@ -114,20 +88,12 @@ trait Middleware{
 
             if ($getReturnValue) {
                 $result = $generator->getReturn();
-                $return = ($result !== null);
+                $isSend = ($result !== null);
             }else{
-                $return = false;
+                $isSend = false;
             }
         }
 
         return $result;
-    }
-
-    /**
-     * 重置中间件
-     */
-    public function reset()
-    {
-        $this->handlers = [];
     }
 }

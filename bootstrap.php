@@ -1,6 +1,5 @@
 <?php
 include 'vendor/autoload.php';
-include 'system/Support/Helper.php';
 
 /**
  * php7错误跟异常都继承于Throwable,可以用try...catch的方式来捕获程序中的错误
@@ -10,7 +9,6 @@ if(version_compare(PHP_VERSION, '7.0.0', '<')){
         throw new \ErrorException($errstr, $errno, $errno, $errfile, $errline);
     });
 }
-
 //基础功能
 //TODO::Config类
 //TODO::日志功能 , psr-3 引入或自己开发
@@ -35,12 +33,12 @@ $app = new Ant\App(
 $router = new Ant\Routing\Router();
 
 //$router = new Ant\SimpleRouter\Router();
+$router->get('/test',function(){
+    echo 123;
+});
+
 $router->group(['namespace' => 'App\\Controller'],function($router){
     $router->get('/',"IndexController@index");
-
-    $router->get('/test/{test:\w+}',function($test){
-        echo $test;
-    })->setArgument('test','test');
 });
 
 /* 将中间件装载到应用中 */
@@ -50,4 +48,7 @@ $app->addMiddleware(function (Ant\Http\Request $request,Ant\Http\Response $respo
     $response->withHeader('x-run-time',(microtime(true) - START) * 1000);
 });
 
-$app->addMiddleware([$router,'run']);
+$app->setApplicationKernel(function($res,$req)use($router){
+    return $router->run($res,$req);
+});
+

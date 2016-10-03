@@ -2,6 +2,8 @@
 namespace Ant;
 
 use Ant\Container\Container;
+use Ant\Http\Request;
+use Ant\Http\Response;
 use Ant\Middleware\Middleware;
 use Ant\Interfaces\ServiceProviderInterface;
 use Psr\Http\Message\RequestInterface;
@@ -30,9 +32,8 @@ use Psr\Http\Message\ResponseInterface;
  * @method Container forgetService($name)
  * @method Container registerService(ServiceProviderInterface $serviceProvider)
  */
-class App{
-    use Middleware;
-
+class App
+{
     /**
      * 加载的中间件
      *
@@ -62,8 +63,14 @@ class App{
     protected $exceptionHandler;
 
     /**
+     * 应用内核
+     *
+     * @var \Closure
+     */
+    protected $applicationKernel;
+
+    /**
      * App constructor.
-     * @param string $namespace
      * @param string $path
      */
     public function __construct($path = '/')
@@ -161,7 +168,7 @@ class App{
      * @param callable $handler
      * @return $this
      */
-    public function setExceptionHandler(callable $handler)
+    public function registerExceptionHandler(callable $handler)
     {
         $this->exceptionHandler = $handler;
 
@@ -192,11 +199,22 @@ class App{
         };
     }
 
+    public function  setApplicationKernel(\Closure $kernel)
+    {
+        $this->applicationKernel = $kernel;
+    }
+
+    public function addMiddleware(callable $middleware)
+    {
+        $this->middleware[] = $middleware;
+    }
+
     /**
      * 启动框架
      */
     public function run()
     {
+        //TODO::所有响应信息都应该统一输出
         $request = $this->container['request'];
         $response = $this->container['response'];
 
@@ -210,13 +228,15 @@ class App{
      *
      * @param $request
      * @param $response
+     * @return null
      */
     public function process($request,$response)
     {
         try{
-            $this->withArguments([$request,$response]);
-
-            $this->execute();
+            (new Middleware)
+                ->send($request,$response)
+                ->through($this->middleware)
+                ->then($this->applicationKernel);
         }catch(\Exception $exception){
             call_user_func($this->getExceptionHandler(),$exception,$request,$response);
         }catch(\Throwable $error){

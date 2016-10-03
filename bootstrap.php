@@ -26,13 +26,14 @@ if(version_compare(PHP_VERSION, '7.0.0', '<')){
 //TODO::单元测试
 //TODO::Console
 
+//TODO::SimpleRouter重构
+
 $app = new Ant\App(
     realpath(__DIR__.'/app')
 );
 
 $router = new Ant\Routing\Router();
 
-//$router = new Ant\SimpleRouter\Router();
 $router->get('/test',function(){
     echo 123;
 });

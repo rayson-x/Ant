@@ -23,10 +23,6 @@ use FastRoute\Dispatcher\GroupCountBased;
  */
 class Router
 {
-    use Middleware{
-        Middleware::execute as executeMiddleware;
-    }
-
     /**
      * 服务容器
      *
@@ -84,9 +80,11 @@ class Router
     protected $groupAttributes = null;
 
     /**
-     * @var false|string
+     * 中间件
+     *
+     * @var array
      */
-    protected $FastRouteCacheFile = false;
+    protected $handlers = [];
 
     /**
      * Routing constructor.
@@ -418,6 +416,7 @@ class Router
      *
      * @param $request
      * @param $response
+     * @return mixed
      */
     public function run($request,$response)
     {
@@ -425,11 +424,9 @@ class Router
             //启动路由器
             $this->routeStartEnable = true;
 
-            $handlers = $this->dispatch($request);
+            list($middleware,$handle) = $this->dispatch($request);
 
-            $this->withArguments([$request,$response]);
-
-            $this->executeMiddleware($handlers);
+            return (new Middleware)->send($request,$response)->through($middleware)->then($handle);
         }catch(Exception $exception){
             call_user_func($this->getExceptionHandle(),$exception,$request,$response);
         }catch(Throwable $error){
@@ -527,12 +524,11 @@ class Router
             $handle = $this->createMiddleware($action['middleware']);
         }
 
-        //添加为最后一节中间件
-        $handle[] = function(...$params)use($action,$args){
+        $callback = function(...$params)use($action,$args){
             $this->callAction($action,array_merge($args,$params));
         };
 
-        return $handle;
+        return [$handle,$callback];
     }
 
     /**

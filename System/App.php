@@ -2,9 +2,10 @@
 namespace Ant;
 
 use Ant\Container\Container;
-use Ant\Http\Request;
-use Ant\Http\Response;
 use Ant\Middleware\Middleware;
+use Ant\Http\Request as HttpRequest;
+use Ant\Http\Response as HttpResponse;
+use Ant\Http\Exception as HttpException;
 use Ant\Interfaces\ServiceProviderInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
@@ -79,7 +80,6 @@ class App
 
         $this->register(BaseServiceProvider::class);
 
-        //注册应用程序命名空间
         $this->registerNamespace('App',$path);
     }
 
@@ -121,30 +121,30 @@ class App
      *
      * @param $namespace
      * @param $path
-     * @param null $classname
+     * @param null $className
      * @return mixed
      */
-    public function registerNamespace($namespace, $path, $classname = null)
+    public function registerNamespace($namespace, $path, $className = null)
     {
         $namespace = trim($namespace, '\\');
         $path = rtrim($path, '/\\');
 
-        $loader = function ($classname, $return_filename = false) use ($namespace, $path) {
-            if (class_exists($classname, false) || interface_exists($classname, false)) {
+        $loader = function ($className, $returnFileName = false) use ($namespace, $path) {
+            if (class_exists($className, false) || interface_exists($className, false)) {
                 return true;
             }
 
-            $classname = trim($classname, '\\');
+            $className = trim($className, '\\');
 
-            if ($namespace && stripos($classname, $namespace) !== 0) {
+            if ($namespace && stripos($className, $namespace) !== 0) {
                 return false;
             } else {
-                $filename = trim(substr($classname, strlen($namespace)), '\\');
+                $filename = trim(substr($className, strlen($namespace)), '\\');
             }
 
             $filename = $path.DIRECTORY_SEPARATOR.str_replace('\\', DIRECTORY_SEPARATOR, $filename).'.php';
 
-            if ($return_filename) {
+            if ($returnFileName) {
                 return $filename;
             } else {
                 if (!file_exists($filename)) {
@@ -153,14 +153,14 @@ class App
 
                 require $filename;
 
-                return class_exists($classname, false) || interface_exists($classname, false);
+                return class_exists($className, false) || interface_exists($className, false);
             }
         };
 
-        if ($classname === null) {
+        if ($className === null) {
             spl_autoload_register($loader);
         } else {
-            return $loader($classname, true);
+            return $loader($className, true);
         }
     }
 
@@ -185,25 +185,35 @@ class App
 
         return function($exception,$request,$response){
             /* @var $response \Ant\Http\Response */
-            if ($exception instanceof \Ant\Http\Exception) {
+            if ($exception instanceof HttpException) {
                 $status = $exception->getCode();
             } else {
                 $status = 500;
             }
 
             $response->withStatus($status);
-
             foreach (exceptionHandle($exception) as $key => $value) {
                 $response->write($value."<br>");
             }
+
+            return $response;
         };
     }
 
+    /**
+     * @param \Closure $kernel
+     */
     public function  setApplicationKernel(\Closure $kernel)
     {
+        //TODO::函数名,变量类型,提供更多变的方式
         $this->applicationKernel = $kernel;
     }
 
+    /**
+     * 添加应用中间件
+     *
+     * @param callable $middleware
+     */
     public function addMiddleware(callable $middleware)
     {
         $this->middleware[] = $middleware;
@@ -214,11 +224,10 @@ class App
      */
     public function run()
     {
-        //TODO::所有响应信息都应该统一输出
         $request = $this->container['request'];
         $response = $this->container['response'];
 
-        $this->process($request,$response);
+        $response = $this->process($request,$response);
 
         $response->send();
     }
@@ -228,19 +237,34 @@ class App
      *
      * @param $request
      * @param $response
-     * @return null
+     * @return \Ant\Http\Response
      */
     public function process($request,$response)
     {
+        ob_start();
+        $level = ob_get_level();
+
         try{
-            (new Middleware)
+            $result = (new Middleware)
                 ->send($request,$response)
                 ->through($this->middleware)
                 ->then($this->applicationKernel);
         }catch(\Exception $exception){
-            call_user_func($this->getExceptionHandler(),$exception,$request,$response);
+            $result = call_user_func($this->getExceptionHandler(),$exception,$request,$response);
         }catch(\Throwable $error){
-            call_user_func($this->getExceptionHandler(),$error,$request,$response);
+            $result = call_user_func($this->getExceptionHandler(),$error,$request,$response);
         }
+
+        if(! $result instanceof HttpResponse){
+            // 将高嵌套级别的缓冲区的内容清除
+            while(ob_get_level() > $level){
+                ob_get_clean();
+            }
+
+            // 将输出内容写入响应body
+            $result = $response->write(ob_get_clean());
+        }
+
+        return $result;
     }
 }

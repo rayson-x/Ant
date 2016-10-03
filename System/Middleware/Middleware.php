@@ -34,6 +34,7 @@ class Middleware{
     public function send(...$arguments)
     {
         $this->arguments = $arguments;
+
         return $this;
     }
 
@@ -46,11 +47,12 @@ class Middleware{
     public function through($handle)
     {
         $this->handlers = is_array($handle) ? $handle : func_get_args();
+
         return $this;
     }
 
     /**
-     * 运行中间件到达最后回调函数
+     * 运行中间件到达
      *
      * @param \Closure $destination
      * @return null|mixed
@@ -58,8 +60,9 @@ class Middleware{
     public function then(\Closure $destination)
     {
         $stack = [];
+        $arguments = $this->arguments;
         foreach ($this->handlers as $handler) {
-            $generator = call_user_func_array($handler, $this->arguments);
+            $generator = call_user_func_array($handler, $arguments);
 
             if ($generator instanceof Generator) {
                 $stack[] = $generator;
@@ -69,12 +72,12 @@ class Middleware{
                     break;
                 }elseif($yieldValue instanceof Arguments){
                     //替换传递参数
-                    $this->arguments = $yieldValue->toArray();
+                    $arguments = $yieldValue->toArray();
                 }
             }
         }
 
-        $result = $destination(...$this->arguments);
+        $result = $destination(...$arguments);
         $isSend = ($result !== null);
         $getReturnValue = version_compare(PHP_VERSION, '7.0.0', '>=');
         //重入函数栈

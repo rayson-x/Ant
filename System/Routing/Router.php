@@ -93,6 +93,9 @@ class Router implements RouterInterface
      */
     protected $cacheFile = false;
 
+    /**
+     * Router constructor.
+     */
     public function __construct()
     {
         $this->container = Container::getInstance();
@@ -229,39 +232,6 @@ class Router implements RouterInterface
     }
 
     /**
-     * @param Dispatcher $dispatcher
-     */
-    public function setDispatcher(Dispatcher $dispatcher)
-    {
-        $this->dispatcher = $dispatcher;
-    }
-
-    /**
-     * @return \FastRoute\Dispatcher\GroupCountBased
-     */
-    protected function createDispatcher()
-    {
-        if (!$this->dispatcher) {
-            $routeDefinitionCallback = function (RouteCollector $r) {
-                foreach ($this->routes as $route) {
-                    $r->addRoute($route->getMethod(), $route->getUri(), $route->getAction());
-                }
-            };
-
-            if ($this->cacheFile) {
-                $this->dispatcher = \FastRoute\cachedDispatcher($routeDefinitionCallback,[
-                    'cacheDisabled' => true,
-                    'cacheFile' => $this->cacheFile,
-                ]);
-            } else {
-                $this->dispatcher = \FastRoute\simpleDispatcher($routeDefinitionCallback);
-            }
-        }
-
-        return $this->dispatcher;
-    }
-
-    /**
      * @param null $request
      * @return \Closure
      */
@@ -359,6 +329,39 @@ class Router implements RouterInterface
     }
 
     /**
+     * @param Dispatcher $dispatcher
+     */
+    public function setDispatcher(Dispatcher $dispatcher)
+    {
+        $this->dispatcher = $dispatcher;
+    }
+
+    /**
+     * @return \FastRoute\Dispatcher\GroupCountBased
+     */
+    protected function createDispatcher()
+    {
+        if (!$this->dispatcher) {
+            $routeDefinitionCallback = function (RouteCollector $r) {
+                foreach ($this->routes as $route) {
+                    $r->addRoute($route->getMethod(), $route->getUri(), $route->getAction());
+                }
+            };
+
+            if ($this->cacheFile) {
+                $this->dispatcher = \FastRoute\cachedDispatcher($routeDefinitionCallback,[
+                    'cacheDisabled' => true,
+                    'cacheFile' => $this->cacheFile,
+                ]);
+            } else {
+                $this->dispatcher = \FastRoute\simpleDispatcher($routeDefinitionCallback);
+            }
+        }
+
+        return $this->dispatcher;
+    }
+
+    /**
      * 处理路由调度器返回数据
      *
      * @param $routeInfo
@@ -449,7 +452,7 @@ class Router implements RouterInterface
     /**
      * @param $req
      * @param $res
-     * @return null|mixed
+     * @return mixed
      */
     public function run($req,$res)
     {

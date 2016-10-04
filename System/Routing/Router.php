@@ -398,7 +398,7 @@ class Router implements RouterInterface
         }
 
         return function(...$params)use($action,$args){
-            $this->callAction($action,array_merge($args,$params));
+            return $this->callAction($action,array_merge($args,$params));
         };
     }
 

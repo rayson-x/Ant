@@ -64,13 +64,6 @@ class App
     protected $exceptionHandler;
 
     /**
-     * 应用内核
-     *
-     * @var \Closure
-     */
-    protected $applicationKernel;
-
-    /**
      * App constructor.
      * @param string $path
      */
@@ -121,15 +114,13 @@ class App
      *
      * @param $namespace
      * @param $path
-     * @param null $className
-     * @return mixed
      */
-    public function registerNamespace($namespace, $path, $className = null)
+    public function registerNamespace($namespace, $path)
     {
         $namespace = trim($namespace, '\\');
         $path = rtrim($path, '/\\');
 
-        $loader = function ($className, $returnFileName = false) use ($namespace, $path) {
+        spl_autoload_register(function ($className) use ($namespace, $path) {
             if (class_exists($className, false) || interface_exists($className, false)) {
                 return true;
             }
@@ -144,27 +135,19 @@ class App
 
             $filename = $path.DIRECTORY_SEPARATOR.str_replace('\\', DIRECTORY_SEPARATOR, $filename).'.php';
 
-            if ($returnFileName) {
-                return $filename;
-            } else {
-                if (!file_exists($filename)) {
-                    return false;
-                }
-
-                require $filename;
-
-                return class_exists($className, false) || interface_exists($className, false);
+            if (!file_exists($filename)) {
+                return false;
             }
-        };
 
-        if ($className === null) {
-            spl_autoload_register($loader);
-        } else {
-            return $loader($className, true);
-        }
+            require $filename;
+
+            return class_exists($className, false) || interface_exists($className, false);
+        });
     }
 
     /**
+     * 注册自定义异常处理方式
+     *
      * @param callable $handler
      * @return $this
      */
@@ -176,6 +159,8 @@ class App
     }
 
     /**
+     * 获取异常处理方法
+     *
      * @return callable|\Closure
      */
     public function getExceptionHandler(){
@@ -184,7 +169,7 @@ class App
         }
 
         return function($exception,$request,$response){
-            /* @var $response \Ant\Http\Response */
+            /* @var $response HttpResponse */
             if ($exception instanceof HttpException) {
                 $status = $exception->getCode();
             } else {
@@ -201,14 +186,15 @@ class App
     }
 
     /**
-     * @param \Closure $kernel
+     * 获取路由器
+     *
+     * @return \Ant\Routing\Router
      */
-    public function  setApplicationKernel(\Closure $kernel)
+    public function createRouter()
     {
-        //TODO::函数名,变量类型,提供更多变的方式
-        $this->applicationKernel = $kernel;
+        return $this->container['Router'];
     }
-
+    
     /**
      * 添加应用中间件
      *
@@ -239,16 +225,16 @@ class App
      * @param $response
      * @return \Ant\Http\Response
      */
-    public function process($request,$response)
+    protected function process($request,$response)
     {
+        //TODO::尝试将功能实现变更加优雅
         ob_start();
         $level = ob_get_level();
 
         try{
-            $result = (new Middleware)
-                ->send($request,$response)
-                ->through($this->middleware)
-                ->then($this->applicationKernel);
+            $result = $this->sendThroughMiddleware([$request,$response],$this->middleware,function(){
+                return $this->container['Router']->run(...func_get_args());
+            });
         }catch(\Exception $exception){
             $result = call_user_func($this->getExceptionHandler(),$exception,$request,$response);
         }catch(\Throwable $error){
@@ -256,15 +242,38 @@ class App
         }
 
         if(! $result instanceof HttpResponse){
-            // 将高嵌套级别的缓冲区的内容清除
-            while(ob_get_level() > $level){
-                ob_get_clean();
+            if($result === null){
+                //返回结果为空时获取缓冲区内容
+                while(ob_get_level() > ($level - 1)){
+                    //获取当前等级缓冲区内容
+                    $result = ob_get_clean();
+                }
             }
 
-            // 将输出内容写入响应body
-            $result = $response->write(ob_get_clean());
+            $result = $response->write((string) $result);
         }
 
+        ob_end_clean();
         return $result;
+    }
+
+    /**
+     * 发送请求与响应通过中间件到达回调函数
+     *
+     * @param array $args
+     * @param array $handlers
+     * @param \Closure $then
+     * @return mixed
+     */
+    protected function sendThroughMiddleware(array $args,array $handlers,\Closure $then)
+    {
+        if(count($handlers) > 0){
+            return (new Middleware)
+                ->send(...$args)
+                ->through($handlers)
+                ->then($then);
+        }
+
+        return $then(...$args);
     }
 }

@@ -32,16 +32,6 @@ $app = new Ant\App(
     realpath(__DIR__.'/app')
 );
 
-$router = new Ant\Routing\Router();
-
-$router->get('/test',function(){
-    echo 123;
-});
-
-$router->group(['namespace' => 'App\\Controller'],function($router){
-    $router->get('/',"IndexController@index");
-});
-
 /* 将中间件装载到应用中 */
 $app->addMiddleware(function (Ant\Http\Request $request,Ant\Http\Response $response){
     yield ;
@@ -49,7 +39,8 @@ $app->addMiddleware(function (Ant\Http\Request $request,Ant\Http\Response $respo
     $response->withHeader('x-run-time',(microtime(true) - START) * 1000);
 });
 
-$app->setApplicationKernel(function($res,$req)use($router){
-    return $router->run($res,$req);
-});
+$router = $app->createRouter();
 
+$router->group(['namespace' => 'App\\Controller'],function($router){
+    $router->get('/',"IndexController@index");
+});

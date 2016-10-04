@@ -12,3 +12,8 @@
 ### ORM 正在开发
 
 ### Router 支持RESTful风格的路由
+
+使用之前先通过composer获取依赖
+```
+composer install
+```

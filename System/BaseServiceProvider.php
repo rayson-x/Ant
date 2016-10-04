@@ -1,8 +1,9 @@
 <?php
 namespace Ant;
 
-use Ant\Http\Response;
 use Ant\Http\Request;
+use Ant\Http\Response;
+use Ant\Routing\Router;
 use Ant\Support\Http\Environment;
 use Ant\Interfaces\ContainerInterface;
 use Ant\Interfaces\ServiceProviderInterface;
@@ -45,10 +46,19 @@ class BaseServiceProvider implements ServiceProviderInterface
 
         /**
          * 注册 Http Response 类
+         *
+         * @return Response
          */
         $container->bindIf([Response::class => 'response'],function(){
             return new Response();
         },true);
+
+        /**
+         * 注册 Ant Router 类
+         */
+        $container->singleton([Router::class => 'Router'],function(){
+            return new Router();
+        });
     }
 
     /**

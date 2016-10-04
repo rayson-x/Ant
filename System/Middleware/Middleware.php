@@ -28,12 +28,11 @@ class Middleware{
     /**
      * 设置在中间件中传输的参数
      *
-     * @param $arguments
      * @return self $this
      */
-    public function send(...$arguments)
+    public function send()
     {
-        $this->arguments = $arguments;
+        $this->arguments = func_get_args();
 
         return $this;
     }
@@ -90,7 +89,7 @@ class Middleware{
             }
 
             if ($getReturnValue) {
-                $result = $generator->getReturn();
+                $result = $generator->getReturn() ?: $result;
                 $isSend = ($result !== null);
             }else{
                 $isSend = false;

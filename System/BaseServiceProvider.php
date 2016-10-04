@@ -4,9 +4,9 @@ namespace Ant;
 use Ant\Http\Request;
 use Ant\Http\Response;
 use Ant\Routing\Router;
-use Ant\Support\Http\Environment;
-use Ant\Interfaces\ContainerInterface;
-use Ant\Interfaces\ServiceProviderInterface;
+use Ant\Http\Environment;
+use Ant\Interfaces\Container\ContainerInterface;
+use Ant\Interfaces\Container\ServiceProviderInterface;
 
 class BaseServiceProvider implements ServiceProviderInterface
 {
@@ -41,7 +41,7 @@ class BaseServiceProvider implements ServiceProviderInterface
          * @return Request
          */
         $container->bindIf([Request::class => 'request'],function(){
-            return \Ant\Support\Http\Request::createRequestFromEnvironment($this['environment']);
+            return Request::createRequestFromEnvironment($this['environment']);
         },true);
 
         /**

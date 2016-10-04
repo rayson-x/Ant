@@ -8,7 +8,8 @@ use Psr\Http\Message\MessageInterface;
  * Class Message
  * @package Ant\Http
  */
-abstract class Message implements MessageInterface{
+abstract class Message implements MessageInterface
+{
     /**
      * @var bool 是否保持数据不变性
      */

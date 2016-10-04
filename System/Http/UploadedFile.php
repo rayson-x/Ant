@@ -6,8 +6,8 @@ use InvalidArgumentException;
 use Psr\Http\Message\StreamInterface;
 use Psr\Http\Message\UploadedFileInterface;
 
-class UploadedFile implements UploadedFileInterface{
-
+class UploadedFile implements UploadedFileInterface
+{
     /**
      * @var array
      */
@@ -22,6 +22,40 @@ class UploadedFile implements UploadedFileInterface{
      * @var null
      */
     protected $stream = null;
+
+    /**
+     * 加载上传文件,仅限POST上传
+     *
+     * @param $uploadedFiles
+     * @return array
+     */
+    public static function parseUploadedFiles($uploadedFiles)
+    {
+        $parsed = [];
+        foreach($uploadedFiles as $field => $uploadedFile){
+            if(!isset($uploadedFile['error'])){
+                continue;
+            }
+
+            $parsed[$field] = [];
+            if(is_array($uploadedFile['error'])){
+                //详见手册 [PHP多文件上传]
+                $subArray = [];
+                $count = count($uploadedFile['error']);
+                $fileKey = array_keys($uploadedFile);
+                for($fileIdx = 0;$fileIdx < $count;$fileIdx++){
+                    foreach($fileKey as $key){
+                        $subArray[$fileIdx][$key] = $uploadedFile[$key][$fileIdx];
+                    }
+                }
+                $parsed[$field] = static::parseUploadedFiles($subArray);
+            }else{
+                $parsed[$field] = new static($uploadedFile);
+            }
+        }
+
+        return $parsed;
+    }
 
     /**
      * UploadedFile constructor.

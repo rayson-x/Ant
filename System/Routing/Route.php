@@ -174,7 +174,7 @@ class Route implements RouteInterface
      * @param $middleware
      * @return self $this
      */
-    public function setMiddleware($middleware)
+    public function addMiddleware($middleware)
     {
         $this->middleware[] = $middleware;
         return $this;

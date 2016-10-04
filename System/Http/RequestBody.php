@@ -1,8 +1,8 @@
 <?php
 namespace Ant\Http;
 
-class RequestBody extends Body{
-
+class RequestBody extends Body
+{
     /**
      * 获取请求内容
      *

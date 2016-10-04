@@ -15,7 +15,8 @@ use Psr\Http\Message\ServerRequestInterface;
  * @see http://www.php-fig.org/psr/psr-7/
  * 可能改变实例的所有方法都必须保证请求实例不能被改变,使得它们保持当前消息的内部状态,并返回一个包含改变状态的实例.
  */
-class Request extends Message implements ServerRequestInterface{
+class Request extends Message implements ServerRequestInterface
+{
     /**
      * 是否保持数据不变性
      *
@@ -115,6 +116,24 @@ class Request extends Message implements ServerRequestInterface{
     ];
 
     /**
+     * 通过上下文环境创建一个request
+     *
+     * @param Environment $server
+     * @return static
+     */
+    public static function createRequestFromEnvironment(Environment $server)
+    {
+        $uri = Uri::createFromEnvironment($server);
+        $headers = Header::createFromEnvironment($server);
+        $cookieParams = $_COOKIE;
+        $serverParams = $server->all();
+        $body = new RequestBody();
+        $uploadFiles = UploadedFile::parseUploadedFiles($_FILES);
+
+        return new static($uri,$headers,$cookieParams,$serverParams,$body,$uploadFiles);
+    }
+
+    /**
      * Request constructor.
      * @param UriInterface $uri
      * @param array $headers
@@ -177,6 +196,7 @@ class Request extends Message implements ServerRequestInterface{
         }
 
         $method = isset($this->serverParams['REQUEST_METHOD']) ? strtoupper($this->serverParams['REQUEST_METHOD']) : 'GET';
+
         if ($method !== 'POST') {
             return $this->method = $method;
         }

@@ -35,12 +35,14 @@ $app = new Ant\App(
 /* 将中间件装载到应用中 */
 $app->addMiddleware(function (Ant\Http\Request $request,Ant\Http\Response $response){
     yield ;
-
-    $response->withHeader('x-run-time',(microtime(true) - START) * 1000);
+    //获取脚本运行时间(ms)
+    $response->withHeader(
+        'x-run-time',(int)((microtime(true) - $request->getServerParam('REQUEST_TIME_FLOAT')) * 1000).'ms'
+    );
 });
 
 $router = $app->createRouter();
 
-$router->group(['namespace' => 'App\\Controller'],function($router){
-    $router->get('/',"IndexController@index");
+$router->group(['namespace' => 'App\\Controller'],function(\Ant\Routing\Router $router){
+        $router->get('/test',"IndexController@index");
 });

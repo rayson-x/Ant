@@ -8,8 +8,8 @@ use ReflectionMethod;
 use ReflectionFunction;
 use ReflectionParameter;
 use Ant\Support\Traits\Singleton;
-use Ant\Interfaces\ContainerInterface;
-use Ant\Interfaces\ServiceProviderInterface;
+use Ant\Interfaces\Container\ContainerInterface;
+use Ant\Interfaces\Container\ServiceProviderInterface;
 
 /**
  * PS:这个是参考Laravel的服务容器进行的开发,相当于laravel的服务容器删减版

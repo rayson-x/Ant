@@ -7,7 +7,8 @@ namespace Ant\Http;
  * Class StatusPhrase
  * @package Ant\Http
  */
-class StatusPhrase{
+class StatusPhrase
+{
     const SWITCHING_PROTOCOLS = 101;
     const PROCESSING = 102;
     const OK = 200;

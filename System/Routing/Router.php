@@ -7,6 +7,7 @@ use FastRoute\Dispatcher;
 use FastRoute\RouteCollector;
 use Ant\Container\Container;
 use Ant\Middleware\Middleware;
+use Ant\Http\Exception as HttpException;
 use Ant\Interfaces\Router\RouterInterface;
 
 /**
@@ -111,9 +112,9 @@ class Router implements RouterInterface
         if(!$this->routeStartEnable){
             $this->group[] = [$attributes,$action];
         }else{
-            $this->compileRoute([
+            $this->compileRoute(
                 [$attributes,$action]
-            ]);
+            );
         }
     }
 
@@ -122,7 +123,7 @@ class Router implements RouterInterface
      *
      * @param $uri
      * @param $action
-     * @return $this
+     * @return Route
      */
     public function get($uri,$action)
     {
@@ -134,7 +135,7 @@ class Router implements RouterInterface
      *
      * @param $uri
      * @param $action
-     * @return $this
+     * @return Route
      */
     public function post($uri,$action)
     {
@@ -146,7 +147,7 @@ class Router implements RouterInterface
      *
      * @param $uri
      * @param $action
-     * @return $this
+     * @return Route
      */
     public function put($uri,$action)
     {
@@ -158,7 +159,7 @@ class Router implements RouterInterface
      *
      * @param $uri
      * @param $action
-     * @return $this
+     * @return Route
      */
     public function delete($uri,$action)
     {
@@ -170,7 +171,7 @@ class Router implements RouterInterface
      *
      * @param $uri
      * @param $action
-     * @return $this
+     * @return Route
      */
     public function head($uri,$action)
     {
@@ -182,7 +183,7 @@ class Router implements RouterInterface
      *
      * @param $uri
      * @param $action
-     * @return $this
+     * @return Route
      */
     public function patch($uri,$action)
     {
@@ -194,7 +195,7 @@ class Router implements RouterInterface
      *
      * @param $uri
      * @param $action
-     * @return $this
+     * @return Route
      */
     public function any($uri,$action)
     {
@@ -239,7 +240,9 @@ class Router implements RouterInterface
     {
         list($method,$pathInfo) = $this->parseIncomingRequest($request);
 
-        $this->compileRoute($this->group);
+        foreach($this->group as $group){
+            $this->compileRoute($group);
+        }
 
         if(isset($this->fastRoute[$method.$pathInfo])){
             return $this->handleFoundRoute(
@@ -272,25 +275,24 @@ class Router implements RouterInterface
      */
     protected function compileRoute(array $routeGroup)
     {
-        foreach($routeGroup as list($attributes,$action)){
-            //保留父级分组属性
-            $parentGroupAttributes = $this->groupAttributes;
+        list($attributes,$action) = $routeGroup;
+        //保留父级分组属性
+        $parentGroupAttributes = $this->groupAttributes;
 
-            if (isset($attributes['middleware']) && is_string($attributes['middleware'])) {
-                $attributes['middleware'] = explode('|', $attributes['middleware']);
-            }
-
-            //是否继承父级分组属性
-            if(isset($attributes['extend']) && $attributes['extend'] === false){
-                $this->groupAttributes = $attributes;
-            }else{
-                $this->groupAttributes = $this->extendParentGroupAttributes($attributes);
-            }
-
-            call_user_func($action, $this);
-
-            $this->groupAttributes = $parentGroupAttributes;
+        if (isset($attributes['middleware']) && is_string($attributes['middleware'])) {
+            $attributes['middleware'] = explode('|', $attributes['middleware']);
         }
+
+        //是否继承父级分组属性
+        if(isset($attributes['extend']) && $attributes['extend'] === false){
+            $this->groupAttributes = $attributes;
+        }else{
+            $this->groupAttributes = $this->extendParentGroupAttributes($attributes);
+        }
+
+        call_user_func($action, $this);
+
+        $this->groupAttributes = $parentGroupAttributes;
     }
 
     /**
@@ -371,10 +373,10 @@ class Router implements RouterInterface
     {
         switch ($routeInfo[0]) {
             case Dispatcher::NOT_FOUND:
-                throw new \Ant\Http\Exception(404);
+                throw new HttpException(404);
 
             case Dispatcher::METHOD_NOT_ALLOWED:
-                throw new \Ant\Http\Exception(405);
+                throw new HttpException(405);
 
             case Dispatcher::FOUND:
                 return $this->handleFoundRoute($routeInfo[1],$routeInfo[2]);
@@ -402,6 +404,15 @@ class Router implements RouterInterface
         };
     }
 
+    public function addMiddleware($middleware)
+    {
+        if(!is_array($middleware)){
+            $middleware = func_get_args();
+        }
+
+        $this->middleware = array_merge($this->middleware,$middleware);
+    }
+
     /**
      * 加载路由使用的中间件
      *
@@ -413,10 +424,12 @@ class Router implements RouterInterface
         $middleware = is_string($middleware) ? explode('|', $middleware) : (array) $middleware;
 
         return array_map(function($middleware){
+            $middleware = (!is_string($middleware))
+                ? $middleware
+                : (isset($this->middleware[$middleware]) ? $this->middleware[$middleware] : $middleware);
+
             //获取可以回调的路由
             if(is_string($middleware)){
-                $middleware = isset($this->$middleware[$middleware]) ? $this->$middleware[$middleware] : $middleware;
-
                 return $this->container->make($middleware);
             }elseif($middleware instanceof \Closure){
                 return $middleware;

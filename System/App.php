@@ -6,8 +6,7 @@ use Ant\Middleware\Middleware;
 use Ant\Http\Request as HttpRequest;
 use Ant\Http\Response as HttpResponse;
 use Ant\Http\Exception as HttpException;
-use Ant\Interfaces\ServiceProviderInterface;
-use Psr\Http\Message\RequestInterface;
+use Ant\Interfaces\Container\ServiceProviderInterface;use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 
 /**
@@ -244,16 +243,18 @@ class App
         if(! $result instanceof HttpResponse){
             if($result === null){
                 //返回结果为空时获取缓冲区内容
-                while(ob_get_level() > ($level - 1)){
-                    //获取当前等级缓冲区内容
-                    $result = ob_get_clean();
+                while(ob_get_level() > $level){
+                    //丢弃顶层输出缓冲区
+                    ob_end_clean();
                 }
+
+                //获取并关闭当前等级缓冲区内容
+                $result = ob_get_clean();
             }
 
             $result = $response->write((string) $result);
         }
 
-        ob_end_clean();
         return $result;
     }
 

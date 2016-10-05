@@ -63,16 +63,29 @@ class App
     protected $exceptionHandler;
 
     /**
+     * 项目路径
+     *
+     * @var string
+     */
+    protected $basePath = '';
+
+    /**
      * App constructor.
      * @param string $path
      */
-    public function __construct($path = '/')
+    public function __construct($path = null)
     {
         $this->container = Container::getInstance();
 
         $this->register(BaseServiceProvider::class);
 
-        $this->registerNamespace('App',$path);
+        if($path){
+            $this->basePath = trim($path);
+        }
+
+        $this->registerNamespace(
+            'App',$this->basePath.DIRECTORY_SEPARATOR.'app'
+        );
     }
 
     /**

@@ -29,7 +29,7 @@ if(version_compare(PHP_VERSION, '7.0.0', '<')){
 //TODO::SimpleRouter重构
 
 $app = new Ant\App(
-    realpath(__DIR__.'/app')
+    realpath(__DIR__)
 );
 
 /* 将中间件装载到应用中 */
@@ -43,6 +43,17 @@ $app->addMiddleware(function (Ant\Http\Request $request,Ant\Http\Response $respo
 
 $router = $app->createRouter();
 
-$router->group(['namespace' => 'App\\Controller'],function(\Ant\Routing\Router $router){
-        $router->get('/test',"IndexController@index");
+$router->get('/', function(){
+    throw new Exception(123);
+})->addMiddleware(function(Ant\Http\Request $request,Ant\Http\Response $response){
+    try{
+        $message = (yield);
+    }catch(Exception $e){
+        $response->withStatus(500);
+        $message = $e->getMessage();
+    }
+
+    return $response->setJson($message);
+})->addMiddleware(function(Ant\Http\Request $request,Ant\Http\Response $response){
+    yield;
 });

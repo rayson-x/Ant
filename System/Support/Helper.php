@@ -1,16 +1,6 @@
 <?php
 use Ant\Support\ArrayHandle;
 use Ant\Container\Container;
-use Psr\Http\Message\ServerRequestInterface;
-
-/**
- * 设置一个新中间件参数
- * @param ServerRequestInterface $request
- */
-function newRequest(ServerRequestInterface $request)
-{
-    Container::getInstance()->instance('newRequest',$request);
-}
 
 /**
  * 打印信息
@@ -39,16 +29,6 @@ function container($serviceName = null, $parameters = [])
     }
 
     return Container::getInstance()->make($serviceName, $parameters);
-}
-
-function serializeClosure(Closure $closure)
-{
-    return container('serialize')->serialize($closure);
-}
-
-function unserializeClosure($closure)
-{
-    return container('serialize')->unserialize($closure);
 }
 
 /**
@@ -116,7 +96,9 @@ function exceptionHandle($exception){
     }
 
     $exceptionInfo = [];
-    $exceptionInfo['Exception'] = sprintf($exception->getLine().'%s(%d) %s',get_class($exception),$exception->getCode(),$exception->getMessage());
+    $exceptionInfo['Exception'] = sprintf(
+        "{$exception->getFile()}({$exception->getLine()}) %s %s",get_class($exception),$exception->getMessage()
+    );
 
     foreach(explode("\n",$exception->getTraceAsString()) as $index => $line){
         $key           = sprintf('X-Exception-Trace-%02d', $index);

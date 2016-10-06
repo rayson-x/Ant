@@ -4,11 +4,12 @@ include 'vendor/autoload.php';
 /**
  * php7错误跟异常都继承于Throwable,可以用try...catch的方式来捕获程序中的错误
  */
-if(version_compare(PHP_VERSION, '7.0.0', '<')){
-    set_error_handler(function($errno,$errstr,$errfile,$errline){
-        throw new \ErrorException($errstr, $errno, $errno, $errfile, $errline);
-    });
-}
+set_error_handler(function($errno,$errstr,$errfile,$errline){
+    throw new \ErrorException($errstr, $errno, $errno, $errfile, $errline);
+});
+error_reporting(-1);
+
+
 //基础功能
 //TODO::Config类
 //TODO::日志功能 , psr-3 引入或自己开发
@@ -34,7 +35,7 @@ $app = new Ant\App(
 
 /* 将中间件装载到应用中 */
 $app->addMiddleware(function (Ant\Http\Request $request,Ant\Http\Response $response){
-    yield ;
+    yield;
     //获取脚本运行时间(ms)
     $response->withHeader(
         'x-run-time',(int)((microtime(true) - $request->getServerParam('REQUEST_TIME_FLOAT')) * 1000).'ms'
@@ -43,17 +44,13 @@ $app->addMiddleware(function (Ant\Http\Request $request,Ant\Http\Response $respo
 
 $router = $app->createRouter();
 
-$router->get('/', function(){
-    throw new Exception(123);
+$router->get('/',function($test = "Ant-Framework"){
+    return (object)$test;
 })->addMiddleware(function(Ant\Http\Request $request,Ant\Http\Response $response){
     try{
-        $message = (yield);
+        $response->setJson(yield);
     }catch(Exception $e){
         $response->withStatus(500);
-        $message = $e->getMessage();
+        $response->setJson($e->getMessage());
     }
-
-    return $response->setJson($message);
-})->addMiddleware(function(Ant\Http\Request $request,Ant\Http\Response $response){
-    yield;
 });

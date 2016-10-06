@@ -71,7 +71,7 @@ class App
 
     /**
      * App constructor.
-     * @param string $path
+     * @param string $path 项目路径
      */
     public function __construct($path = null)
     {
@@ -83,9 +83,7 @@ class App
             $this->basePath = trim($path);
         }
 
-        $this->registerNamespace(
-            'App',$this->basePath.DIRECTORY_SEPARATOR.'app'
-        );
+        $this->registerNamespace('App',$this->basePath.DIRECTORY_SEPARATOR.'app');
     }
 
     /**
@@ -255,9 +253,8 @@ class App
 
         if(! $result instanceof HttpResponse){
             if($result === null){
-                //返回结果为空时获取缓冲区内容
                 while(ob_get_level() > $level){
-                    //丢弃顶层输出缓冲区
+                    //丢弃顶层缓冲区
                     ob_end_clean();
                 }
 

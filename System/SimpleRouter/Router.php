@@ -38,13 +38,6 @@ class Router
     protected $routeStartEnable = false;
 
     /**
-     * 异常处理函数
-     *
-     * @var false|callable
-     */
-    protected $exceptionHandle = false;
-
-    /**
      * 请求的路由
      *
      * @var string
@@ -386,32 +379,6 @@ class Router
     }
 
     /**
-     * 设置异常处理
-     *
-     * @param callable $handle
-     */
-    public function setExceptionHandle(callable $handle)
-    {
-        $this->exceptionHandle = $handle;
-    }
-
-    /**
-     * 获取异常处理
-     *
-     * @return callable|Closure|false
-     */
-    public function getExceptionHandle()
-    {
-        if($this->exceptionHandle){
-            return $this->exceptionHandle;
-        }
-
-        return function($e){
-            throw $e;
-        };
-    }
-
-    /**
      * 执行路由中间件
      *
      * @param $request
@@ -427,10 +394,6 @@ class Router
             list($middleware,$handle) = $this->dispatch($request);
 
             return (new Middleware)->send($request,$response)->through($middleware)->then($handle);
-        }catch(Exception $exception){
-            call_user_func($this->getExceptionHandle(),$exception,$request,$response);
-        }catch(Throwable $error){
-            call_user_func($this->getExceptionHandle(),$error,$request,$response);
         }finally{
             $this->routeStartEnable = false;
         }
@@ -525,7 +488,7 @@ class Router
         }
 
         $callback = function(...$params)use($action,$args){
-            $this->callAction($action,array_merge($args,$params));
+            return $this->callAction($action,array_merge($args,$params));
         };
 
         return [$handle,$callback];

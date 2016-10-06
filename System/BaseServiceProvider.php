@@ -57,7 +57,7 @@ class BaseServiceProvider implements ServiceProviderInterface
          * 注册 Ant Router 类
          */
         $container->singleton([Router::class => 'Router'],function(){
-            return new Router();
+            return new Router($this);
         });
     }
 

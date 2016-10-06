@@ -5,10 +5,10 @@ use RuntimeException;
 use InvalidArgumentException;
 use FastRoute\Dispatcher;
 use FastRoute\RouteCollector;
-use Ant\Container\Container;
 use Ant\Middleware\Middleware;
 use Ant\Http\Exception as HttpException;
 use Ant\Interfaces\Router\RouterInterface;
+use Ant\Interfaces\Container\ContainerInterface;
 
 /**
  * TODO::待重构“关键词”功能
@@ -96,10 +96,12 @@ class Router implements RouterInterface
 
     /**
      * Router constructor.
+     *
+     * @param ContainerInterface $container
      */
-    public function __construct()
+    public function __construct(ContainerInterface $container)
     {
-        $this->container = Container::getInstance();
+        $this->container = $container;
     }
 
     /**
@@ -472,7 +474,6 @@ class Router implements RouterInterface
         try{
             //启动路由器
             $this->routeStartEnable = true;
-            
             $routeCallback = $this->dispatch($req);
 
             return (new Middleware)

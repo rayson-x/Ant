@@ -65,7 +65,7 @@ class Middleware
             $stack = [];
             $arguments = $this->arguments;
             foreach ($this->handlers as $handler) {
-                $generator = $handler(...$arguments);
+                $generator = call_user_func_array($handler,$arguments);
 
                 if ($generator instanceof Generator) {
                     $stack[] = $generator;

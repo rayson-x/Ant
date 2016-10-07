@@ -4,8 +4,8 @@ include 'vendor/autoload.php';
 /**
  * php7错误跟异常都继承于Throwable,可以用try...catch的方式来捕获程序中的错误
  */
-set_error_handler(function($errno,$errstr,$errfile,$errline){
-    throw new \ErrorException($errstr, $errno, $errno, $errfile, $errline);
+set_error_handler(function($level, $message, $file = '', $line = 0){
+    throw new \ErrorException($message, 0, $level, $file, $line);
 });
 error_reporting(-1);
 
@@ -27,11 +27,7 @@ error_reporting(-1);
 //TODO::单元测试
 //TODO::Console
 
-//TODO::SimpleRouter重构
-
-$app = new Ant\App(
-    realpath(__DIR__)
-);
+$app = new Ant\App(realpath(__DIR__));
 
 /* 将中间件装载到应用中 */
 $app->addMiddleware(function (Ant\Http\Request $request,Ant\Http\Response $response){
@@ -53,4 +49,6 @@ $router->get('/',function($test = "Ant-Framework"){
         $response->withStatus(500);
         $response->setJson($e->getMessage());
     }
+
+    return $response;
 });

@@ -93,12 +93,14 @@ class Middleware
                     $generator->next();
                 }
 
+                //尝试用协同返回数据进行替换,如果无返回则继续使用之前结果
                 if ($getReturnValue) {
-                    $result = $generator->getReturn();
-                    $isSend = ($result !== null);
-                }elseif(null === $result = $generator->current()){
-                    $isSend = false;
+                    $result = $generator->getReturn() ?: $result;
+                }else{
+                    $result = $generator->current() ?: $result;
                 }
+
+                $isSend = ($result !== null);
             }
 
             return $result;

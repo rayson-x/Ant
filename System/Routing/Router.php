@@ -406,6 +406,11 @@ class Router implements RouterInterface
         };
     }
 
+    /**
+     * 添加可选中间件
+     *
+     * @param $middleware
+     */
     public function addMiddleware($middleware)
     {
         if(!is_array($middleware)){
@@ -465,6 +470,8 @@ class Router implements RouterInterface
     }
 
     /**
+     * 启动路由器
+     *
      * @param $req
      * @param $res
      * @return mixed

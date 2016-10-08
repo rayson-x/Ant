@@ -599,7 +599,7 @@ class Request extends Message implements ServerRequestInterface
     }
 
     /**
-     * 获取POST参数
+     * 获取POST参数,仅在请求方式为POST时有效
      *
      * @param null $key
      * @return array|null|object
@@ -614,6 +614,22 @@ class Request extends Message implements ServerRequestInterface
     }
 
     /**
+     * 获取cookie参数
+     *
+     * @param null $key
+     * @return array|null
+     */
+    public function cookie($key = null)
+    {
+        $cookie = $this->getCookieParams();
+        if($key === null){
+            return $cookie;
+        }
+
+        return isset($cookie[$key]) ? $cookie[$key] : null;
+    }
+
+    /**
      * 获取body参数
      *
      * @param null $key
@@ -621,12 +637,13 @@ class Request extends Message implements ServerRequestInterface
      */
     public function getBodyParam($key = null)
     {
-        $params = $this->getParsedBody();
         if($key === null){
-            return $params;
+            return $this->getParsedBody();
         }
 
-        if(is_array($params) && isset($params[$key])){
+        $params = $this->getParsedBody();
+
+        if(is_array($params) && array_key_exists($key,$params)){
             return $params[$key];
         }elseif (is_object($params) && property_exists($params, $key)){
             return $params->$key;
@@ -677,7 +694,7 @@ class Request extends Message implements ServerRequestInterface
      * @param $value mixed
      * @return Request
      */
-    public function immutability(Request $instance,$attribute,$value)
+    protected function immutability(Request $instance,$attribute,$value)
     {
         $result = clone $instance;
         if(is_array($attribute)){

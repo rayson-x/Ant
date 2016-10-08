@@ -77,11 +77,11 @@ class App
     {
         $this->container = Container::getInstance();
 
-        $this->register(BaseServiceProvider::class);
+        $this->register(new BaseServiceProvider);
 
-        if($path){
-            $this->basePath = trim($path);
-        }
+        $this->registerError();
+
+        $this->basePath = trim($path);
 
         $this->registerNamespace('App',$this->basePath.DIRECTORY_SEPARATOR.'app');
     }
@@ -117,6 +117,14 @@ class App
         if($provider instanceof ServiceProviderInterface){
             $this->container->registerService($provider);
         }
+    }
+
+    public function registerError()
+    {
+        set_error_handler(function($level, $message, $file = '', $line = 0){
+            throw new \ErrorException($message, 0, $level, $file, $line);
+        });
+        error_reporting(-1);
     }
 
     /**

@@ -31,6 +31,26 @@ function container($serviceName = null, $parameters = [])
     return Container::getInstance()->make($serviceName, $parameters);
 }
 
+function get($key = null)
+{
+    return Container::getInstance()->make('request')->get($key);
+}
+
+function post($key = null)
+{
+    return Container::getInstance()->make('request')->post($key);
+}
+
+function body($key = null)
+{
+    return Container::getInstance()->make('request')->getBodyParam($key);
+}
+
+function cookie($key = null)
+{
+    return Container::getInstance()->make('request')->cookie($key);
+}
+
 /**
  * 保证json编码不会出错
  * @param $value

@@ -29,6 +29,13 @@ class Response extends Message implements ResponseInterface
     protected $responsePhrase = '';
 
     /**
+     * 响应的cookie
+     *
+     * @var array
+     */
+    protected $cookie = [];
+
+    /**
      * @param int $code
      * @param null|array $header
      * @param StreamInterface|null $body
@@ -131,6 +138,22 @@ class Response extends Message implements ResponseInterface
     }
 
     /**
+     * 设置Cookie
+     *
+     * @param string $name          cookie名称
+     * @param string $value         cookie值
+     * @param int $expire           超时时间
+     * @param string $path          cookie作用目录
+     * @param string $domain        cookie作用域名
+     * @param bool $secure          是否https专属
+     * @param bool|true $httponly   是否只有http可以使用cookie(启用后,JS将无法访问该cookie)
+     */
+    public function setCookie($name, $value, $expire = 0, $path = '/', $domain = '', $secure = false, $httponly = true)
+    {
+        $this->cookie[] = [$name, $value, $expire, $path, $domain, $secure, $httponly];
+    }
+
+    /**
      * 开始响应
      */
     public function send()
@@ -153,7 +176,9 @@ class Response extends Message implements ResponseInterface
                 header(sprintf('%s: %s',$name,$value));
             }
 
-            //TODO::响应COOKIE
+            foreach($this->cookie as list($name, $value, $expire, $path, $domain, $secure, $httponly)){
+                setcookie($name, $value, $expire, $path, $domain, $secure, $httponly);
+            }
         }
 
         //响应body内容

@@ -1,9 +1,12 @@
 <?php
 namespace Ant\Database;
 
-class Statement extends \PDOStatement {
+use PDO;
+use PDOStatement;
+
+class Statement extends PDOStatement {
     /**
-     * ·µ»ØÓÃÓÚÖ´ĞĞµÄsqlÓï¾ä
+     * è¿”å›ç”¨äºæ‰§è¡Œçš„sqlè¯­å¥
      *
      * @return string
      */
@@ -13,7 +16,7 @@ class Statement extends \PDOStatement {
     }
 
     /**
-     * ´Ó²éÑ¯½á¹ûÌáÈ¡ÏÂÒ»ĞĞ
+     * ä»æŸ¥è¯¢ç»“æœæå–ä¸‹ä¸€è¡Œ
      *
      * @return array
      */
@@ -23,29 +26,29 @@ class Statement extends \PDOStatement {
     }
 
     /**
-     * ´ÓÏÂÒ»ĞĞĞĞÖĞ»ñÈ¡Ö¸¶¨ÁĞµÄÊı¾İ
+     * ä»ä¸‹ä¸€è¡Œè¡Œä¸­è·å–æŒ‡å®šåˆ—çš„æ•°æ®
      *
-     * @param integer $col_number   ÁĞĞòºÅ
+     * @param integer $col_number   åˆ—åºå·
      * @return mixed
      */
     public function getCol($col_number = 0)
     {
-        return $this->fetch(\PDO::FETCH_COLUMN, $col_number);
+        return $this->fetch(PDO::FETCH_COLUMN, $col_number);
     }
 
     /**
-     * »ñÈ¡²éÑ¯½á¹ûÄÚÖ¸¶¨ÁĞµÄËùÓĞ½á¹û
+     * è·å–æŸ¥è¯¢ç»“æœå†…æŒ‡å®šåˆ—çš„æ‰€æœ‰ç»“æœ
      *
-     * @param integer $col_number   ÁĞĞòºÅ
+     * @param integer $col_number   åˆ—åºå·
      * @return array
      */
     public function getCols($col_number = 0)
     {
-        return $this->fetchAll(\PDO::FETCH_COLUMN, $col_number);
+        return $this->fetchAll(PDO::FETCH_COLUMN, $col_number);
     }
 
     /**
-     * ·µ»ØËùÓĞµÄ²éÑ¯½á¹û£¬ÔÊĞíÒÔÖ¸¶¨µÄ×Ö¶ÎÄÚÈİÎª·µ»ØÊı×éµÄkey
+     * è¿”å›æ‰€æœ‰çš„æŸ¥è¯¢ç»“æœï¼Œå…è®¸ä»¥æŒ‡å®šçš„å­—æ®µå†…å®¹ä¸ºè¿”å›æ•°ç»„çš„key
      *
      * @param null $column
      * @return array

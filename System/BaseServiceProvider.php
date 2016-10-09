@@ -31,7 +31,7 @@ class BaseServiceProvider implements ServiceProviderInterface
          *
          * @return Environment;
          */
-        $container->bindIf([Environment::class => 'environment'],function(){
+        $container->bindIf(['environment' => Environment::class],function(){
             return new Environment($_SERVER);
         });
 
@@ -40,7 +40,7 @@ class BaseServiceProvider implements ServiceProviderInterface
          *
          * @return Request
          */
-        $container->bindIf([Request::class => 'request'],function(){
+        $container->bindIf(['request' => Request::class],function(){
             return Request::createRequestFromEnvironment($this['environment']);
         },true);
 
@@ -49,14 +49,14 @@ class BaseServiceProvider implements ServiceProviderInterface
          *
          * @return Response
          */
-        $container->bindIf([Response::class => 'response'],function(){
+        $container->bindIf(['response' => Response::class],function(){
             return new Response();
         },true);
 
         /**
          * 注册 Ant Router 类
          */
-        $container->singleton([Router::class => 'Router'],function(){
+        $container->singleton(['Router' => Router::class],function(){
             return new Router($this);
         });
     }

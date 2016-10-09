@@ -114,9 +114,7 @@ class Router implements RouterInterface
         if(!$this->routeStartEnable){
             $this->group[] = [$attributes,$action];
         }else{
-            $this->compileRoute(
-                [$attributes,$action]
-            );
+            $this->compileRoute([$attributes,$action]);
         }
     }
 

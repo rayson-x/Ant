@@ -245,7 +245,6 @@ class App
      */
     protected function process($request,$response)
     {
-        //TODO::尝试将功能实现变更加优雅
         ob_start();
         $level = ob_get_level();
 

@@ -1,7 +1,10 @@
 <?php
 namespace Ant\Http;
 
-class Environment
+use ArrayIterator;
+use IteratorAggregate;
+
+class Environment implements IteratorAggregate
 {
     /**
      * @var array
@@ -45,7 +48,7 @@ class Environment
     {
         $items = is_array($items) ? $items : func_get_args();
 
-        $this->replace($items);
+        $this->items = $items;
     }
 
     /**
@@ -122,5 +125,10 @@ class Environment
     public function reset()
     {
         $this->items = [];
+    }
+
+    public function getIterator()
+    {
+        return new ArrayIterator($this->items);
     }
 }

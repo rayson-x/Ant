@@ -17,4 +17,8 @@ $router->get('/',function(){
     return 'Ant-Framework';
 });
 
+$router->post('/',function(){
+    var_dump(Ant\post());
+});
+
 return $app;

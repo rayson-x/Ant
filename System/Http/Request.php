@@ -99,7 +99,7 @@ class Request extends Message implements ServerRequestInterface
      *
      * @var bool
      */
-    protected $requestRoute = false;
+    protected $virtualPath = false;
 
     /**
      * 支持的http请求方式
@@ -491,7 +491,7 @@ class Request extends Message implements ServerRequestInterface
      */
     public function getRequestRoute()
     {
-        if($this->requestRoute === false){
+        if($this->virtualPath === false){
             //获取脚本路径
             $requestScriptName = parse_url($this->getServerParam('SCRIPT_NAME'), PHP_URL_PATH);
             $requestScriptDir = dirname($requestScriptName);
@@ -514,10 +514,10 @@ class Request extends Message implements ServerRequestInterface
                 $virtualPath = '/'.trim(substr($requestUri, strlen($basePath)), '/');
             }
 
-            $this->requestRoute = $virtualPath;
+            $this->virtualPath = $virtualPath;
         }
 
-        return $this->requestRoute;
+        return $this->virtualPath;
     }
 
     /**

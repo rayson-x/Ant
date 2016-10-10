@@ -2,7 +2,7 @@
 namespace Ant\Http;
 
 use RuntimeException;
-use InvalidArgumentException;
+use UnexpectedValueException;
 use Psr\Http\Message\StreamInterface;
 
 /**
@@ -72,7 +72,7 @@ class Stream implements StreamInterface
     public function __construct($stream)
     {
         if(!is_resource($stream)){
-            throw new InvalidArgumentException(__METHOD__ . ' argument must be a valid PHP resource');
+            throw new UnexpectedValueException(__METHOD__ . ' argument must be a valid PHP resource');
         }
         $this->stream = $stream;
 
@@ -255,12 +255,24 @@ class Stream implements StreamInterface
     /**
      * 写入字符串,返回写入长度
      *
-     * @param string $string
+     * @param $content $string
      * @return int
      */
-    public function write($string)
+    public function write($content)
     {
-        if (!$this->isWritable() || ($written = fwrite($this->stream, $string)) === false) {
+        if (null !== $content &&
+            !is_string($content) &&
+            !is_numeric($content) &&
+            !method_exists($content,'__toString'))
+        {
+            //参数错误
+            throw new UnexpectedValueException(
+                sprintf('The Response content must be a string or object implementing __toString(), "%s" given.', gettype($content))
+            );
+        }
+
+        if (!$this->isWritable() || ($written = fwrite($this->stream, $content)) === false) {
+            //写入失败
             throw new RuntimeException('Could not write to stream');
         }
 

@@ -14,11 +14,12 @@ $app->addMiddleware(function (Ant\Http\Request $request,Ant\Http\Response $respo
 $router = $app->createRouter();
 
 $router->get('/',function(){
-    return 'Ant-Framework';
+//    return 'Ant-Framework';
+    return [123,123];
 });
 
 $router->post('/',function(){
-    var_dump(Ant\post());
+    var_dump(post());
 });
 
 return $app;

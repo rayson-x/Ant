@@ -231,7 +231,11 @@ class App
         $request = $this->container['request'];
         $response = $this->container['response'];
 
-        $response = $this->process($request,$response);
+        $result = $this->process($request,$response);
+
+        if(!$result instanceof HttpResponse){
+            $response->write($result);
+        }
 
         $response->send();
     }
@@ -245,12 +249,12 @@ class App
      */
     protected function process($request,$response)
     {
-        ob_start();
-        $level = ob_get_level();
-
+        //TODO::将缓冲区在响应解析完毕之后输出
         try{
             $result = $this->sendThroughMiddleware([$request,$response],$this->middleware,function(){
-                return $this->container['Router']->run(...func_get_args());
+                return $this->parseResponse(
+                    $this->container['Router']->run(...func_get_args())
+                );
             });
         }catch(\Exception $exception){
             $result = call_user_func($this->getExceptionHandler(),$exception,$request,$response);
@@ -258,18 +262,13 @@ class App
             $result = call_user_func($this->getExceptionHandler(),$error,$request,$response);
         }
 
-        if(! $result instanceof HttpResponse){
-            if($result === null){
-                while(ob_get_level() > $level){
-                    //丢弃顶层缓冲区
-                    ob_end_clean();
-                }
+        return $result;
+    }
 
-                //获取并关闭当前等级缓冲区内容
-                $result = ob_get_clean();
-            }
-
-            $result = $response->write((string) $result);
+    protected function parseResponse($result)
+    {
+        if(!$result instanceof HttpResponse){
+            return $this->container['response']->setContent($result);
         }
 
         return $result;

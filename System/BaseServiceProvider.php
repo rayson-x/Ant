@@ -8,6 +8,7 @@ use Ant\Http\Environment;
 use Ant\Interfaces\Container\ContainerInterface;
 use Ant\Interfaces\Container\ServiceProviderInterface;
 
+//TODO::性能优化,此处消耗了40%的时间
 class BaseServiceProvider implements ServiceProviderInterface
 {
     public function register(ContainerInterface $container)
@@ -31,7 +32,7 @@ class BaseServiceProvider implements ServiceProviderInterface
          *
          * @return Environment;
          */
-        $container->bindIf(['environment' => Environment::class],function(){
+        $container->bind(['environment' => Environment::class],function(){
             return new Environment($_SERVER);
         });
 
@@ -40,18 +41,18 @@ class BaseServiceProvider implements ServiceProviderInterface
          *
          * @return Request
          */
-        $container->bindIf(['request' => Request::class],function(){
+        $container->singleton(['request' => Request::class],function(){
             return Request::createRequestFromEnvironment($this['environment']);
-        },true);
+        });
 
         /**
          * 注册 Http Response 类
          *
          * @return Response
          */
-        $container->bindIf(['response' => Response::class],function(){
+        $container->singleton(['response' => Response::class],function(){
             return new Response();
-        },true);
+        });
 
         /**
          * 注册 Ant Router 类

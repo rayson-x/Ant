@@ -263,6 +263,8 @@ class Router implements RouterInterface
     {
         if($request instanceof \Ant\Http\Request){
             return [$request->getMethod(),$request->getRequestRoute()];
+        }elseif($request instanceof \Psr\Http\Message\ServerRequestInterface){
+
         }else{
             //TODO::通过自己的处理方式获取请求信息
         }

@@ -1,6 +1,4 @@
 <?php
-namespace Ant;
-
 use Ant\Support\ArrayHandle;
 use Ant\Container\Container;
 

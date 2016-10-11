@@ -2,8 +2,6 @@
 namespace Ant\SimpleRouter;
 
 use Closure;
-use Exception;
-use Throwable;
 use RuntimeException;
 use BadFunctionCallException;
 use InvalidArgumentException;
@@ -29,13 +27,6 @@ class Router
      * @var Container
      */
     protected $container;
-
-    /**
-     * 路由启动开关
-     *
-     * @var bool
-     */
-    protected $routeStartEnable = false;
 
     /**
      * 请求的路由
@@ -81,10 +72,12 @@ class Router
 
     /**
      * Routing constructor.
+     *
+     * @param Container $container
      */
-    public function __construct()
+    public function __construct(Container $container = null)
     {
-        $this->container = Container::getInstance();
+        $this->container = $container ?: Container::getInstance();
     }
 
     /**
@@ -95,22 +88,18 @@ class Router
      */
     public function group(array $attributes, Closure $action)
     {
-        //开启路由之后,再进行路由分组会直接生成路由映射
-        if(!$this->routeStartEnable){
-            $keyword = '#/#';
+        //保留父级分组属性
+        $parentGroupAttributes = $this->groupAttributes;
 
-            //路由器开始时禁用关键词功能
-            if(isset($attributes['keyword'])){
-                //关键词覆盖分组前缀
-                $keyword = $attributes['keyword'];
-            }
-
-            $this->group[$keyword][] = [$attributes,$action];
-        }else{
-            $this->compileRoute([
-                [$attributes,$action]
-            ]);
+        if (isset($attributes['middleware']) && is_string($attributes['middleware'])) {
+            $attributes['middleware'] = explode('|', $attributes['middleware']);
         }
+
+        $this->groupAttributes = $attributes;
+
+        call_user_func($action, $this);
+
+        $this->groupAttributes = $parentGroupAttributes;
     }
 
     /**
@@ -313,22 +302,12 @@ class Router
             return $this->dispatcher;
         }
 
-        $dispatcherCallable = function(RouteCollector $r){
+        $this->dispatcher = \FastRoute\simpleDispatcher(function(RouteCollector $r){
             //加载路由到路由控制器中
             foreach($this->routes as $route){
                 $r->addRoute($route['method'],$route['uri'],$route['action']);
             }
-        };
-
-        //是否使用FastRoute路由缓存
-        if($this->FastRouteCacheFile){
-            $this->dispatcher = \FastRoute\cachedDispatcher($dispatcherCallable,[
-                'cacheFile' => $this->FastRouteCacheFile,
-                'cacheDisabled' => true,
-            ]);
-        }else{
-            $this->dispatcher = \FastRoute\simpleDispatcher($dispatcherCallable);
-        }
+        });
 
         return $this->dispatcher;
     }
@@ -341,27 +320,6 @@ class Router
     public function setDispatcher(\FastRoute\Dispatcher $dispatcher)
     {
         $this->dispatcher = $dispatcher;
-    }
-
-    /**
-     * 设置缓存文件
-     *
-     * @param $cacheFile
-     * @return $this
-     */
-    protected function setCacheFile($cacheFile)
-    {
-        if (!is_string($cacheFile) && $cacheFile !== false) {
-            throw new InvalidArgumentException('Routing cacheFile must be a string or false');
-        }
-
-        $this->FastRouteCacheFile = $cacheFile;
-
-        if ($cacheFile !== false && !is_writable(dirname($cacheFile))) {
-            throw new RuntimeException('Routing cacheFile directory must be writable');
-        }
-
-        return $this;
     }
 
     /**
@@ -387,16 +345,9 @@ class Router
      */
     public function run($request,$response)
     {
-        try{
-            //启动路由器
-            $this->routeStartEnable = true;
+        list($middleware,$handle) = $this->dispatch($request);
 
-            list($middleware,$handle) = $this->dispatch($request);
-
-            return (new Middleware)->send($request,$response)->through($middleware)->then($handle);
-        }finally{
-            $this->routeStartEnable = false;
-        }
+        return (new Middleware)->send($request,$response)->through($middleware)->then($handle);
     }
 
     /**
@@ -411,8 +362,6 @@ class Router
         $pathInfo = $request->getRequestRoute();
         $this->routeRequest = $method.$pathInfo;
 
-        $this->addRouteFromGroup($pathInfo);
-
         //进行简单路由匹配
         if (isset($this->routes[$this->routeRequest])) {
             return $this->handleFoundRoute($this->routes[$this->routeRequest]['action'],[]);
@@ -422,54 +371,6 @@ class Router
         return $this->handleDispatcher(
             $this->createDispatcher()->dispatch($method,$pathInfo)
         );
-    }
-
-    /**
-     * 添加分组路由
-     *
-     * @param $pathInfo
-     */
-    protected function addRouteFromGroup($pathInfo)
-    {
-        //获取关键词
-        $keywords = array_keys(array_reverse($this->group));
-
-        //进行关键词匹配
-        foreach($keywords as $keyword){
-            if(preg_match($keyword,$pathInfo) === 1) {
-                $this->compileRoute($this->group[$keyword]);
-
-                break;
-            }
-        }
-    }
-
-    /**
-     * 解析路由
-     *
-     * @param array $group
-     */
-    protected function compileRoute(array $group)
-    {
-        foreach($group as list($attributes,$action)){
-            //保留父级分组属性
-            $parentGroupAttributes = $this->groupAttributes;
-
-            if (isset($attributes['middleware']) && is_string($attributes['middleware'])) {
-                $attributes['middleware'] = explode('|', $attributes['middleware']);
-            }
-
-            //设置二级缓存
-            if(isset($attributes['cacheFile'])){
-                $this->setCacheFile($attributes['cacheFile']);
-            }
-
-            $this->groupAttributes = $attributes;
-
-            call_user_func($action, $this);
-
-            $this->groupAttributes = $parentGroupAttributes;
-        }
     }
 
     /**

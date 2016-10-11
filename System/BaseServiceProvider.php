@@ -3,7 +3,7 @@ namespace Ant;
 
 use Ant\Http\Request;
 use Ant\Http\Response;
-use Ant\Routing\Router;
+use Ant\SimpleRouter\Router;
 use Ant\Http\Environment;
 use Ant\Interfaces\Container\ContainerInterface;
 use Ant\Interfaces\Container\ServiceProviderInterface;

@@ -168,17 +168,15 @@ class Response extends Message implements ResponseInterface
     protected $cookie = [];
 
     /**
-     * @param array|object|string   $content
      * @param int                   $code
      * @param null|array            $header
      * @param StreamInterface|null  $body
      */
-    public function __construct($content = '',$code = 200,$header = [],StreamInterface $body = null)
+    public function __construct($code = 200,$header = [],StreamInterface $body = null)
     {
         $this->code = $code;
         $this->headers = $header ?: [];
         $this->body = $body ? : new Body(fopen('php://temp', 'r+'));
-        $this->setContent($content);
     }
 
     /**

@@ -345,24 +345,11 @@ class Router implements RouterInterface
      */
     protected function createDispatcher()
     {
-        if (!$this->dispatcher) {
-            $routeDefinitionCallback = function (RouteCollector $r) {
-                foreach ($this->routes as $route) {
-                    $r->addRoute($route->getMethod(), $route->getUri(), $route->getAction());
-                }
-            };
-
-            if ($this->cacheFile) {
-                $this->dispatcher = \FastRoute\cachedDispatcher($routeDefinitionCallback,[
-                    'cacheDisabled' => true,
-                    'cacheFile' => $this->cacheFile,
-                ]);
-            } else {
-                $this->dispatcher = \FastRoute\simpleDispatcher($routeDefinitionCallback);
+        return $this->dispatcher ?: \FastRoute\simpleDispatcher(function (RouteCollector $r) {
+            foreach ($this->routes as $route) {
+                $r->addRoute($route->getMethod(), $route->getUri(), $route->getAction());
             }
-        }
-
-        return $this->dispatcher;
+        });
     }
 
     /**

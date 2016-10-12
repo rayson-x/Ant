@@ -210,7 +210,7 @@ class App
      */
     public function createRouter()
     {
-        return $this->container['Router'];
+        return $this->container->make('router');
     }
     
     /**
@@ -253,7 +253,7 @@ class App
         try{
             $result = $this->sendThroughMiddleware([$request,$response],$this->middleware,function(){
                 return $this->parseResponse(
-                    $this->container['Router']->run(...func_get_args())
+                    $this->container['router']->run(...func_get_args())
                 );
             });
         }catch(\Exception $exception){

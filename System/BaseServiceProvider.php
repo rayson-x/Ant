@@ -3,12 +3,11 @@ namespace Ant;
 
 use Ant\Http\Request;
 use Ant\Http\Response;
-use Ant\SimpleRouter\Router;
+use Ant\Routing\Router;
 use Ant\Http\Environment;
 use Ant\Interfaces\Container\ContainerInterface;
 use Ant\Interfaces\Container\ServiceProviderInterface;
 
-//TODO::性能优化,此处消耗了40%的时间
 class BaseServiceProvider implements ServiceProviderInterface
 {
     public function register(ContainerInterface $container)
@@ -32,7 +31,7 @@ class BaseServiceProvider implements ServiceProviderInterface
          *
          * @return Environment;
          */
-        $container->bind(['environment' => Environment::class],function(){
+        $container->bind('environment',function(){
             return new Environment($_SERVER);
         });
 
@@ -41,7 +40,7 @@ class BaseServiceProvider implements ServiceProviderInterface
          *
          * @return Request
          */
-        $container->singleton(['request' => Request::class],function(){
+        $container->singleton('request',function(){
             return Request::createRequestFromEnvironment($this['environment']);
         });
 
@@ -50,14 +49,14 @@ class BaseServiceProvider implements ServiceProviderInterface
          *
          * @return Response
          */
-        $container->singleton(['response' => Response::class],function(){
+        $container->singleton('response',function(){
             return new Response();
         });
 
         /**
          * 注册 Ant Router 类
          */
-        $container->singleton(['Router' => Router::class],function(){
+        $container->singleton('router',function(){
             return new Router($this);
         });
     }
@@ -74,7 +73,7 @@ class BaseServiceProvider implements ServiceProviderInterface
          *
          * @return Request
          */
-        $container->extend(Request::class,function($request){
+        $container->extend('request',function($request){
             /* @var $request Request */
             $request->setBodyParsers('json',function($input){
                 return safe_json_decode($input,true);

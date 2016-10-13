@@ -11,7 +11,7 @@ use Ant\Interfaces\Router\RouterInterface;
 use Ant\Interfaces\Container\ContainerInterface;
 
 /**
- * TODO::待重构“关键词”功能
+ * TODO::“关键词”功能
  *
  * Class Routing
  * @package Ant\Routing
@@ -266,7 +266,7 @@ class Router implements RouterInterface
         }elseif($request instanceof \Psr\Http\Message\ServerRequestInterface){
 
         }else{
-            //TODO::通过自己的处理方式获取请求信息
+
         }
     }
 
@@ -292,7 +292,7 @@ class Router implements RouterInterface
             $this->groupAttributes = $this->extendParentGroupAttributes($attributes);
         }
 
-        call_user_func($action, $this);
+        $action($this);
 
         $this->groupAttributes = $parentGroupAttributes;
     }

@@ -273,7 +273,7 @@ class Response extends Message implements ResponseInterface
     public function setJson($data,$status = null,$encodingOptions = 0)
     {
         $this->getBody()->rewind();
-        $this->getBody()->write($json = safe_json_encode($data, $encodingOptions));
+        $this->getBody()->write(safe_json_encode($data, $encodingOptions));
 
         $this->withHeader('Content-Type', 'application/json;charset=utf-8');
         if (isset($status)) {
@@ -449,7 +449,7 @@ class Response extends Message implements ResponseInterface
         is_array($content);
     }
 
-    /***
+    /**
      * @return string
      */
     public function __toString()

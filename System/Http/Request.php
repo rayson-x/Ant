@@ -685,27 +685,4 @@ class Request extends Message implements ServerRequestInterface
 
         $this->bodyParsers[$subtype] = $parsers;
     }
-
-    /**
-     * 保持数据不变性
-     *
-     * @param $instance Request
-     * @param $attribute string
-     * @param $value mixed
-     * @return Request
-     */
-    protected function immutability(Request $instance,$attribute,$value)
-    {
-        $result = clone $instance;
-        if(is_array($attribute)){
-            $array = $attribute[0];
-            $key = $attribute[1];
-
-            $result->$array[$key] = $value;
-        }else{
-            $result->$attribute = $value;
-        }
-
-        return $result;
-    }
 }

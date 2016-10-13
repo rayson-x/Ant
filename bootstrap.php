@@ -13,8 +13,8 @@ $app->addMiddleware(function (Ant\Http\Request $request,Ant\Http\Response $respo
 
 $router = $app->createRouter();
 
-$router->get('/',function(){
-//    return 'Ant-Framework';
+$router->get('/',function($request,$response){
+    $response->setCookie('test','test');
     return [123,123];
 });
 

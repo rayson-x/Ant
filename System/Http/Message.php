@@ -52,10 +52,7 @@ abstract class Message implements MessageInterface
      */
     public function withProtocolVersion($version)
     {
-        $result = $this->immutability ? clone $this : $this;
-        $result->protocolVersion = $version;
-
-        return $result;
+        return $this->immutability('protocolVersion',$version);
     }
 
     /**
@@ -121,12 +118,7 @@ abstract class Message implements MessageInterface
      */
     public function withHeader($name, $value)
     {
-        $result = $this->immutability ? clone $this : $this;
-
-        $value = is_array($value) ? $value : explode(',',$value);
-        $result->headers[$name] = $value;
-
-        return $result;
+        return $this->immutability('headers',is_array($value) ? $value : explode(',',$value));
     }
 
     /**
@@ -189,8 +181,27 @@ abstract class Message implements MessageInterface
             return $this;
         }
 
+        return $this->immutability('body',$body);
+    }
+
+    /**
+     * 保持数据不变性
+     *
+     * @param $attribute string
+     * @param $value mixed
+     * @return self
+     */
+    protected function immutability($attribute,$value)
+    {
+        //TODO::尝试用重载函数完成
         $result = $this->immutability ? clone $this : $this;
-        $result->body = $body;
+        if(is_array($attribute)){
+            list($array,$key) = $attribute;
+
+            $result->$array[$key] = $value;
+        }else{
+            $result->$attribute = $value;
+        }
 
         return $result;
     }

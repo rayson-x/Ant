@@ -52,7 +52,7 @@ abstract class Message implements MessageInterface
      */
     public function withProtocolVersion($version)
     {
-        return $this->immutability('protocolVersion',$version);
+        return $this->changeAttribute('protocolVersion',$version);
     }
 
     /**
@@ -118,7 +118,7 @@ abstract class Message implements MessageInterface
      */
     public function withHeader($name, $value)
     {
-        return $this->immutability('headers',is_array($value) ? $value : explode(',',$value));
+        return $this->changeAttribute(['headers',$name],is_array($value) ? $value : explode(',',$value));
     }
 
     /**
@@ -150,13 +150,10 @@ abstract class Message implements MessageInterface
         if (!$this->hasHeader($name)) {
             return $this;
         }
+        $header = $this->headers;
+        unset($header[strtolower($name)]);
 
-        $result = $this->immutability ? clone $this : $this;
-        $name = strtolower($name);
-
-        unset($result->headers[$name]);
-
-        return $result;
+        return $this->changeAttribute('headers',$header);
     }
 
     /**
@@ -181,7 +178,23 @@ abstract class Message implements MessageInterface
             return $this;
         }
 
-        return $this->immutability('body',$body);
+        return $this->changeAttribute('body',$body);
+    }
+
+    /**
+     * 设置对象不变性
+     * 根据PSR-7的接口要求
+     * 每次修改请求内容或者响应内容
+     * 都要保证原有数据不能被覆盖
+     * 所以在改变了一项属性的时候需要clone一个相同的类
+     * 去改变那个相同的类的属性，通过这种方式保证原有数据不被覆盖
+     * 本人出于损耗与易用性，给这个保持不变性加上了一个开关
+     *
+     * @param bool|false $enable
+     */
+    public function setImmutability($enable = false)
+    {
+        $this->immutability = $enable;
     }
 
     /**
@@ -191,9 +204,8 @@ abstract class Message implements MessageInterface
      * @param $value mixed
      * @return self
      */
-    protected function immutability($attribute,$value)
+    protected function changeAttribute($attribute,$value)
     {
-        //TODO::尝试用重载函数完成
         $result = $this->immutability ? clone $this : $this;
         if(is_array($attribute)){
             list($array,$key) = $attribute;

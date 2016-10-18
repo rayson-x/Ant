@@ -233,11 +233,7 @@ class App
 
         $result = $this->process($request,$response);
 
-        if(!$result instanceof HttpResponse){
-            $response->write($result);
-        }
-
-        $response->send();
+        $result->send();
     }
 
     /**
@@ -249,7 +245,6 @@ class App
      */
     protected function process($request,$response)
     {
-        //TODO::将缓冲区在响应解析完毕之后输出
         try{
             $result = $this->sendThroughMiddleware([$request,$response],$this->middleware,function(){
                 return $this->parseResponse(
@@ -265,10 +260,15 @@ class App
         return $result;
     }
 
+    /**
+     * @param $result
+     * @return HttpResponse
+     */
     protected function parseResponse($result)
     {
         if(!$result instanceof HttpResponse){
-            return $this->container['response']->setContent($result);
+            $this->container['response']->setContent($result);
+            $result = $this->container['response'];
         }
 
         return $result;

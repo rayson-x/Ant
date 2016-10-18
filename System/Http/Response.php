@@ -140,13 +140,6 @@ class Response extends Message implements ResponseInterface
     ];
 
     /**
-     * 是否保持数据不变性
-     *
-     * @var bool
-     */
-    protected $immutability = false;
-
-    /**
      * http状态码
      *
      * @var int
@@ -202,10 +195,9 @@ class Response extends Message implements ResponseInterface
             throw new InvalidArgumentException('Invalid HTTP status code');
         }
 
-        $this->code = $code;
         $this->responsePhrase = (string) $reasonPhrase;
 
-        return $this;
+        return $this->changeAttribute('code',$code);
     }
 
     /**
@@ -445,8 +437,8 @@ class Response extends Message implements ResponseInterface
     {
         //默认将实现了json序列化方法的对象进行JSON序列化
         return $content instanceof JsonSerializable ||
-        $content instanceof ArrayObject ||
-        is_array($content);
+            $content instanceof ArrayObject ||
+            is_array($content);
     }
 
     /**

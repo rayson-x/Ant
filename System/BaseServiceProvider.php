@@ -50,7 +50,9 @@ class BaseServiceProvider implements ServiceProviderInterface
          * @return Response
          */
         $container->singleton('response',function(){
-            return new Response();
+            $res = new Response();
+            $res->setImmutability();
+            return $res;
         });
 
         /**

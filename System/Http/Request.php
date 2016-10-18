@@ -18,13 +18,6 @@ use Psr\Http\Message\ServerRequestInterface;
 class Request extends Message implements ServerRequestInterface
 {
     /**
-     * 是否保持数据不变性
-     *
-     * @var bool
-     */
-    protected $immutability = true;
-
-    /**
      * 请求资源
      *
      * @var string
@@ -181,7 +174,7 @@ class Request extends Message implements ServerRequestInterface
      */
     public function withRequestTarget($requestTarget)
     {
-        return $this->immutability($this,['serverParams','REQUEST_URI'],$requestTarget);
+        return $this->changeAttribute(['serverParams','REQUEST_URI'],$requestTarget);
     }
 
     /**
@@ -217,7 +210,7 @@ class Request extends Message implements ServerRequestInterface
      */
     public function withMethod($method)
     {
-        return $this->immutability($this,'method',$this->filterMethod($method));
+        return $this->changeAttribute('method',$this->filterMethod($method));
     }
 
     /**
@@ -276,7 +269,7 @@ class Request extends Message implements ServerRequestInterface
             $host = $this->getHeader('host');
         }
 
-        return $this->immutability($this,['headers','host'],$host);
+        return $this->changeAttribute(['headers','host'],$host);
     }
 
     /**
@@ -320,7 +313,7 @@ class Request extends Message implements ServerRequestInterface
      */
     public function withCookieParams(array $cookies)
     {
-        return $this->immutability($this,'cookieParams',$cookies);
+        return $this->changeAttribute('cookieParams',$cookies);
     }
 
     /**
@@ -351,7 +344,7 @@ class Request extends Message implements ServerRequestInterface
      */
     public function withQueryParams(array $query)
     {
-        return $this->immutability($this,'queryParams',$query);
+        return $this->changeAttribute('queryParams',$query);
     }
 
     /**
@@ -383,7 +376,7 @@ class Request extends Message implements ServerRequestInterface
      */
     public function withUploadedFiles(array $uploadedFiles)
     {
-        return $this->immutability($this,'uploadFiles',$uploadedFiles);
+        return $this->changeAttribute('uploadFiles',$uploadedFiles);
     }
 
     /**
@@ -430,7 +423,7 @@ class Request extends Message implements ServerRequestInterface
             throw new InvalidArgumentException('Parsed body value must be an array, an object, or null');
         }
 
-        return $this->immutability($this,'bodyParsed',$data);
+        return $this->changeAttribute('bodyParsed',$data);
     }
 
     /**
@@ -464,7 +457,7 @@ class Request extends Message implements ServerRequestInterface
      */
     public function withAttribute($name, $value)
     {
-        return $this->immutability($this,['attributes',$name],$value);
+        return $this->changeAttribute(['attributes',$name],$value);
     }
 
     /**

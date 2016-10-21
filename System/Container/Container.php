@@ -21,7 +21,8 @@ use Ant\Interfaces\Container\ServiceProviderInterface;
  * Class Container
  * @package Ant
  */
-class Container implements ContainerInterface,ArrayAccess{
+class Container implements ContainerInterface,ArrayAccess
+{
     use Singleton;
 
     /**
@@ -759,9 +760,9 @@ class Container implements ContainerInterface,ArrayAccess{
     }
 
     /**
-     * 服务提供者
+     * 通过服务提供者注册服务
      *
-     * @param \Ant\Interfaces\ServiceProviderInterface $serviceProvider
+     * @param ServiceProviderInterface $serviceProvider
      */
     public function registerService(ServiceProviderInterface $serviceProvider)
     {
@@ -779,5 +780,40 @@ class Container implements ContainerInterface,ArrayAccess{
         $this->extenders = [];
         $this->bindings = [];
         $this->tags = [];
+    }
+
+    /**
+     * @param $key
+     * @param $value
+     */
+    public function __set($key,$value)
+    {
+        $this->offsetSet($key,$value);
+    }
+
+    /**
+     * @param $key
+     * @return object
+     */
+    public function __get($key)
+    {
+        return $this->offsetGet($key);
+    }
+
+    /**
+     * @param $key
+     * @return bool
+     */
+    public function __isset($key)
+    {
+        return $this->offsetExists($key);
+    }
+
+    /**
+     * @param $key
+     */
+    public function __unset($key)
+    {
+        $this->offsetUnset($key);
     }
 }

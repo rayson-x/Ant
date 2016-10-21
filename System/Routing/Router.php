@@ -22,7 +22,7 @@ class Router implements RouterInterface
     /**
      * 服务容器
      *
-     * @var Container
+     * @var ContainerInterface
      */
     protected $container;
 
@@ -256,6 +256,8 @@ class Router implements RouterInterface
     }
 
     /**
+     * 解析请求
+     *
      * @param $request
      * @return array
      */
@@ -271,7 +273,7 @@ class Router implements RouterInterface
     }
 
     /**
-     * 将分组编译为符合规范的路由
+     * 注册路由分组中的路由
      *
      * @param $routeGroup array
      */
@@ -418,12 +420,9 @@ class Router implements RouterInterface
         $middleware = is_string($middleware) ? explode('|', $middleware) : (array) $middleware;
 
         return array_map(function($middleware){
-            $middleware = (!is_string($middleware))
-                ? $middleware
-                : (isset($this->middleware[$middleware]) ? $this->middleware[$middleware] : $middleware);
-
             //获取可以回调的路由
             if(is_string($middleware)){
+                $middleware = isset($this->middleware[$middleware]) ? $this->middleware[$middleware] : $middleware;
                 return $this->container->make($middleware);
             }elseif($middleware instanceof \Closure){
                 return $middleware;

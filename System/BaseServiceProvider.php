@@ -51,7 +51,7 @@ class BaseServiceProvider implements ServiceProviderInterface
          */
         $container->singleton('response',function(){
             $res = new Response();
-            $res->setImmutability();
+            $res->setImmutability(false);
             return $res;
         });
 

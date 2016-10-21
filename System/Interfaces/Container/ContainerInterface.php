@@ -102,4 +102,14 @@ interface ContainerInterface
      * @param $name
      */
     public function forgetService($name);
+
+    /**
+     * 通过容器获取回调依赖后回调
+     *
+     * @param $callback
+     * @param array $parameters
+     * @param null $defaultMethod
+     * @return mixed
+     */
+    public function call($callback,$parameters = [],$defaultMethod = null);
 }

@@ -124,7 +124,7 @@ class App
         set_error_handler(function($level, $message, $file = '', $line = 0){
             throw new \ErrorException($message, 0, $level, $file, $line);
         });
-        error_reporting(-1);
+        error_reporting(E_ALL);
     }
 
     /**

@@ -97,7 +97,7 @@ class App
     }
 
     /**
-     * 注册服务提供者
+     * 注册服务提供者,如果服务提供者不符合规范将会跳过
      *
      * @param $provider
      */
@@ -113,17 +113,20 @@ class App
 
         $this->loadedProviders[$providerName] = true;
 
-        //TODO::遇到类型错误的服务容器在 抛出异常,跳过此服务 二者选一
         if($provider instanceof ServiceProviderInterface){
             $this->container->registerService($provider);
         }
     }
 
+    /**
+     * 注册错误信息
+     */
     public function registerError()
     {
         set_error_handler(function($level, $message, $file = '', $line = 0){
             throw new \ErrorException($message, 0, $level, $file, $line);
         });
+
         error_reporting(-1);
     }
 

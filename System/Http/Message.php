@@ -83,7 +83,7 @@ abstract class Message implements MessageInterface
      * 返回指定header数组
      *
      * @param $name
-     * @return string[]
+     * @return array
      */
     public function getHeader($name)
     {
@@ -133,7 +133,7 @@ abstract class Message implements MessageInterface
         if($this->hasHeader($name)){
             $value = (is_array($value))
                 ? array_merge($this->getHeader($name),$value)
-                : $value = implode(',',$this->getHeader($name)).','.$value;
+                : implode(',',$this->getHeader($name)).','.$value;
         }
 
         return $this->withHeader($name, $value);

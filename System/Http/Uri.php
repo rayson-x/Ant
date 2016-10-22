@@ -78,7 +78,7 @@ class Uri implements UriInterface
      */
     public static function createFromEnvironment(Environment $server)
     {
-        $scheme = (empty($scheme) || $server->get('HTTPS') === 'off') ? 'http' : 'https';
+        $scheme = (empty($scheme) || $server->get('HTTPS') == 'off') ? 'http' : 'https';
         $user = $server->get('PHP_AUTH_USER','');
         $password = $server->get('PHP_AUTH_PW','');
 
@@ -86,7 +86,7 @@ class Uri implements UriInterface
         if($httpHost = $server->get('HTTP_HOST',false)){
             if(strpos($httpHost,':')){
                 list($host,$port) = explode(':',$httpHost,2);
-                $port = intval($port);
+                $port = (int)$port;
             }else{
                 $host = $httpHost;
                 $port = null;
@@ -105,16 +105,16 @@ class Uri implements UriInterface
      * Uri constructor.
      * @param $scheme
      * @param $host
-     * @param $uri
+     * @param $url
      * @param null $port
      * @param string $user
      * @param string $password
      */
-    public function __construct($scheme,$host,$uri,$port = null,$user = '',$password = '')
+    public function __construct($scheme,$host,$url,$port = null,$user = '',$password = '')
     {
         $parsed = [];
-        if ($uri) {
-            $parsed = parse_url($uri) ?: [];
+        if ($url) {
+            $parsed = parse_url($url) ?: [];
         }
 
         $this->scheme = $scheme;

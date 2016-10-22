@@ -76,7 +76,7 @@ class Request extends Message implements ServerRequestInterface
     /**
      * body 解析器 根据subtype进行调用
      *
-     * @var callable[]
+     * @var array[callable...]
      */
     protected $bodyParsers = [];
 
@@ -361,7 +361,7 @@ class Request extends Message implements ServerRequestInterface
     /**
      * 获取上传文件信息
      *
-     * @return array[]|UploadedFileInterface
+     * @return array
      */
     public function getUploadedFiles()
     {

@@ -8,7 +8,8 @@ class RequestBody extends Body
      *
      * RequestBody constructor.
      */
-    public function __construct(){
+    public function __construct()
+    {
         $stream = fopen('php://temp','w+');
         stream_copy_to_stream(fopen('php://input','r'),$stream);
         rewind($stream);

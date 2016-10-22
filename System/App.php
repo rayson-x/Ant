@@ -191,12 +191,18 @@ class App
         return function($exception,$request,$response){
             /* @var $response HttpResponse */
             if ($exception instanceof HttpException) {
-                $status = $exception->getCode();
+                // 获取HTTP状态码
+                $status = $exception->getStatusCode();
+
+                // 将头信息写入响应头
+                foreach($exception->getHeaders() as $name => $value){
+                    $response->withAddedHeader($name,$value);
+                }
             } else {
                 $status = 500;
             }
-
             $response->withStatus($status);
+
             foreach (exceptionHandle($exception) as $key => $value) {
                 $response->write($value."<br>");
             }

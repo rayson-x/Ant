@@ -319,6 +319,9 @@ class Stream implements StreamInterface
         return is_resource($this->stream);
     }
 
+    /**
+     * 关闭资源
+     */
     public function __destruct()
     {
         $this->close();

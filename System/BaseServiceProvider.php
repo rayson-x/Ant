@@ -12,9 +12,6 @@ class BaseServiceProvider implements ServiceProviderInterface
 {
     public function register(ContainerInterface $container)
     {
-        /**
-         * 按照顺序注册服务
-         */
         $this->registerClass($container);
         $this->registerServiceExtend($container);
     }
@@ -28,8 +25,6 @@ class BaseServiceProvider implements ServiceProviderInterface
     {
         /**
          * 注册Server数据集
-         *
-         * @return Environment;
          */
         $container->bind('environment',function(){
             return new Environment($_SERVER);
@@ -37,8 +32,6 @@ class BaseServiceProvider implements ServiceProviderInterface
 
         /**
          * 注册 Http Request 处理类
-         *
-         * @return Request
          */
         $container->singleton('request',function(){
             return Request::createRequestFromEnvironment($this['environment']);
@@ -46,8 +39,6 @@ class BaseServiceProvider implements ServiceProviderInterface
 
         /**
          * 注册 Http Response 类
-         *
-         * @return Response
          */
         $container->singleton('response',function(){
             $res = new Response();
@@ -72,8 +63,6 @@ class BaseServiceProvider implements ServiceProviderInterface
     {
         /**
          * 扩展 Http Request 处理类
-         *
-         * @return Request
          */
         $container->extend('request',function($request){
             /* @var $request Request */
@@ -92,6 +81,8 @@ class BaseServiceProvider implements ServiceProviderInterface
                 parse_str($input,$data);
                 return $data;
             });
+
+            return $request;
         });
     }
 }

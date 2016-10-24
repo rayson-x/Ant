@@ -1,52 +1,35 @@
 <?php
 namespace Ant;
 
+use Ant\Traits\Singleton;
 use Ant\Container\Container;
 use Ant\Middleware\Middleware;
+use Ant\Exception\HttpException;
 use Ant\Http\Request as HttpRequest;
 use Ant\Http\Response as HttpResponse;
-use Ant\Http\Exception as HttpException;
-use Ant\Interfaces\Container\ServiceProviderInterface;use Psr\Http\Message\RequestInterface;
+use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
+use Ant\Interfaces\Container\ServiceProviderInterface;
 
 /**
  * Class App
  * @package Ant
- *
- * 重载了服务容器的方法
- * @method Container bound($serviceName)
- * @method Container resolved($serviceName)
- * @method Container alias($serviceName, $alias)
- * @method Container tag($serviceGroup, $tags)
- * @method Container tagged($tag)
- * @method Container bind($serviceName, $concrete = null, $shared = false)
- * @method Container bindIf($serviceName, $concrete = null, $shared = false)
- * @method Container singleton($serviceName, $concrete = null)
- * @method Container instance($serviceName, $instance)
- * @method Container extend($serviceName, \Closure $closure)
- * @method Container when($concrete)
- * @method Container make($serviceName, array $parameters = [])
- * @method Container build($concrete, array $parameters = [])
- * @method Container call($callback,$parameters = [],$defaultMethod = null)
- * @method Container callClass($callback,$parameters = [],$defaultMethod = null)
- * @method Container forgetService($name)
- * @method Container registerService(ServiceProviderInterface $serviceProvider)
  */
-class App
+class App extends Container
 {
+    use Singleton;
+
+    /**
+     * 换行符
+     */
+    const EOL = (PHP_SAPI == 'cli') ? PHP_EOL : '<br />';
+
     /**
      * 加载的中间件
      *
      * @var array
      */
     protected $middleware = [];
-
-    /**
-     * 服务容器
-     *
-     * @var Container
-     */
-    protected $container;
 
     /**
      * 已注册服务提供者
@@ -71,29 +54,15 @@ class App
 
     /**
      * App constructor.
+     *
      * @param string $path 项目路径
      */
     public function __construct($path = null)
     {
-        $this->container = Container::getInstance();
-
-        $this->register(new BaseServiceProvider);
-
-        $this->registerError();
-
         $this->basePath = trim($path);
-
+        $this->registerError();
+        $this->registerService(new BaseServiceProvider);
         $this->registerNamespace('App',$this->basePath.DIRECTORY_SEPARATOR.'app');
-    }
-
-    /**
-     * @param $method
-     * @param $args
-     * @return mixed
-     */
-    public function __call($method,$args)
-    {
-        return $this->container->$method(...$args);
     }
 
     /**
@@ -114,7 +83,7 @@ class App
         $this->loadedProviders[$providerName] = true;
 
         if($provider instanceof ServiceProviderInterface){
-            $this->container->registerService($provider);
+            $this->registerService($provider);
         }
     }
 
@@ -204,7 +173,7 @@ class App
             $response->withStatus($status);
 
             foreach (exceptionHandle($exception) as $key => $value) {
-                $response->write($value."<br>");
+                $response->write($value.self::EOL);
             }
 
             return $response;
@@ -218,9 +187,9 @@ class App
      */
     public function createRouter()
     {
-        return $this->container->make('router');
+        return $this['router'];
     }
-    
+
     /**
      * 添加应用中间件
      *
@@ -236,10 +205,12 @@ class App
      */
     public function run()
     {
-        $request = $this->container['request'];
-        $response = $this->container['response'];
+        $request = $this['request'];
+        $response = $this['response'];
 
-        $result = $this->process($request,$response);
+        $result = $this->parseResponse(
+            $this->process($request,$response)
+        );
 
         $result->send();
     }
@@ -256,7 +227,7 @@ class App
         try{
             $result = $this->sendThroughMiddleware([$request,$response],$this->middleware,function(){
                 return $this->parseResponse(
-                    $this->container['router']->run(...func_get_args())
+                    $this['router']->run(...func_get_args())
                 );
             });
         }catch(\Exception $exception){
@@ -275,8 +246,8 @@ class App
     protected function parseResponse($result)
     {
         if(!$result instanceof HttpResponse){
-            $this->container['response']->setContent($result);
-            $result = $this->container['response'];
+            $this['response']->setContent($result);
+            $result = $this['response'];
         }
 
         return $result;

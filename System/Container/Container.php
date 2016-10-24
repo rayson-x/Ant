@@ -7,7 +7,6 @@ use ReflectionClass;
 use ReflectionMethod;
 use ReflectionFunction;
 use ReflectionParameter;
-use Ant\Support\Traits\Singleton;
 use Ant\Interfaces\Container\ContainerInterface;
 use Ant\Interfaces\Container\ServiceProviderInterface;
 
@@ -23,8 +22,6 @@ use Ant\Interfaces\Container\ServiceProviderInterface;
  */
 class Container implements ContainerInterface,ArrayAccess
 {
-    use Singleton;
-
     /**
      * 已经实例化的服务.
      *
@@ -241,10 +238,11 @@ class Container implements ContainerInterface,ArrayAccess
             $serviceName = $this->setAliasFromArray($serviceName);
         }
 
-        //如果已经绑定,删除之前所有的服务实例
+        // 如果已经绑定,删除之前所有的服务实例
         $this->removeStaleInstances($serviceName);
 
         if($concrete instanceof Closure){
+            // 将闭包函数的作用域绑定到服务容器
             $concrete = $concrete->bindTo($this);
         }elseif(is_null($concrete)){
             $concrete = $serviceName;
@@ -310,10 +308,7 @@ class Container implements ContainerInterface,ArrayAccess
         $serviceName = $this->normalize($serviceName);
 
         if(isset($this->instances[$serviceName])){
-            $returnValue = call_user_func($closure,$this->instances[$serviceName],$this);
-            if($returnValue !== null){
-                $this->instances[$serviceName] = $returnValue;
-            }
+            $this->instances[$serviceName] = $closure($this->instances[$serviceName]);
         }else{
             $this->extenders[$serviceName][] = $closure;
         }
@@ -449,7 +444,7 @@ class Container implements ContainerInterface,ArrayAccess
     public function build($concrete, array $parameters = [])
     {
         if ($concrete instanceof Closure) {
-            return call_user_func_array($concrete,$parameters);
+            return $concrete(...$parameters);
         }
         //通过反射机制实现实例
         $reflection = new ReflectionClass($concrete);
@@ -477,9 +472,7 @@ class Container implements ContainerInterface,ArrayAccess
         $this->buildStack[] = $concrete;
 
         //获取构造函数需要参数
-        $dependencies = $construct->getParameters();
-        $parameters = $this->keyParametersByArgument($dependencies,$parameters);
-        $instanceArgs = $this->getDependencies($dependencies,$parameters);
+        $instanceArgs = $this->getDependencies($construct,$parameters);
 
         //完成,将生成中的实例出栈
         array_pop($this->buildStack);
@@ -489,46 +482,35 @@ class Container implements ContainerInterface,ArrayAccess
     }
 
     /**
-     * 将方法依赖参数与用户传入参数进行匹配
+     * 获取实例依赖参数
      *
-     * @param $dependencies
-     * @param $parameters
+     * @param \ReflectionFunctionAbstract $callback
+     * @param array $primitives
      * @return mixed
      */
-    protected function keyParametersByArgument($dependencies, $parameters)
+    protected function getDependencies(\ReflectionFunctionAbstract $callback, array $primitives)
     {
-        foreach($parameters as $key => $value){
-            //通过数组索引进行匹配
-            if(is_numeric($key)){
-                unset($parameters[$key]);
+        $parameters = $callback->getParameters();
 
-                $parameters[$dependencies[$key]->name] = $value;
+        // 将函数依赖参数从索引数组变成关联数组
+        foreach($primitives as $key => $value){
+            if(is_numeric($key)){
+                unset($primitives[$key]);
+
+                $primitives[$parameters[$key]->name] = $value;
             }
         }
 
-        return $parameters;
-    }
-
-    /**
-     * 获取实例依赖参数
-     *
-     * @param $parameters
-     * @param $primitives
-     * @return mixed
-     */
-    protected function getDependencies($parameters,$primitives)
-    {
         $dependencies = [];
-
         foreach($parameters as $parameter){
             if(array_key_exists($parameter->name,$primitives)){
-                //使用用户给定的值
+                // 使用给定的值
                 $dependencies[] = $primitives[$parameter->name];
             }elseif(is_null($parameter->getClass())){
-                //获取参数
+                // 获取参数
                 $dependencies[] = $this->resolveNotClass($parameter);
             }else{
-                //获取依赖的服务实例
+                // 获取依赖的服务实例
                 $dependencies[] = $this->resolveClass($parameter);
             }
         }
@@ -544,7 +526,7 @@ class Container implements ContainerInterface,ArrayAccess
      */
     protected function resolveNotClass(ReflectionParameter $parameter)
     {
-        if (! is_null($concrete = $this->getContextualConcrete('$'.$parameter->name))) {
+        if (!is_null($concrete = $this->getContextualConcrete('$'.$parameter->name))) {
             return $concrete;
         }
 
@@ -553,7 +535,7 @@ class Container implements ContainerInterface,ArrayAccess
         }
 
         throw new ContainerValueNotFoundException(
-            "Unresolvable dependency resolving [$parameter] in class {$parameter->getDeclaringClass()->getName()}"
+            "Unresolvable dependency resolving [{$parameter->getName()}]"
         );
     }
 
@@ -570,12 +552,14 @@ class Container implements ContainerInterface,ArrayAccess
             $dependencyClass = $parameter->getClass()->getName();
             if(!is_null($object = $this->getContextualConcrete($dependencyClass))){
                 //优先使用用户提供实例
+                if(is_string($object)){
+                    $object = $this->makeAndSuppressExceptions($object);
+                }
+
                 if($object instanceof $dependencyClass){
                     return $object;
                 }
-                //TODO::实例用户提供的类
             }
-
             return $this->make($dependencyClass);
         }catch(ContainerValueNotFoundException $e){
             if($parameter->isOptional()){
@@ -583,6 +567,21 @@ class Container implements ContainerInterface,ArrayAccess
             }
 
             throw $e;
+        }
+    }
+
+    /**
+     * 通过服务名获取服务,并且抑制生成出错时抛出异常
+     *
+     * @param $serviceName
+     * @return mixed|object
+     */
+    protected function makeAndSuppressExceptions($serviceName)
+    {
+        try{
+            return $this->make($serviceName);
+        }catch(ContainerValueNotFoundException $e){
+            return $serviceName;
         }
     }
 
@@ -600,7 +599,14 @@ class Container implements ContainerInterface,ArrayAccess
             return $this->callClass($callback,$parameters,$defaultMethod );
         }
 
-        $parameters = $this->getMethodDependencies($callback,$parameters);
+        // 通过反射获取依赖
+        if(is_array($callback)){
+            $func = new ReflectionMethod($callback[0],$callback[1]);
+        }else{
+            $func = new ReflectionFunction($callback);
+        }
+
+        $parameters = $this->getDependencies($func,array_values($parameters));
 
         return call_user_func_array($callback,$parameters);
     }
@@ -614,32 +620,6 @@ class Container implements ContainerInterface,ArrayAccess
     protected function isCallableWithAtSign($callback)
     {
         return is_string($callback) && strpos($callback,'@') !== false;
-    }
-
-    /**
-     * 获取方法依赖
-     *
-     * @param $callback
-     * @param $parameters
-     * @return array
-     */
-    protected function getMethodDependencies($callback,$parameters)
-    {
-        $dependence = [];
-
-        foreach(($this->getCallableReflection($callback)->getParameters()) as $parameter){
-            if (array_key_exists($parameter->name, $parameters)) {
-                $dependence[] = $parameters[$parameter->name];
-
-                unset($parameters[$parameter->name]);
-            } elseif ($parameter->getClass()) {
-                $dependence[] = $this->make($parameter->getClass()->name);
-            } elseif ($parameter->isDefaultValueAvailable()) {
-                $dependence[] = $parameter->getDefaultValue();
-            }
-        }
-
-        return array_merge($dependence, $parameters);
     }
 
     /**
@@ -751,7 +731,8 @@ class Container implements ContainerInterface,ArrayAccess
      *
      * @param $name
      */
-    public function forgetService($name){
+    public function forgetService($name)
+    {
         $name = $this->normalize($name);
         //获取服务原名
         $serviceName = $this->getServiceNameFromAlias($name);
@@ -772,7 +753,8 @@ class Container implements ContainerInterface,ArrayAccess
     /**
      * 重置容器
      */
-    public function reset(){
+    public function reset()
+    {
         $this->aliases = [];
         $this->resolved = [];
         $this->bindings = [];

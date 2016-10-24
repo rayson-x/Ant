@@ -1,5 +1,5 @@
 <?php
-namespace Ant\Http;
+namespace Ant\Exception;
 
 use RuntimeException;
 
@@ -9,7 +9,7 @@ use RuntimeException;
  * Class Exception
  * @package Ant\Http
  */
-class Exception extends RuntimeException
+class HttpException extends RuntimeException
 {
     protected $statusCode;
     protected $headers;

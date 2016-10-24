@@ -161,7 +161,7 @@ abstract class Message implements MessageInterface
     /**
      * 通过迭代的方式添加响应头
      *
-     * @param $iterator \Iterator|Array
+     * @param $iterator \Iterator|array
      * @return self
      */
     public function addHeaderFromIterator($iterator)

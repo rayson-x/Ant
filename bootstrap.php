@@ -15,7 +15,7 @@ $app->addMiddleware(function (Ant\Http\Request $request,Ant\Http\Response $respo
     // 此处为匹配成功之后的响应头
     $newResponse = $response->addHeaderFromIterator([
         'Expires' => gmdate("D, d M Y H:i:s T"),
-        'X-Powered-By' => 'ASP',
+        'X-Powered-By' => '.NET',
         'x-run-time' => (int)((microtime(true) - $request->getServerParam('REQUEST_TIME_FLOAT')) * 1000).'ms',
     ]);
 
@@ -27,8 +27,9 @@ $app->addMiddleware(function (Ant\Http\Request $request,Ant\Http\Response $respo
     }
 });
 
+//Todo::Debug,容器中单例服务绑定失败
 /* 获取路由器 */
-$router = $app->createRouter();
+$router = $app['router'];
 
 /* 注册路由 */
 $router->get('/[{test}]',function($test,$request,$response){
@@ -41,7 +42,6 @@ $router->get('/[{test}]',function($test,$request,$response){
         'Content-Disposition' => 'attachment; filename="example.txt"',
         'Content-Transfer-Encoding' => 'binary',
     ]);
-
     return $newResponse;
 });
 

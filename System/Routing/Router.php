@@ -2,11 +2,12 @@
 namespace Ant\Routing;
 
 use RuntimeException;
-use InvalidArgumentException;
 use FastRoute\Dispatcher;
+use InvalidArgumentException;
 use FastRoute\RouteCollector;
 use Ant\Middleware\Middleware;
-use Ant\Http\Exception as HttpException;
+use Ant\Exception\NotFoundException;
+use Ant\Exception\MethodNotAllowedException;
 use Ant\Interfaces\Router\RouterInterface;
 use Ant\Interfaces\Container\ContainerInterface;
 
@@ -43,7 +44,7 @@ class Router implements RouterInterface
     /**
      * 路由
      *
-     * @var array
+     * @var array[Route]
      */
     protected $routes = [];
 
@@ -76,7 +77,7 @@ class Router implements RouterInterface
     protected $middleware = [];
 
     /**
-     *
+     * 路由器中间件
      *
      * @var array
      */
@@ -364,16 +365,13 @@ class Router implements RouterInterface
     {
         switch ($routeInfo[0]) {
             case Dispatcher::NOT_FOUND:
-                throw new HttpException(404);
+                throw new NotFoundException();
 
             case Dispatcher::METHOD_NOT_ALLOWED:
-                throw new HttpException(405);
+                throw new MethodNotAllowedException();
 
             case Dispatcher::FOUND:
                 return $this->handleFoundRoute($routeInfo[1],$routeInfo[2]);
-
-            default:
-                throw new RuntimeException('The dispatcher returns the invalid parameter');
         }
     }
 
@@ -437,7 +435,7 @@ class Router implements RouterInterface
      *
      * @param $action Route
      * @param array $args
-     * @return mixed
+     * @return mixed|\Ant\Http\Response
      */
     protected function callAction(Route $action,$args = [])
     {
@@ -451,7 +449,7 @@ class Router implements RouterInterface
         try{
             return $this->container->call($callback,$args);
         }catch (\BadMethodCallException $e){
-            throw new \Ant\Http\Exception(404);
+            throw new NotFoundException();
         }
     }
 

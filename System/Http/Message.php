@@ -5,6 +5,8 @@ use Psr\Http\Message\StreamInterface;
 use Psr\Http\Message\MessageInterface;
 
 /**
+ * TODO::将Cookie交给Message类处理
+ *
  * Class Message
  * @package Ant\Http
  */
@@ -114,7 +116,7 @@ abstract class Message implements MessageInterface
      *
      * @param $name
      * @param $value
-     * @return Message
+     * @return self
      */
     public function withHeader($name, $value)
     {
@@ -125,8 +127,8 @@ abstract class Message implements MessageInterface
      * 向header添加信息
      *
      * @param $name  string
-     * @param $value string||string[]
-     * @return Message
+     * @param $value string|array
+     * @return self
      */
     public function withAddedHeader($name, $value)
     {
@@ -143,7 +145,7 @@ abstract class Message implements MessageInterface
      * 销毁header信息
      *
      * @param $name
-     * @return $this|Message
+     * @return self
      */
     public function withoutHeader($name)
     {
@@ -154,6 +156,26 @@ abstract class Message implements MessageInterface
         unset($header[strtolower($name)]);
 
         return $this->changeAttribute('headers',$header);
+    }
+
+    /**
+     * 通过迭代的方式添加响应头
+     *
+     * @param $iterator \Iterator|Array
+     * @return self
+     */
+    public function addHeaderFromIterator($iterator)
+    {
+        if(!$iterator instanceof \Iterator && !is_array($iterator)){
+            throw new \RuntimeException();
+        }
+
+        $self = $this;
+        foreach($iterator as $name => $value){
+            $self = $self->withAddedHeader($name,$value);
+        }
+
+        return $self;
     }
 
     /**

@@ -14,7 +14,6 @@ Interface RouterInterface
      *
      * @param array $attributes
      * @param \Closure $action
-     * @return mixed
      */
     public function group(array $attributes,\Closure $action);
 
@@ -24,7 +23,6 @@ Interface RouterInterface
      * @param $method
      * @param $uri
      * @param $action
-     * @return mixed
      */
     public function map($method,$uri,$action);
 

@@ -7,6 +7,12 @@ use InvalidArgumentException;
 use Psr\Http\Message\StreamInterface;
 use Psr\Http\Message\ResponseInterface;
 
+/**
+ * Todo::添加静态方法,通过http响应内容获取Response类
+ *
+ * Class Response
+ * @package Ant\Http
+ */
 class Response extends Message implements ResponseInterface
 {
     const SWITCHING_PROTOCOLS = 101;
@@ -165,7 +171,7 @@ class Response extends Message implements ResponseInterface
      * @param null|array            $header
      * @param StreamInterface|null  $body
      */
-    public function __construct($code = 200,$header = [],StreamInterface $body = null)
+    public function __construct($code = 200, $header = [], StreamInterface $body = null)
     {
         $this->code = $code;
         $this->headers = $header ?: [];
@@ -453,8 +459,13 @@ class Response extends Message implements ResponseInterface
             $this->getReasonPhrase()
         );
         $output .= PHP_EOL;
-        foreach ($this->getHeaders() as $name => $values) {
-            $output .= sprintf('%s: %s', $name, $this->getHeaderLine($name)) . PHP_EOL;
+        foreach($this->getHeaders() as $name => $value){
+            if (is_array($value)) {
+                $value = implode(',', $value);
+            }
+
+            $name = implode('-',array_map('ucfirst',explode('-',$name)));
+            $output .= sprintf('%s: %s',$name,$value).PHP_EOL;
         }
         $output .= PHP_EOL;
         $output .= (string)$this->getBody();

@@ -6,13 +6,13 @@ use Ant\Support\ArrayHandle;
 /**
  * 打印信息
  */
-function debug()
-{
-    echo "<pre>";
-    var_dump(...func_get_args());
-    echo "</pre>";
-    die;
-}
+//function debug()
+//{
+//    echo "<pre>";
+//    var_dump(...func_get_args());
+//    echo "</pre>";
+//    die;
+//}
 
 function ArraySetIn(&$array,$path,$value)
 {

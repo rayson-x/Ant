@@ -95,20 +95,6 @@ class Request extends Message implements ServerRequestInterface
     protected $virtualPath = false;
 
     /**
-     * 支持的http请求方式
-     *
-     * @var array
-     */
-    protected $viewMethods = [
-        'GET' => 1,
-        'PUT' => 1,
-        'POST' => 1,
-        'DELETE' => 1,
-        'HEAD' => 1,
-        'PATCH' => 1,
-    ];
-
-    /**
      * 通过上下文环境创建一个request
      *
      * @param Environment $server
@@ -141,8 +127,8 @@ class Request extends Message implements ServerRequestInterface
         array $cookieParams,
         array $serverParams,
         StreamInterface $body = null,
-        array $uploadFiles = [])
-    {
+        array $uploadFiles = []
+    ){
         $this->uri = $uri;
         $this->headers = $headers;
         $this->cookieParams = $cookieParams;
@@ -190,13 +176,12 @@ class Request extends Message implements ServerRequestInterface
 
         $method = isset($this->serverParams['REQUEST_METHOD']) ? strtoupper($this->serverParams['REQUEST_METHOD']) : 'GET';
 
-        if ($method !== 'POST') {
-            return $this->method = $method;
-        }
-
-        $override = $this->getHeaderLine('x-http-method-override') ?: $this->post('_method');
-        if($override){
-            $method = $this->filterMethod($override);
+        // 尝试重写请求方法
+        if ($method == 'POST') {
+            $override = $this->post('_method') ?: $this->getHeaderLine('x-http-method-override');
+            if($override){
+                $method = $override;
+            }
         }
 
         return $this->method = $method;
@@ -210,27 +195,7 @@ class Request extends Message implements ServerRequestInterface
      */
     public function withMethod($method)
     {
-        return $this->changeAttribute('method',$this->filterMethod($method));
-    }
-
-    /**
-     * 过滤非法请求方式
-     *
-     * @param $method
-     * @return string
-     */
-    public function filterMethod($method)
-    {
-        $method = strtoupper($method);
-
-        if(!array_key_exists($method,$this->viewMethods)){
-            throw new InvalidArgumentException(sprintf(
-                'Unsupported HTTP method "%s" provided',
-                $method
-            ));
-        }
-
-        return $method;
+        return $this->changeAttribute('method',$method);
     }
 
     /**

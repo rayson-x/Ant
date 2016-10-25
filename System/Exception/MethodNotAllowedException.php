@@ -9,9 +9,25 @@ namespace Ant\Exception;
  */
 class MethodNotAllowedException extends HttpException
 {
-    //Todo::返回allowed
-    public function __construct($message = null, \Exception $previous = null, array $headers = array(), $code = 0)
-    {
+    /**
+     * 抛出405异常
+     *
+     * @param array $allowed
+     * @param null $message
+     * @param \Exception|null $previous
+     * @param array $headers
+     * @param int $code
+     */
+    public function __construct(
+        array $allowed,
+        $message = null,
+        \Exception $previous = null,
+        array $headers = array(),
+        $code = 0
+    ){
+        $allowed = ['allowed' => implode(',',$allowed)];
+        $headers = array_merge($headers,$allowed);
+
         parent::__construct(405,$message,$previous,$headers,$code);
     }
 }

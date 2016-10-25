@@ -9,6 +9,7 @@ use Ant\Http\Request as HttpRequest;
 use Ant\Http\Response as HttpResponse;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
+use Ant\Exception\MethodNotAllowedException;
 use Ant\Interfaces\Container\ServiceProviderInterface;
 
 /**
@@ -46,6 +47,21 @@ class App extends Container
      * @var string
      */
     protected $basePath = '';
+
+    /**
+     * 支持的http请求方式,如果不在下列方法内会抛出异常
+     *
+     * @var array
+     */
+    protected $methods = [
+        'GET' => 1,             // 请求资源
+        'PUT' => 1,             // 创建资源
+        'POST' => 1,            // 创建或者完整的更新了资源
+        'DELETE' => 1,          // 删除资源
+        'HEAD' => 1,            // 只获取某个资源的头部信息
+        'PATCH' => 1,           // 局部更新资源
+        'OPTIONS ' => 1         // 获取资源支持的HTTP方法
+    ];
 
     /**
      * App constructor.
@@ -181,12 +197,10 @@ class App extends Container
             return $this->exceptionHandler;
         }
 
-        return function($exception,$request,$response){
-            /* @var $response HttpResponse */
+        return function($exception,HttpRequest $request,HttpResponse $response){
             if ($exception instanceof HttpException) {
                 // 获取HTTP状态码
                 $status = $exception->getStatusCode();
-
                 // 将头信息写入响应头
                 foreach($exception->getHeaders() as $name => $value){
                     $response->withAddedHeader($name,$value);
@@ -197,7 +211,7 @@ class App extends Container
             $response->withStatus($status);
 
             foreach (exceptionHandle($exception) as $key => $value) {
-                $response->write($value.(PHP_SAPI == 'cli') ? PHP_EOL : '<br />');
+                $response->write($value.'<br />');
             }
 
             return $response;
@@ -239,6 +253,7 @@ class App extends Container
     protected function process($request,$response)
     {
         try{
+            $this->filterMethod($request);
             $result = $this->sendThroughMiddleware([$request,$response],$this->middleware,function(){
                 return $this->parseResponse(
                     $this['router']->run(...func_get_args())
@@ -254,6 +269,25 @@ class App extends Container
     }
 
     /**
+     * 过滤非法请求方式
+     *
+     * @param \Ant\Http\Request $request
+     */
+    protected function filterMethod(\Ant\Http\Request $request)
+    {
+        $method = strtoupper($request->getMethod());
+
+        if(!array_key_exists($method,$this->methods)){
+            throw new MethodNotAllowedException(array_keys($this->methods),sprintf(
+                'Unsupported HTTP method "%s" provided',
+                $method
+            ));
+        }
+    }
+
+    /**
+     * 解析响应结果
+     *
      * @param $result
      * @return HttpResponse
      */

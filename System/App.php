@@ -54,6 +54,7 @@ class App extends Container
      */
     public function __construct($path = null)
     {
+        static::setInstance($this);
         $this->basePath = trim($path);
         $this->registerError();
         $this->registerService(new BaseServiceProvider);
@@ -80,6 +81,16 @@ class App extends Container
         if($provider instanceof ServiceProviderInterface){
             $this->registerService($provider);
         }
+    }
+
+    /**
+     * 注册全局容器
+     */
+    public function registerInstance()
+    {
+        $this->instance('app',$this);
+        $this->alias('app',Container::class);
+        $this->alias('app',App::class);
     }
 
     /**

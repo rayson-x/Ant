@@ -1,16 +1,17 @@
 <?php
+
+use Ant\App;
 use Ant\Support\ArrayHandle;
-use Ant\Container\Container;
 
 /**
  * 打印信息
- * @param $msg
  */
-function show($msg)
+function debug()
 {
     echo "<pre>";
-    var_dump($msg);
+    var_dump(...func_get_args());
     echo "</pre>";
+    die;
 }
 
 function ArraySetIn(&$array,$path,$value)
@@ -25,30 +26,30 @@ function ArraySetIn(&$array,$path,$value)
 function container($serviceName = null, $parameters = [])
 {
     if (is_null($serviceName)) {
-        return Container::getInstance();
+        return App::getInstance();
     }
 
-    return Container::getInstance()->make($serviceName, $parameters);
+    return App::getInstance()->make($serviceName, $parameters);
 }
 
 function get($key = null)
 {
-    return Container::getInstance()->make('request')->get($key);
+    return container('request')->get($key);
 }
 
 function post($key = null)
 {
-    return Container::getInstance()->make('request')->post($key);
+    return container('request')->post($key);
 }
 
 function body($key = null)
 {
-    return Container::getInstance()->make('request')->getBodyParam($key);
+    return container('request')->getBodyParam($key);
 }
 
 function cookie($key = null)
 {
-    return Container::getInstance()->make('request')->cookie($key);
+    return container('request')->cookie($key);
 }
 
 /**

@@ -373,7 +373,7 @@ class Uri implements UriInterface
             $uri = '';
         }
 
-        $uri .= $this->getPath();
+        $uri .= '/'.$this->getPath();
 
         if ($query = $this->getQuery()) {
             $uri .= '?'.$query;

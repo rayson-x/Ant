@@ -493,11 +493,14 @@ class Container implements ContainerInterface,ArrayAccess
         $parameters = $callback->getParameters();
 
         // 将函数依赖参数从索引数组变成关联数组
-        foreach($primitives as $key => $value){
-            if(is_numeric($key)){
-                unset($primitives[$key]);
+        foreach($parameters as $parameter){
+            if($primitive = each($primitives)){
+                list($key,$value) = $primitive;
 
-                $primitives[$parameters[$key]->name] = $value;
+                if(is_numeric($key)){
+                    unset($primitives[$key]);
+                    $primitives[$parameter->name] = $value;
+                }
             }
         }
 

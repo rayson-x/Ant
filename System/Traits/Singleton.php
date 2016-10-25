@@ -46,15 +46,23 @@ trait Singleton
     /**
      * 获取实例
      *
-     * @return \Ant\Container\Container|Singleton
+     * @return self
      */
     public static function getInstance()
     {
         if (!isset(static::$instance)) {
-            static::$instance = new static();
+            static::setInstance(new static);
         }
 
         return static::$instance;
+    }
+
+    /**
+     * @param self $instance
+     */
+    public static function setInstance(self $instance)
+    {
+        static::$instance = $instance;
     }
 
     /**

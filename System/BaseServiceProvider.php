@@ -24,7 +24,12 @@ class BaseServiceProvider implements ServiceProviderInterface
     protected function registerClass(ContainerInterface $container)
     {
         /**
-         * 注册Server数据集
+         * 注册服务容器
+         */
+        $container->instance('app',$container);
+
+        /**
+         * 注册环境
          */
         $container->bind('environment',function(){
             return new Environment($_SERVER);

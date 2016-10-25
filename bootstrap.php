@@ -27,26 +27,25 @@ $app->addMiddleware(function (Ant\Http\Request $request,Ant\Http\Response $respo
     }
 });
 
-//Todo::Debug,容器中单例服务绑定失败
 /* 获取路由器 */
 $router = $app['router'];
 
 /* 注册路由 */
-$router->get('/[{test}]',function($test,$request,$response){
-    return $response->write($test);
-})->setArgument('test','hello world')->addMiddleware(function(){
+$router->get('/',function($request,$response){
+    return $response->write('hello world');
+});
+
+$router->get('/getFile/[{string}]',function($string,$request,$response){
+    return $response->write($string);
+})->setArgument('string','hello world')->addMiddleware(function(){
     // 此路由响应结果为txt文件
     $oldResponse = yield;
     $newResponse = $oldResponse->addHeaderFromIterator([
         'Content-Type' => 'application/octet-stream',
-        'Content-Disposition' => 'attachment; filename="example.txt"',
+        'Content-Disposition' => 'attachment; filename="example"',
         'Content-Transfer-Encoding' => 'binary',
     ]);
     return $newResponse;
-});
-
-$router->post('/',function(){
-    var_dump(post());
 });
 
 return $app;

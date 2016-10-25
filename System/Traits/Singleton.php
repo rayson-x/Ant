@@ -58,9 +58,9 @@ trait Singleton
     }
 
     /**
-     * @param self $instance
+     * @param $instance
      */
-    public static function setInstance(self $instance)
+    public static function setInstance($instance)
     {
         static::$instance = $instance;
     }

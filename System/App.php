@@ -54,10 +54,9 @@ class App extends Container
      */
     public function __construct($path = null)
     {
-        static::setInstance($this);
         $this->basePath = trim($path);
         $this->registerError();
-        $this->registerService(new BaseServiceProvider);
+        $this->bootstrapContainer();
         $this->registerNamespace('App',$this->basePath.DIRECTORY_SEPARATOR.'app');
     }
 
@@ -84,13 +83,31 @@ class App extends Container
     }
 
     /**
-     * 注册全局容器
+     * 初始化应用容器.
      */
-    public function registerInstance()
+    protected function bootstrapContainer()
     {
-        $this->instance('app',$this);
-        $this->alias('app',Container::class);
-        $this->alias('app',App::class);
+        static::setInstance($this);
+        $this->registerService(new BaseServiceProvider);
+        $this->registerContainerAliases();
+    }
+
+    /**
+     * 注册服务别名
+     */
+    protected function registerContainerAliases()
+    {
+        $aliases = [
+            \Ant\App::class                     => 'app',
+            \Ant\Container\Container::class     => 'app',
+            \Ant\Routing\Router::class          => 'router',
+            \Ant\Http\Request::class            => 'request',
+            \Ant\Http\Response::class           => 'response',
+        ];
+
+        foreach($aliases as $alias => $serviceName){
+            $this->alias($serviceName,$alias);
+        }
     }
 
     /**
@@ -98,10 +115,11 @@ class App extends Container
      */
     public function registerError()
     {
+        error_reporting(E_ALL);
+
         set_error_handler(function($level, $message, $file = '', $line = 0){
             throw new \ErrorException($message, 0, $level, $file, $line);
         });
-        error_reporting(E_ALL);
     }
 
     /**
@@ -184,16 +202,6 @@ class App extends Container
 
             return $response;
         };
-    }
-
-    /**
-     * 获取路由器
-     *
-     * @return \Ant\Routing\Router
-     */
-    public function createRouter()
-    {
-        return $this['router'];
     }
 
     /**

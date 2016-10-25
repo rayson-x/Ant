@@ -20,11 +20,6 @@ class App extends Container
     use Singleton;
 
     /**
-     * 换行符
-     */
-    const EOL = (PHP_SAPI == 'cli') ? PHP_EOL : '<br />';
-
-    /**
      * 加载的中间件
      *
      * @var array
@@ -173,7 +168,7 @@ class App extends Container
             $response->withStatus($status);
 
             foreach (exceptionHandle($exception) as $key => $value) {
-                $response->write($value.self::EOL);
+                $response->write($value.(PHP_SAPI == 'cli') ? PHP_EOL : '<br />');
             }
 
             return $response;

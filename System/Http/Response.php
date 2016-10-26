@@ -302,7 +302,21 @@ class Response extends Message implements ResponseInterface
      */
     public function send()
     {
-        //响应头
+        $this->sendHeader();
+        $this->sendContent();
+
+        if (function_exists("fastcgi_finish_request")) {
+            fastcgi_finish_request();
+        }
+    }
+
+    /**
+     * 发送头信息
+     *
+     * @return $this
+     */
+    public function sendHeader()
+    {
         if(!headers_sent()){
             header(sprintf(
                 'HTTP/%s %s %s',
@@ -325,12 +339,23 @@ class Response extends Message implements ResponseInterface
             }
         }
 
-        //响应body内容
+        return $this;
+    }
+
+    /**
+     * 发送消息主体
+     *
+     * @return $this
+     */
+    public function sendContent()
+    {
         if(!$this->isEmpty()){
             echo (string) $this->getBody();
         }else{
             echo '';
         }
+
+        return $this;
     }
 
     /**

@@ -4,13 +4,14 @@ namespace Ant;
 use Ant\Traits\Singleton;
 use Ant\Container\Container;
 use Ant\Middleware\Middleware;
-use Ant\Exception\HttpException;
 use Ant\Http\Request as HttpRequest;
 use Ant\Http\Response as HttpResponse;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Ant\Exception\MethodNotAllowedException;
 use Ant\Interfaces\Container\ServiceProviderInterface;
+use Symfony\Component\Debug\Exception\FatalThrowableError;
+use Symfony\Component\Debug\Exception\FatalErrorException;
 
 /**
  * Class App
@@ -114,11 +115,14 @@ class App extends Container
     protected function registerContainerAliases()
     {
         $aliases = [
-            \Ant\App::class                     => 'app',
-            \Ant\Container\Container::class     => 'app',
-            \Ant\Routing\Router::class          => 'router',
-            \Ant\Http\Request::class            => 'request',
-            \Ant\Http\Response::class           => 'response',
+            \Ant\App::class                                     => 'app',
+            \Ant\Container\Container::class                     => 'app',
+            \Ant\Interfaces\ContainerInterface::class           => 'app',
+            \Ant\Routing\Router::class                          => 'router',
+            \Psr\Http\Message\ServerRequestInterface::class     => 'request',
+            \Ant\Http\Request::class                            => 'request',
+            \Psr\Http\Message\ResponseInterface::class          => 'response',
+            \Ant\Http\Response::class                           => 'response',
         ];
 
         foreach($aliases as $alias => $serviceName){
@@ -136,6 +140,68 @@ class App extends Container
         set_error_handler(function($level, $message, $file = '', $line = 0){
             throw new \ErrorException($message, 0, $level, $file, $line);
         });
+
+        set_exception_handler(function($e){
+            $this->handleUncaughtException($e);
+        });
+
+        register_shutdown_function(function () {
+            $errorCodes = [E_ERROR, E_CORE_ERROR, E_COMPILE_ERROR, E_PARSE];
+            if (! is_null($error = error_get_last()) && in_array($error['type'],$errorCodes)) {
+                $this->handleUncaughtException(new FatalErrorException(
+                    $error['message'], $error['type'], 0, $error['file'], $error['line']
+                ));
+            }
+        });
+    }
+
+    /**
+     * 处理未捕获异常
+     *
+     * @param \Exception $e
+     */
+    protected function handleUncaughtException($e)
+    {
+        // 此处是为了兼容PHP7
+        // PHP7中错误可以跟异常都实现了Throwable接口
+        // 所以错误也会跟异常一起被捕获
+        // 此处将捕获到的错误转换成异常
+        if ($e instanceof \Error) {
+            $e = new FatalThrowableError($e);
+        }
+
+        $this->call("Ant\\Debug\\ExceptionHandle@render",[$e])->send();
+    }
+
+    /**
+     * 注册自定义异常处理方式
+     *
+     * @param callable $handler
+     * @return $this
+     */
+    public function registerExceptionHandler(callable $handler)
+    {
+        $this->exceptionHandler = $handler;
+
+        return $this;
+    }
+
+    /**
+     * 获取异常处理方法
+     *
+     * @return callable|\Closure
+     */
+    protected function getExceptionHandler()
+    {
+        if(is_callable($this->exceptionHandler)){
+            return $this->exceptionHandler;
+        }
+
+        // 如果开发者没有再次处理异常
+        // 异常将会交由Ant框架进行处理
+        return function($exception){
+            $this->handleUncaughtException($exception);
+        };
     }
 
     /**
@@ -172,50 +238,6 @@ class App extends Container
 
             return class_exists($className, false) || interface_exists($className, false);
         });
-    }
-
-    /**
-     * 注册自定义异常处理方式
-     *
-     * @param callable $handler
-     * @return $this
-     */
-    public function registerExceptionHandler(callable $handler)
-    {
-        $this->exceptionHandler = $handler;
-
-        return $this;
-    }
-
-    /**
-     * 获取异常处理方法
-     *
-     * @return callable|\Closure
-     */
-    public function getExceptionHandler(){
-        if(is_callable($this->exceptionHandler)){
-            return $this->exceptionHandler;
-        }
-
-        return function($exception,HttpRequest $request,HttpResponse $response){
-            if ($exception instanceof HttpException) {
-                // 获取HTTP状态码
-                $status = $exception->getStatusCode();
-                // 将头信息写入响应头
-                foreach($exception->getHeaders() as $name => $value){
-                    $response->withAddedHeader($name,$value);
-                }
-            } else {
-                $status = 500;
-            }
-            $response->withStatus($status);
-
-            foreach (exceptionHandle($exception) as $key => $value) {
-                $response->write($value.'<br />');
-            }
-
-            return $response;
-        };
     }
 
     /**

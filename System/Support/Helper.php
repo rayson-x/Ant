@@ -6,13 +6,13 @@ use Ant\Support\ArrayHandle;
 /**
  * 打印信息
  */
-//function debug()
-//{
-//    echo "<pre>";
-//    var_dump(...func_get_args());
-//    echo "</pre>";
-//    die;
-//}
+function debug()
+{
+    echo "<pre>";
+    var_dump(...func_get_args());
+    echo "</pre>";
+    die;
+}
 
 function ArraySetIn(&$array,$path,$value)
 {
@@ -106,12 +106,34 @@ function contains($haystack, $needles)
     return false;
 }
 
+function handleError($exception,Ant\Http\Request $request,Ant\Http\Response $response)
+{
+    if ($exception instanceof Ant\Exception\HttpException) {
+        // 获取HTTP状态码
+        $status = $exception->getStatusCode();
+        // 将头信息写入响应头
+        foreach($exception->getHeaders() as $name => $value){
+            $response->withAddedHeader($name,$value);
+        }
+    } else {
+        $status = 500;
+    }
+    $response->withStatus($status);
+
+    foreach (exceptionHandle($exception) as $key => $value) {
+        $response->write($value.'<br />');
+    }
+
+    return $response;
+}
+
 /**
  * 获取错误信息
  * @param $exception
  * @return array
  */
-function exceptionHandle($exception){
+function exceptionHandle($exception)
+{
     if($exception->getPrevious()){
         return exceptionHandle($exception->getPrevious());
     }
@@ -122,7 +144,7 @@ function exceptionHandle($exception){
     );
 
     foreach(explode("\n",$exception->getTraceAsString()) as $index => $line){
-        $key           = sprintf('X-Exception-Trace-%02d', $index);
+        $key = sprintf('X-Exception-Trace-%02d', $index);
         $exceptionInfo[$key] = $line;
     }
 

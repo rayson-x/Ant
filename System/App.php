@@ -159,20 +159,22 @@ class App extends Container
     /**
      * 处理未捕获异常
      *
-     * @param \Exception $e
+     * @param \Exception $exception
      * @return HttpResponse
      */
-    protected function handleUncaughtException($e)
+    protected function handleUncaughtException($exception)
     {
         // 此处是为了兼容PHP7
         // PHP7中错误可以跟异常都实现了Throwable接口
         // 所以错误也会跟异常一起被捕获
         // 此处将捕获到的错误转换成异常
-        if ($e instanceof \Error) {
-            $e = new FatalThrowableError($e);
+        if ($exception instanceof \Error) {
+            $exception = new FatalThrowableError($exception);
         }
 
-        return $this->call("Ant\\Debug\\ExceptionHandle@render",[$e]);
+        $handle = $this->make(\Ant\Debug\ExceptionHandle::class);
+
+        return $handle->render($exception,$this['response'],true);
     }
 
     /**

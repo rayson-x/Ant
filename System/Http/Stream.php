@@ -111,11 +111,11 @@ class Stream implements StreamInterface
      */
     public function close()
     {
-        if($this->isAttached()){
-            fclose($this->stream);
-        }
+        $stream = $this->detach();
 
-        $this->detach();
+        if(is_resource($stream)){
+            fclose($stream);
+        }
     }
 
     /**
@@ -317,13 +317,5 @@ class Stream implements StreamInterface
     public function isAttached()
     {
         return is_resource($this->stream);
-    }
-
-    /**
-     * 关闭资源
-     */
-    public function __destruct()
-    {
-        $this->close();
     }
 }

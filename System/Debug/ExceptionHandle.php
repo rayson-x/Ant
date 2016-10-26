@@ -1,27 +1,34 @@
 <?php
 namespace Ant\Debug;
 
+use Exception;
 use Ant\Exception\HttpException;
 use Psr\Http\Message\ResponseInterface;
 use Symfony\Component\Debug\Exception\FlattenException;
 use Symfony\Component\Debug\ExceptionHandler as SymfonyExceptionHandler;
 
+/**
+ * Todo::根据接口判断响应格式
+ *
+ * Class ExceptionHandle
+ * @package Ant\Debug
+ */
 class ExceptionHandle
 {
     /**
-     * @param $e
+     * @param Exception $exeption
      * @param ResponseInterface $response
      * @return ResponseInterface
      */
-    public function render($e,ResponseInterface $response)
+    public function render(Exception $exeption, ResponseInterface $response, $debug = true)
     {
-        if($e instanceof HttpException){
-            $fe = FlattenException::create($e,$e->getStatusCode(),$e->getHeaders());
+        if($exeption instanceof HttpException){
+            $fe = FlattenException::create($exeption,$exeption->getStatusCode(),$exeption->getHeaders());
         }else{
-            $fe = FlattenException::create($e);
+            $fe = FlattenException::create($exeption);
         }
-        //Todo::Debug开关
-        $handler = new SymfonyExceptionHandler(true);
+        $handler = new SymfonyExceptionHandler($debug);
+        //Todo::分离响应流,重新设置body
 
         foreach($fe->getHeaders() as $name => $value){
             $response->withAddedHeader($name,$value);

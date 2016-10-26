@@ -9,7 +9,7 @@ trait ParseGroupAttributes
      *
      * @var array
      */
-    protected $groupAttributes;
+    protected $groupAttributes = [];
     
     /**
      * 合并请求资源前缀与后缀

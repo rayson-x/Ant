@@ -83,13 +83,6 @@ class Router implements RouterInterface
     protected $routeMiddleware = [];
 
     /**
-     * 分组属性
-     *
-     * @var
-     */
-    protected $groupAttributes = [];
-
-    /**
      * @var bool
      */
     protected $cacheFile = false;
@@ -419,10 +412,10 @@ class Router implements RouterInterface
     {
         $middleware = is_string($middleware) ? explode('|', $middleware) : (array) $middleware;
 
+        //获取可以回调的路由
         return array_map(function($middleware){
-            //获取可以回调的路由
+            $middleware = $this->getMiddleware($middleware);
             if(is_string($middleware)){
-                $middleware = isset($this->middleware[$middleware]) ? $this->middleware[$middleware] : $middleware;
                 return $this->container->make($middleware);
             }elseif($middleware instanceof \Closure){
                 return $middleware;
@@ -430,6 +423,15 @@ class Router implements RouterInterface
 
             throw new InvalidArgumentException("Middleware [$middleware] does not exist");
         },$middleware);
+    }
+
+    protected function getMiddleware($middleware)
+    {
+        if(is_string($middleware)){
+            $middleware = isset($this->middleware[$middleware]) ? $this->middleware[$middleware] : $middleware;
+        }
+
+        return $middleware;
     }
 
     /**

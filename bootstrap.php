@@ -14,9 +14,10 @@ $app->addMiddleware(function (Ant\Http\Request $request,Ant\Http\Response $respo
     // 匹配成功之后执行的代码,如果匹配失败,响应404
     // 此处为匹配成功之后的响应头
     $response->addHeaderFromIterator([
-        'Expires' => gmdate("D, d M Y H:i:s T"),
-        'X-Powered-By' => '.NET',
+        'expires' => gmdate("D, d M Y H:i:s T"),
+        'x-powered-by' => '.NET',
         'x-run-time' => (int)((microtime(true) - $request->getServerParam('REQUEST_TIME_FLOAT')) * 1000).'ms',
+        'access-control-allow-origin' => '*'
     ]);
 });
 
@@ -32,8 +33,8 @@ $router->get('/getFile/[{string}]',function($string,$request,$response){
     return $response->write($string);
 })->setArgument('string','hello world')->addMiddleware(function(){
     // 此路由响应结果为txt文件
-    $oldResponse = yield;
-    $newResponse = $oldResponse->addHeaderFromIterator([
+    $response = yield;
+    $response->addHeaderFromIterator([
         'Content-Type' => 'application/octet-stream',
         'Content-Disposition' => 'attachment; filename="example"',
         'Content-Transfer-Encoding' => 'binary',

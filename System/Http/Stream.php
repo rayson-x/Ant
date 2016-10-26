@@ -293,7 +293,7 @@ class Stream implements StreamInterface
     }
 
     /**
-     * 从封装协议文件指针中取得报头／元数据
+     * 从封装协议文件指针中取得报头/元数据
      *
      * @param null $key
      * @return array|mixed|null

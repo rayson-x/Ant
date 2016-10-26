@@ -77,7 +77,7 @@ class Router
      */
     public function __construct(Container $container = null)
     {
-        $this->container = $container ?: Container::getInstance();
+        $this->container = $container;
     }
 
     /**

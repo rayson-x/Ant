@@ -90,7 +90,6 @@ class Collection implements CollectionInterface
         $this->items = [];
     }
     
-    
     /**
      * ArrayAccess预定义接口,可以将对象以数组的方式使用
      *
@@ -153,5 +152,4 @@ class Collection implements CollectionInterface
     {
         return new ArrayIterator($this->items);
     }
-
 }

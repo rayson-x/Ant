@@ -142,15 +142,16 @@ class App extends Container
         });
 
         set_exception_handler(function($e){
-            $this->handleUncaughtException($e);
+            $this->handleUncaughtException($e)->send();
         });
 
         register_shutdown_function(function () {
-            $errorCodes = [E_ERROR, E_CORE_ERROR, E_COMPILE_ERROR, E_PARSE];
-            if (! is_null($error = error_get_last()) && in_array($error['type'],$errorCodes)) {
-                $this->handleUncaughtException(new FatalErrorException(
+            if (!is_null($error = error_get_last()) &&
+                in_array($error['type'],[E_ERROR, E_CORE_ERROR, E_COMPILE_ERROR, E_PARSE])
+            ){
+                throw new FatalErrorException(
                     $error['message'], $error['type'], 0, $error['file'], $error['line']
-                ));
+                );
             }
         });
     }
@@ -159,6 +160,7 @@ class App extends Container
      * 处理未捕获异常
      *
      * @param \Exception $e
+     * @return HttpResponse
      */
     protected function handleUncaughtException($e)
     {
@@ -170,7 +172,7 @@ class App extends Container
             $e = new FatalThrowableError($e);
         }
 
-        $this->call("Ant\\Debug\\ExceptionHandle@render",[$e])->send();
+        return $this->call("Ant\\Debug\\ExceptionHandle@render",[$e]);
     }
 
     /**
@@ -198,9 +200,9 @@ class App extends Container
         }
 
         // 如果开发者没有再次处理异常
-        // 异常将会交由Ant框架进行处理
+        // 异常将会交由框架进行处理
         return function($exception){
-            $this->handleUncaughtException($exception);
+            return $this->handleUncaughtException($exception);
         };
     }
 

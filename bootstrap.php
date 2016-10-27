@@ -22,13 +22,15 @@ $app->addMiddleware(function (Ant\Http\Request $request,Ant\Http\Response $respo
     ]);
 });
 
+//Todo::Api中间件
+
 /* 获取路由器 */
 $router = $app['router'];
 
 /* 注册路由 */
 $router->group([],function($router){
     $router->get('/',function($request,$response){
-        echo 123;
+        $response->write('hello world');
     });
 
     $router->get('/file[/{string}]',function($string,$request,$response){
@@ -43,7 +45,5 @@ $router->group([],function($router){
         ]);
     });
 });
-
-
 
 return $app;

@@ -232,7 +232,9 @@ abstract class Message implements MessageInterface
         if(is_array($attribute)){
             list($array,$key) = $attribute;
 
-            $result->$array[$key] = $value;
+            // 兼容5.6
+            $array = &$result->$array;
+            $array[$key] = $value;
         }else{
             $result->$attribute = $value;
         }

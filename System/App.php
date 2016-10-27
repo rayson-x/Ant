@@ -7,8 +7,8 @@ use Ant\Container\Container;
 use Ant\Middleware\Middleware;
 use Ant\Http\Request as HttpRequest;
 use Ant\Http\Response as HttpResponse;
-use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\ServerRequestInterface;
 use Ant\Exception\MethodNotAllowedException;
 use Ant\Interfaces\Container\ServiceProviderInterface;
 use Symfony\Component\Debug\Exception\FatalThrowableError;
@@ -264,7 +264,7 @@ class App extends Container
         $request = $this['request'];
         $response = $this['response'];
 
-        $result = $this->parseResponse(
+        $result = $this->handleResult(
             $this->process($request,$response)
         );
 
@@ -283,7 +283,7 @@ class App extends Container
         try{
             $this->filterMethod($request);
             $result = $this->sendThroughMiddleware([$request,$response],$this->middleware,function(){
-                return $this->parseResponse(
+                return $this->handleResult(
                     $this['router']->run(...func_get_args())
                 );
             });
@@ -299,9 +299,9 @@ class App extends Container
     /**
      * 过滤非法请求方式
      *
-     * @param \Ant\Http\Request $request
+     * @param ServerRequestInterface $request
      */
-    protected function filterMethod(\Ant\Http\Request $request)
+    protected function filterMethod(ServerRequestInterface $request)
     {
         $method = strtoupper($request->getMethod());
 
@@ -319,7 +319,7 @@ class App extends Container
      * @param $result
      * @return HttpResponse
      */
-    protected function parseResponse($result)
+    protected function handleResult($result)
     {
         if(!$result instanceof HttpResponse){
             $this['response']->setContent($result);

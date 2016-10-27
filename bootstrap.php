@@ -9,7 +9,7 @@ $app->addMiddleware(function (Ant\Http\Request $request,Ant\Http\Response $respo
     // code...
 
     // 获取响应信息
-    $response = yield;
+    yield;
 
     // 匹配成功之后执行的代码,如果匹配失败,响应404
     // 此处为匹配成功之后的响应头
@@ -22,15 +22,13 @@ $app->addMiddleware(function (Ant\Http\Request $request,Ant\Http\Response $respo
     ]);
 });
 
-//Todo::Api中间件
-
 /* 获取路由器 */
 $router = $app['router'];
 
 /* 注册路由 */
 $router->group([],function($router){
     $router->get('/',function($request,$response){
-        $response->write('hello world');
+        return ['a' => 123,'b' => 123];
     });
 
     $router->get('/file[/{string}]',function($string,$request,$response){

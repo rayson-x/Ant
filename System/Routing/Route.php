@@ -84,7 +84,7 @@ class Route implements RouteInterface
         $this->callback = $action['uses'];
         $this->middleware = isset($action['middleware']) ? $action['middleware'] : [];
     }
-    
+
     /**
      * 解析行为
      *

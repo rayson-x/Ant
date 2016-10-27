@@ -1,7 +1,12 @@
 <?php
 namespace Ant\Http;
 
-
+/**
+ * Todo::重构Header
+ *
+ * Class Header
+ * @package Ant\Http
+ */
 class Header
 {
     /**

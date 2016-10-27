@@ -8,8 +8,6 @@ use Symfony\Component\Debug\Exception\FlattenException;
 use Symfony\Component\Debug\ExceptionHandler as SymfonyExceptionHandler;
 
 /**
- * Todo::根据接口判断响应格式
- *
  * Class ExceptionHandle
  * @package Ant\Debug
  */
@@ -27,8 +25,8 @@ class ExceptionHandle
         }else{
             $fe = FlattenException::create($exeption);
         }
+
         $handler = new SymfonyExceptionHandler($debug);
-        //Todo::分离响应流,重新设置body
 
         foreach($fe->getHeaders() as $name => $value){
             $response->withAddedHeader($name,$value);

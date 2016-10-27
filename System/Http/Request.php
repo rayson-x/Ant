@@ -88,13 +88,6 @@ class Request extends Message implements ServerRequestInterface
     protected $attributes = [];
 
     /**
-     * 请求的路由
-     *
-     * @var bool
-     */
-    protected $virtualPath = false;
-
-    /**
      * 通过上下文环境创建一个request
      *
      * @param Environment $server
@@ -440,42 +433,6 @@ class Request extends Message implements ServerRequestInterface
         }
 
         return $result;
-    }
-
-    /**
-     * 获取路由
-     *
-     * @return mixed|string
-     */
-    public function getRequestRoute()
-    {
-        if($this->virtualPath === false){
-            //获取脚本路径
-            $requestScriptName = parse_url($this->getServerParam('SCRIPT_NAME'), PHP_URL_PATH);
-            $requestScriptDir = dirname($requestScriptName);
-
-            //获取请求资源
-            $requestUri = parse_url($this->getServerParam('REQUEST_URI'), PHP_URL_PATH);
-
-            $basePath = '';
-            $virtualPath = $requestUri;
-
-            if (stripos($requestUri, $requestScriptName) === 0) {
-                //URI没有隐藏脚本文件
-                $basePath = $requestScriptName;
-            } elseif ($requestScriptDir !== '/' && stripos($requestUri, $requestScriptDir) === 0) {
-                //请求路径与脚本文件路径一致
-                $basePath = $requestScriptDir;
-            }
-
-            if ($basePath) {
-                $virtualPath = '/'.trim(substr($requestUri, strlen($basePath)), '/');
-            }
-
-            $this->virtualPath = $virtualPath;
-        }
-
-        return $this->virtualPath;
     }
 
     /**

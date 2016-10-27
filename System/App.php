@@ -1,6 +1,7 @@
 <?php
 namespace Ant;
 
+use Ant\Http\Body;
 use Ant\Traits\Singleton;
 use Ant\Container\Container;
 use Ant\Middleware\Middleware;
@@ -141,10 +142,6 @@ class App extends Container
             throw new \ErrorException($message, 0, $level, $file, $line);
         });
 
-        set_exception_handler(function($e){
-            $this->handleUncaughtException($e)->send();
-        });
-
         register_shutdown_function(function () {
             if (!is_null($error = error_get_last()) &&
                 in_array($error['type'],[E_ERROR, E_CORE_ERROR, E_COMPILE_ERROR, E_PARSE])
@@ -153,6 +150,10 @@ class App extends Container
                     $error['message'], $error['type'], 0, $error['file'], $error['line']
                 );
             }
+        });
+
+        set_exception_handler(function($e){
+            $this->handleUncaughtException($e)->send();
         });
     }
 
@@ -173,8 +174,9 @@ class App extends Container
         }
 
         $handle = $this->make(\Ant\Debug\ExceptionHandle::class);
+        $response = $this['response']->replaceBody(fopen('php://temp','w+'));
 
-        return $handle->render($exception,$this['response'],true);
+        return $handle->render($exception,$response,true);
     }
 
     /**
@@ -201,7 +203,7 @@ class App extends Container
             return $this->exceptionHandler;
         }
 
-        // 如果开发者没有再次处理异常
+        // 如果开发者没有处理异常
         // 异常将会交由框架进行处理
         return function($exception){
             return $this->handleUncaughtException($exception);

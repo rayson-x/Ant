@@ -11,11 +11,7 @@ use Ant\Interfaces\Container\ContainerInterface;
 use Ant\Interfaces\Container\ServiceProviderInterface;
 
 /**
- * PS:这个是参考Laravel的服务容器进行的开发,相当于laravel的服务容器删减版
- *
- * IoC容器,只要将服务注册到容器中,在有依赖关系时,容器便会会自动载入服务
- * 注意 : 当一个实例的构造函数需要大量参数时,推荐通过闭包函数生成实例,这样可以大幅度提升效率
- * 在实例需要6个参数时,手动生成比自动生成快了接近一倍
+ * 这个是参考Laravel的服务容器进行的开发,相当于laravel的服务容器删减版
  *
  * Class Container
  * @package Ant
@@ -482,7 +478,7 @@ class Container implements ContainerInterface,ArrayAccess
     }
 
     /**
-     * 获取实例依赖参数
+     * 获取回调方法依赖参数
      *
      * @param \ReflectionFunctionAbstract $callback
      * @param array $primitives
@@ -492,17 +488,9 @@ class Container implements ContainerInterface,ArrayAccess
     {
         $parameters = $callback->getParameters();
 
-        // 将函数依赖参数从索引数组变成关联数组
-        foreach($parameters as $parameter){
-            if($primitive = each($primitives)){
-                list($key,$value) = $primitive;
-
-                if(is_numeric($key)){
-                    unset($primitives[$key]);
-                    $primitives[$parameter->name] = $value;
-                }
-            }
-        }
+        $primitives = $this->keyParametersByArgument(
+            $parameters,$primitives
+        );
 
         $dependencies = [];
         foreach($parameters as $parameter){
@@ -519,6 +507,26 @@ class Container implements ContainerInterface,ArrayAccess
         }
 
         return $dependencies;
+    }
+
+    /**
+     * 如果为数字索引，更新他们的参数名称
+     *
+     * @param  array  $dependencies
+     * @param  array  $parameters
+     * @return array
+     */
+    protected function keyParametersByArgument(array $dependencies, array $parameters)
+    {
+        foreach ($parameters as $key => $value) {
+            if (is_numeric($key)) {
+                unset($parameters[$key]);
+
+                $parameters[$dependencies[$key]->name] = $value;
+            }
+        }
+
+        return $parameters;
     }
 
     /**
@@ -615,7 +623,7 @@ class Container implements ContainerInterface,ArrayAccess
     }
 
     /**
-     * 检查是否为 class @ method 格式
+     * 检查是否为 class@method 格式
      *
      * @param $callback
      * @return bool
@@ -646,7 +654,7 @@ class Container implements ContainerInterface,ArrayAccess
     }
 
     /**
-     * 用 Class @ method 的方式调用方法
+     * 用 Class@method 的方式调用方法
      *
      * @param $callback
      * @param array $parameters

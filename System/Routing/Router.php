@@ -11,8 +11,6 @@ use Ant\Exception\MethodNotAllowedException;
 use Ant\Interfaces\Container\ContainerInterface;
 
 /**
- * TODO::“关键词”功能
- *
  * Class Routing
  * @package Ant\Routing
  */
@@ -112,7 +110,7 @@ class Router implements RouterInterface
     }
 
     /**
-     * 注册一个“GET”请求的路由
+     * 注册一个“GET”路由
      *
      * @param $uri
      * @param $action
@@ -124,7 +122,7 @@ class Router implements RouterInterface
     }
 
     /**
-     * 注册一个“POST”请求的路由
+     * 注册一个“POST”路由
      *
      * @param $uri
      * @param $action
@@ -136,7 +134,7 @@ class Router implements RouterInterface
     }
 
     /**
-     * 注册一个“PUT”请求的路由
+     * 注册一个“PUT”路由
      *
      * @param $uri
      * @param $action
@@ -148,7 +146,7 @@ class Router implements RouterInterface
     }
 
     /**
-     * 注册一个“DELETE”请求的路由
+     * 注册一个“DELETE”路由
      *
      * @param $uri
      * @param $action
@@ -160,7 +158,7 @@ class Router implements RouterInterface
     }
 
     /**
-     * 注册一个“HEAD”请求的路由
+     * 注册一个“HEAD”路由
      *
      * @param $uri
      * @param $action
@@ -172,7 +170,7 @@ class Router implements RouterInterface
     }
 
     /**
-     * 注册一个“PATCH”请求的路由
+     * 注册一个“PATCH”路由
      *
      * @param $uri
      * @param $action
@@ -184,7 +182,19 @@ class Router implements RouterInterface
     }
 
     /**
-     * 注册一个接收请求的路由
+     * 注册一个“OPTIONS”路由
+     *
+     * @param $uri
+     * @param $action
+     * @return Route
+     */
+    public function options($uri,$action)
+    {
+        return $this->map('OPTIONS',$uri,$action);
+    }
+
+    /**
+     * 注册一个接受7种请求方式的路由
      *
      * @param $uri
      * @param $action
@@ -192,10 +202,12 @@ class Router implements RouterInterface
      */
     public function any($uri,$action)
     {
-        return $this->map(['GET','POST','PUT','DELETE','HEAD','PATCH'],$uri,$action);
+        return $this->map(['GET','POST','PUT','DELETE','HEAD','PATCH','OPTIONS'],$uri,$action);
     }
 
     /**
+     * 注册一个路由映射
+     *
      * @param $methods
      * @param $uri
      * @param $action
@@ -256,13 +268,44 @@ class Router implements RouterInterface
      */
     protected function parseIncomingRequest($request)
     {
-        if($request instanceof \Ant\Http\Request){
-            return [$request->getMethod(),$request->getRequestRoute()];
-        }elseif($request instanceof \Psr\Http\Message\ServerRequestInterface){
-
-        }else{
-
+        if($request instanceof \Psr\Http\Message\ServerRequestInterface){
+            return [$request->getMethod(),$this->getVirtualPath($request->getServerParams())];
         }
+
+        return [$_SERVER['REQUEST_METHOD'],$this->getVirtualPath($_SERVER)];
+    }
+
+    /**
+     * 获取路由
+     *
+     * @param $serverParams
+     * @return mixed|string
+     */
+    protected function  getVirtualPath($serverParams)
+    {
+        //获取脚本路径
+        $requestScriptName = parse_url($serverParams['SCRIPT_NAME'], PHP_URL_PATH);
+        $requestScriptDir = dirname($requestScriptName);
+
+        //获取请求资源
+        $requestUri = parse_url($serverParams['REQUEST_URI'], PHP_URL_PATH);
+
+        $basePath = '';
+        $virtualPath = $requestUri;
+
+        if (stripos($requestUri, $requestScriptName) === 0) {
+            //URI没有隐藏脚本文件
+            $basePath = $requestScriptName;
+        } elseif ($requestScriptDir !== '/' && stripos($requestUri, $requestScriptDir) === 0) {
+            //请求路径与脚本文件路径一致
+            $basePath = $requestScriptDir;
+        }
+
+        if ($basePath) {
+            $virtualPath = '/'.trim(substr($requestUri, strlen($basePath)), '/');
+        }
+
+        return $virtualPath;
     }
 
     /**
@@ -358,7 +401,7 @@ class Router implements RouterInterface
         switch ($routeInfo[0]) {
             case Dispatcher::NOT_FOUND:
                 // 抛出404异常
-                throw new NotFoundException();
+                throw new NotFoundException;
 
             case Dispatcher::METHOD_NOT_ALLOWED:
                 // 抛出405异常,同时响应客户端资源支持的所有 HTTP 方法
@@ -425,6 +468,12 @@ class Router implements RouterInterface
         },$middleware);
     }
 
+    /**
+     * 获取中间件
+     *
+     * @param $middleware
+     * @return string
+     */
     protected function getMiddleware($middleware)
     {
         if(is_string($middleware)){
@@ -453,7 +502,7 @@ class Router implements RouterInterface
         try{
             return $this->container->call($callback,$args);
         }catch (\BadMethodCallException $e){
-            throw new NotFoundException();
+            throw new NotFoundException;
         }
     }
 

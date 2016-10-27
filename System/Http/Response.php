@@ -248,6 +248,17 @@ class Response extends Message implements ResponseInterface
     }
 
     /**
+     * 替换现有Body
+     *
+     * @param $stream
+     * @return $this|Message
+     */
+    public function replaceBody($stream)
+    {
+        return $this->withBody(new Body($stream));
+    }
+
+    /**
      * http重定向
      *
      * @param $url

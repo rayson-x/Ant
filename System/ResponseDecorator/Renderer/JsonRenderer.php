@@ -2,10 +2,19 @@
 namespace Ant\ResponseDecorator\Renderer;
 
 use Ant\ResponseDecorator\Renderer;
+use Psr\Http\Message\ResponseInterface;
 
 class JsonRenderer extends Renderer
 {
-    public function renderData()
+    public function renderResponse(ResponseInterface $response)
+    {
+        $response->getBody()->write($this->toJson());
+        $response->withAddedHeader('Content-Type', 'application/json;charset=utf-8');
+
+        return $response;
+    }
+
+    public function toJson()
     {
         $output = json_encode($this->wrapped);
 

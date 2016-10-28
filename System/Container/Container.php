@@ -486,7 +486,9 @@ class Container implements ContainerInterface,ArrayAccess
      */
     protected function getDependencies(\ReflectionFunctionAbstract $callback, array $primitives)
     {
-        $parameters = $callback->getParameters();
+        if(!$parameters = $callback->getParameters()){
+            return $primitives;
+        }
 
         $primitives = $this->keyParametersByArgument(
             $parameters,$primitives

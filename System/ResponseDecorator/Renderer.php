@@ -1,17 +1,23 @@
 <?php
 namespace Ant\ResponseDecorator;
 
-abstract class Renderer implements RendererInterface
+use Psr\Http\Message\ResponseInterface;
+
+abstract class Renderer
 {
     protected $wrapped;
 
-    public function __construct($wrappable)
+    public function setWrapped($wrappable)
     {
         $this->wrapped = $wrappable;
+
+        return $this;
     }
 
-    public function renderData()
-    {
-        throw new \RuntimeException('RendererInterface is not implemented');
-    }
+    /**
+     * 渲染数据
+     *
+     * @return ResponseInterface
+     */
+    abstract public function renderResponse(ResponseInterface $response);
 }

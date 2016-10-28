@@ -217,7 +217,7 @@ class Response extends Message implements ResponseInterface
             return $this->responsePhrase;
         }
 
-        return $this->responsePhrase = static::getStatusPhrase($this->code);
+        return static::getStatusPhrase($this->code);
     }
 
     /**
@@ -237,6 +237,7 @@ class Response extends Message implements ResponseInterface
      * 设置响应内容
      *
      * @param $content
+     * @return $this
      */
     public function setContent($content)
     {
@@ -245,6 +246,8 @@ class Response extends Message implements ResponseInterface
         }else{
             $this->write($content);
         }
+
+        return $this;
     }
 
     /**
@@ -284,7 +287,7 @@ class Response extends Message implements ResponseInterface
         $this->getBody()->rewind();
         $this->getBody()->write(safe_json_encode($data, $encodingOptions));
 
-        $this->withHeader('Content-Type', 'application/json;charset=utf-8');
+        $this->withAddedHeader('Content-Type', 'application/json;charset=utf-8');
         if (isset($status)) {
             return $this->withStatus($status);
         }
@@ -302,10 +305,13 @@ class Response extends Message implements ResponseInterface
      * @param string $domain        cookie作用域名
      * @param bool $secure          是否https专属
      * @param bool|true $httponly   是否只有http可以使用cookie(启用后,JS将无法访问该cookie)
+     * @return $this
      */
     public function setCookie($name, $value, $expire = 0, $path = '/', $domain = '', $secure = false, $httponly = true)
     {
         $this->cookie[] = [$name, $value, $expire, $path, $domain, $secure, $httponly];
+
+        return $this;
     }
 
     /**

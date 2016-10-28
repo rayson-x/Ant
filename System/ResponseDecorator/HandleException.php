@@ -15,6 +15,7 @@ class HandleException
 
     /**
      * HandleException constructor.
+     *
      * @param \Exception $exception
      * @param bool|true $debug
      */
@@ -29,9 +30,13 @@ class HandleException
         }
 
         if($debug){
+            $this->content = $exception->getMessage();
+
             $this->headers = array_merge(
                 $this->headers,$this->getExceptionInfo($exception)
             );
+        }else{
+            $this->content = 'Error';
         }
     }
 

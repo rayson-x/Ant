@@ -320,8 +320,7 @@ class App extends Container
     protected function handleResult($result)
     {
         if(!$result instanceof HttpResponse){
-            $this['response']->setContent($result);
-            $result = $this['response'];
+            $result = $this['response']->setContent($result);
         }
 
         return $result;

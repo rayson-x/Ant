@@ -26,22 +26,14 @@ $app->addMiddleware(function (Ant\Http\Request $request,Ant\Http\Response $respo
 $router = $app['router'];
 
 /* 注册路由 */
-$router->group([],function($router){
-    $router->get('/',function($request,$response){
+$router->group(['middleware' => Ant\ResponseDecorator\Decorator::class],function($router){
+    $router->get('/test',function(){
         return ['a' => 123,'b' => 123];
     });
 
     $router->get('/file[/{string}]',function($string,$request,$response){
         return $response->write($string);
-    })->setArgument('string','hello world')->addMiddleware(function(){
-        // 此路由响应结果为txt文件
-        $response = yield;
-        $response->addHeaderFromIterator([
-            'Content-Type' => 'application/octet-stream',
-            'Content-Disposition' => 'attachment; filename="example.txt"',
-            'Content-Transfer-Encoding' => 'binary',
-        ]);
-    });
+    })->setArgument('string','hello world');
 });
 
 return $app;

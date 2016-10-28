@@ -2,12 +2,16 @@
 namespace Ant\ResponseDecorator\Renderer;
 
 use Ant\ResponseDecorator\Renderer;
+use Psr\Http\Message\ResponseInterface;
 
 class XmlRenderer extends  Renderer
 {
-    public function renderData()
+    public function renderResponse(ResponseInterface $response)
     {
-        return $this->toXml();
+        $response->getBody()->write($this->toXml());
+        $response->withAddedHeader('Content-Type', 'application/xml;charset=utf-8');
+
+        return $response;
     }
 
     // Todo::XML转换

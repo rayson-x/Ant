@@ -25,13 +25,15 @@ $app->addMiddleware(function (Ant\Http\Request $request,Ant\Http\Response $respo
 /* 获取路由器 */
 $router = $app['router'];
 
+// Todo::路由添加类型参数
+
 /* 注册路由 */
-$router->group(['middleware' => Ant\ResponseDecorator\Decorator::class],function($router){
+$router->group([ 'middleware' => Ant\ResponseDecorator\Decorator::class],function($router){
     $router->get('/test',function(){
-        return ['a' => 123,'b' => 123];
+        return 123;
     });
 
-    $router->get('/file[/{string}]',function($string,$request,$response){
+    $router->get('/file',function($string,$request,$response){
         return $response->write($string);
     })->setArgument('string','hello world');
 });

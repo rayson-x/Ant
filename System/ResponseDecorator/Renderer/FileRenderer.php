@@ -25,10 +25,12 @@ class FileRenderer extends Renderer
             $response->withAddedHeader($name,$value);
         }
 
-        if(!is_string($this->wrapped)){
+        if(!is_string($this->wrapped) || !is_integer($this->wrapped)){
             throw new \RuntimeException('Response content must be string');
         }
 
-        return $response->getBody()->write($this->wrapped);
+        $response->getBody()->write($this->wrapped);
+
+        return $response;
     }
 }

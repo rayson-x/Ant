@@ -14,7 +14,6 @@ class XmlRenderer extends  Renderer
         return $response;
     }
 
-    // Todo::XML转换
     public function toXml()
     {
         $output = $this->wrapped;

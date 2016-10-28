@@ -54,6 +54,7 @@ class Decorator
         }
 
         if(!$result instanceof PsrResponse){
+            // 渲染Response
             $result = $renderer
                 ->setWrapped($result)
                 ->renderResponse($response);

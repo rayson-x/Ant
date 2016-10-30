@@ -47,6 +47,13 @@ class Route implements RouteInterface
     protected $arguments = [];
 
     /**
+     * 响应类型
+     *
+     * @var array
+     */
+    protected $type = [];
+
+    /**
      * Route constructor.
      * @param $method
      * @param $uri
@@ -67,22 +74,32 @@ class Route implements RouteInterface
             );
         }
 
-        //获取路由映射的回调函数
-        if(!isset($action['uses'])){
-            foreach($action as $value){
-                if($value instanceof \Closure){
-                    $action['uses'] = $value;
-                    break;
-                }
-
-                throw new BadFunctionCallException('Routing callback failed');
-            }
-        }
+        $this->parseUses($action);
 
         $this->method = $method;
         $this->uri = '/'.trim($uri,'/');
         $this->callback = $action['uses'];
         $this->middleware = isset($action['middleware']) ? $action['middleware'] : [];
+        $this->type = isset($action['type']) ? $action['type'] : ['html'];
+    }
+
+    /**
+     * 获取路由映射的方法
+     *
+     * @param $action
+     * @return \Closure
+     */
+    protected function parseUses(&$action)
+    {
+        if(empty($action['uses'])){
+            foreach($action as $value){
+                if($value instanceof \Closure){
+                    return $action['uses'] = $value;
+                }
+            }
+
+            throw new BadFunctionCallException('Routing callback failed');
+        }
     }
 
     /**

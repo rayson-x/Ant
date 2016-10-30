@@ -28,14 +28,10 @@ $router = $app['router'];
 // Todo::路由添加类型参数
 
 /* 注册路由 */
-$router->group([ 'middleware' => Ant\ResponseDecorator\Decorator::class],function($router){
-    $router->get('/test',function(){
-        return 123;
+$router->group([],function($router){
+    $router->get('/',function($req,$res){
+        echo 123;
     });
-
-    $router->get('/file',function($string,$request,$response){
-        return $response->write($string);
-    })->setArgument('string','hello world');
 });
 
 return $app;

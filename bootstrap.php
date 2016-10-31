@@ -27,13 +27,9 @@ $router = $app['router'];
 
 /* 注册路由 */
 $router->group(['type' => ['json','xml']],function($router){
-    $router->get('/',function(){
-        return ['test' => 123];
-    });
-
     $router->get('/test',function(){
-        return 123456;
-    })->withAddResponseType('file');
+        return 123;
+    });
 });
 
 return $app;

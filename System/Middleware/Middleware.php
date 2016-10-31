@@ -68,6 +68,7 @@ class Middleware
                 $generator = call_user_func_array($handler,$arguments);
 
                 if ($generator instanceof Generator) {
+                    //将协同函数添加到函数栈
                     $stack[] = $generator;
 
                     $yieldValue = $generator->current();

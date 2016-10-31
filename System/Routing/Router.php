@@ -25,13 +25,6 @@ class Router implements RouterInterface
     protected $container;
 
     /**
-     * 请求的路由
-     *
-     * @var string
-     */
-    protected $requestRoute;
-
-    /**
      * 路由
      *
      * @var array[Route]
@@ -253,10 +246,8 @@ class Router implements RouterInterface
     {
         $route = $this->newRoute($methods, $uri, $action);
 
-        $this->routes[] = $route;
-
         foreach((array) $methods as $method){
-            $this->fastRoute[$method.$route->getUri()] = $route;
+            $this->routes[$method.$route->getUri()] = $route;
         }
 
         return $route;
@@ -284,9 +275,9 @@ class Router implements RouterInterface
         list($method,$pathInfo,$type) = $this->parseIncomingRequest($req);
 
         // 尽量不使用正则匹配
-        if(isset($this->fastRoute[$method.$pathInfo])){
+        if(isset($this->routes[$method.$pathInfo])){
             $route = $this->handleFoundRoute(
-                $this->fastRoute[$method.$pathInfo]
+                $this->routes[$method.$pathInfo]
             );
         }else{
             $route = $this->handleDispatcher(

@@ -31,21 +31,6 @@ trait ParseGroupAttributes
     }
 
     /**
-     * 合并响应类型
-     *
-     * @param $action
-     * @return array
-     */
-    protected function mergeResponseType($action)
-    {
-        if(isset($this->groupAttributes['type'])){
-
-        }
-
-        return $action;
-    }
-
-    /**
      * 合并分组命名空间
      *
      * @param $action

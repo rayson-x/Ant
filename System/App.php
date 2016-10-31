@@ -283,7 +283,7 @@ class App extends Container
         try{
             $this->filterMethod($request);
             $result = $this->sendThroughMiddleware([$request,$response],$this->middleware,function(){
-                return $this['router']->run(...func_get_args());
+                return $this['router']->dispatch(...func_get_args());
             });
         }catch(\Exception $exception){
             $result = call_user_func($this->getExceptionHandler(),$exception,$request,$response);

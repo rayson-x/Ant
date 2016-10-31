@@ -1,6 +1,9 @@
 <?php
 namespace Ant\Interfaces\Router;
 
+use Psr\Http\Message\ResponseInterface as PsrResponse;
+use Psr\Http\Message\ServerRequestInterface as PsrRequest;
+
 /**
  * 路由器接口类
  *
@@ -29,8 +32,9 @@ Interface RouterInterface
     /**
      * 路由分发
      *
-     * @param $request
-     * @return mixed
+     * @param PsrRequest $request
+     * @param PsrResponse $response
+     * @return PsrResponse
      */
-    public function dispatch($request);
+    public function dispatch($request,$response);
 }

@@ -1,10 +1,9 @@
 <?php
-namespace Ant\ResponseDecorator\Renderer;
+namespace Ant\Routing\Renderer;
 
-use Ant\ResponseDecorator\Renderer;
 use Psr\Http\Message\ResponseInterface;
 
-class TextRenderer extends Renderer
+class HtmlRenderer extends Renderer
 {
     public function renderResponse(ResponseInterface $response)
     {

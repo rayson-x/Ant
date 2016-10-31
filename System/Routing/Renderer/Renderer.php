@@ -1,5 +1,5 @@
 <?php
-namespace Ant\ResponseDecorator;
+namespace Ant\Routing\Renderer;
 
 use Psr\Http\Message\ResponseInterface;
 

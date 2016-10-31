@@ -25,13 +25,15 @@ $app->addMiddleware(function (Ant\Http\Request $request,Ant\Http\Response $respo
 /* 获取路由器 */
 $router = $app['router'];
 
-// Todo::路由添加类型参数
-
 /* 注册路由 */
-$router->group([],function($router){
-    $router->get('/',function($req,$res){
-        echo 123;
+$router->group(['type' => ['json','xml']],function($router){
+    $router->get('/',function(){
+        return ['test' => 123];
     });
+
+    $router->get('/test',function(){
+        return 123456;
+    })->withAddResponseType('file');
 });
 
 return $app;

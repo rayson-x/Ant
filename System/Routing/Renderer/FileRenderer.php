@@ -6,9 +6,8 @@
  * Time: 12:44
  */
 
-namespace Ant\ResponseDecorator\Renderer;
+namespace Ant\Routing\Renderer;
 
-use Ant\ResponseDecorator\Renderer;
 use Psr\Http\Message\ResponseInterface;
 
 class FileRenderer extends Renderer
@@ -25,7 +24,7 @@ class FileRenderer extends Renderer
             $response->withAddedHeader($name,$value);
         }
 
-        if(!is_string($this->wrapped) || !is_integer($this->wrapped)){
+        if(!is_string($this->wrapped) && !is_integer($this->wrapped)){
             throw new \RuntimeException('Response content must be string');
         }
 

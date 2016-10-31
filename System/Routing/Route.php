@@ -51,7 +51,7 @@ class Route implements RouteInterface
      *
      * @var array
      */
-    protected $type = [];
+    protected $responseType = [];
 
     /**
      * Route constructor.
@@ -70,7 +70,9 @@ class Route implements RouteInterface
             $uri = $this->mergeGroupPrefixAndSuffix($uri);
 
             $action = $this->mergeGroupNamespace(
-                $this->mergeMiddlewareGroup($action)
+                $this->mergeMiddlewareGroup(
+                    $this->mergeResponseType($action)
+                )
             );
         }
 
@@ -80,7 +82,7 @@ class Route implements RouteInterface
         $this->uri = '/'.trim($uri,'/');
         $this->callback = $action['uses'];
         $this->middleware = isset($action['middleware']) ? $action['middleware'] : [];
-        $this->type = isset($action['type']) ? $action['type'] : ['html'];
+        $this->responseType = isset($action['type']) ? $action['type'] : ['html'];
     }
 
     /**
@@ -89,7 +91,7 @@ class Route implements RouteInterface
      * @param $action
      * @return \Closure
      */
-    protected function parseUses(&$action)
+    protected function parseUses(& $action)
     {
         if(empty($action['uses'])){
             foreach($action as $value){
@@ -150,16 +152,6 @@ class Route implements RouteInterface
      */
     public function getAction()
     {
-        return $this;
-    }
-
-    /**
-     * 获取路由回调
-     *
-     * @return array
-     */
-    public function getCallable()
-    {
         return $this->callback;
     }
 
@@ -182,6 +174,7 @@ class Route implements RouteInterface
     public function replaceMiddleware($middleware)
     {
         $this->middleware = $middleware;
+
         return $this;
     }
 
@@ -194,6 +187,7 @@ class Route implements RouteInterface
     public function addMiddleware($middleware)
     {
         $this->middleware[] = $middleware;
+
         return $this;
     }
 
@@ -205,6 +199,7 @@ class Route implements RouteInterface
     public function resetMiddleware()
     {
         $this->middleware = [];
+
         return $this;
     }
 
@@ -242,6 +237,7 @@ class Route implements RouteInterface
     public function setArgument($name, $default = null)
     {
         $this->arguments[$name] = $default;
+
         return $this;
     }
 
@@ -249,9 +245,36 @@ class Route implements RouteInterface
      * 设置一组默认的路由参数
      *
      * @param array $arguments
+     * @return $this;
      */
     public function setArguments(array $arguments)
     {
-        $this->arguments = $arguments;
+        foreach($arguments as $name => $value){
+            $this->arguments[$name] = $value;
+        }
+    }
+
+    /**
+     * @return array
+     */
+    public function getResponseType()
+    {
+        return $this->responseType;
+    }
+
+    /**
+     * @param array $responseType
+     */
+    public function setResponseType(array $responseType)
+    {
+        $this->responseType = $responseType;
+    }
+
+    /**
+     * @param $type
+     */
+    public function withAddResponseType($type)
+    {
+        array_push($this->responseType,$type);
     }
 }

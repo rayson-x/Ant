@@ -39,7 +39,11 @@ trait ParseGroupAttributes
     protected function mergeResponseType($action)
     {
         if(isset($this->groupAttributes['type'])){
-
+            if(isset($action['type'])){
+                $action['type'] = array_merge($action['type'],$this->groupAttributes['type']);
+            }else{
+                $action['type'] = $this->groupAttributes['type'];
+            }
         }
 
         return $action;

@@ -25,18 +25,11 @@ class Router implements RouterInterface
     protected $container;
 
     /**
-     * 路由启动开关
-     *
-     * @var bool
-     */
-    protected $routeStartEnable = false;
-
-    /**
      * 请求的路由
      *
      * @var string
      */
-    protected $routeRequest;
+    protected $requestRoute;
 
     /**
      * 路由
@@ -81,11 +74,6 @@ class Router implements RouterInterface
     protected $routeMiddleware = [];
 
     /**
-     * @var bool
-     */
-    protected $cacheFile = false;
-
-    /**
      * Router constructor.
      *
      * @param ContainerInterface $container
@@ -101,12 +89,60 @@ class Router implements RouterInterface
      */
     public function group(array $attributes, \Closure $action)
     {
-        //开启路由之后,再进行路由分组会直接生成路由映射
-        if(!$this->routeStartEnable){
-            $this->group[] = [$attributes,$action];
-        }else{
-            $this->compileRoute([$attributes,$action]);
+        //保留父级分组属性
+        $parentGroupAttributes = $this->groupAttributes;
+
+        if (isset($attributes['middleware']) && is_string($attributes['middleware'])) {
+            $attributes['middleware'] = explode('|', $attributes['middleware']);
         }
+
+        //是否继承父级分组属性
+        if(isset($attributes['extend']) && $attributes['extend'] === false){
+            $this->groupAttributes = $attributes;
+        }else{
+            $this->groupAttributes = $this->extendParentGroupAttributes($attributes);
+        }
+
+        $action($this);
+
+        $this->groupAttributes = $parentGroupAttributes;
+    }
+
+    /**
+     * 继承父级分组属性
+     *
+     * @param array $attributes
+     * @return array
+     */
+    protected function extendParentGroupAttributes(array $attributes)
+    {
+        if($this->groupAttributes === null){
+            return $attributes;
+        }
+
+        $attributes = array_merge([
+            'prefix'    => '',
+            'suffix'    => '',
+            'namespace' => '',
+            'middleware'=> [],
+        ],$attributes);
+
+        //获取父级分组uri前缀与后缀
+        $fix = $this->mergeGroupPrefixAndSuffix(implode('-',[$attributes['prefix'],$attributes['suffix'],]));
+
+        list($attributes['prefix'],$attributes['suffix']) = explode('-',$fix);
+
+        //合并父级分组的中间件与响应类型
+        $attributes = $this->mergeMiddlewareGroup(
+            $this->mergeResponseType($attributes)
+        );
+
+        //获取父级分组命名空间
+        if(isset($this->groupAttributes['namespace'])){
+            $attributes['namespace'] = rtrim($this->groupAttributes['namespace'],'\\').'\\'.trim($attributes['namespace'],'\\');
+        }
+
+        return $attributes;
     }
 
     /**
@@ -238,136 +274,106 @@ class Router implements RouterInterface
     }
 
     /**
-     * @param null $request
-     * @return \Closure
+     * @param \Psr\Http\Message\ServerRequestInterface $req
+     * @param \Psr\Http\Message\ResponseInterface $res
+     * @return \Psr\Http\Message\ResponseInterface
      */
-    public function dispatch($request = null)
+    public function dispatch($req,$res)
     {
-        list($method,$pathInfo) = $this->parseIncomingRequest($request);
+        // 获取请求的方法,路由,跟返回类型
+        list($method,$pathInfo,$type) = $this->parseIncomingRequest($req);
 
-        foreach($this->group as $group){
-            $this->compileRoute($group);
-        }
-
+        // 尽量不使用正则匹配
         if(isset($this->fastRoute[$method.$pathInfo])){
-            return $this->handleFoundRoute(
+            $route = $this->handleFoundRoute(
                 $this->fastRoute[$method.$pathInfo]
+            );
+        }else{
+            $route = $this->handleDispatcher(
+                $this->createDispatcher()->dispatch($method,$pathInfo)
             );
         }
 
-        return $this->handleDispatcher(
-            $this->createDispatcher()->dispatch($method,$pathInfo)
-        );
+        // 请求的类型是否能够响应
+        if(!in_array($type,$route->getResponseType())){
+            throw new \RuntimeException("Requested [$type] format cannot be returned");
+        }
+
+        // 调用中间件
+        $result = (new Middleware)
+            ->send($req,$res)
+            ->through($this->routeMiddleware)
+            ->then($this->callRoute($route));
+
+        // 渲染响应结果
+        if(!$result instanceof \Psr\Http\Message\ResponseInterface && !is_null($result)){
+            $result = Decorator::selectRenderer($type)
+                ->setWrapped($result)
+                ->renderResponse($res);
+        }
+
+        return $result;
     }
 
     /**
      * 解析请求
      *
-     * @param $request
+     * @param \Psr\Http\Message\ServerRequestInterface $request
      * @return array
      */
     protected function parseIncomingRequest($request)
     {
-        if($request instanceof \Psr\Http\Message\ServerRequestInterface){
-            return [$request->getMethod(),$this->getVirtualPath($request->getServerParams())];
-        }
+        $serverParams = $request->getServerParams();
+        $requestRoute = [ $request->getMethod() ];
 
-        return [$_SERVER['REQUEST_METHOD'],$this->getVirtualPath($_SERVER)];
+        return array_merge($requestRoute,$this->getRoute(
+            parse_url($serverParams['REQUEST_URI'], PHP_URL_PATH),
+            parse_url($serverParams['SCRIPT_NAME'], PHP_URL_PATH)
+        ));
     }
 
     /**
      * 获取路由
      *
-     * @param $serverParams
-     * @return mixed|string
+     * @param string $requestScriptName
+     * @param string $requestUri
+     * @return array
      */
-    protected function  getVirtualPath($serverParams)
+    protected function getRoute($requestUri,$requestScriptName)
     {
-        //获取脚本路径
-        $requestScriptName = parse_url($serverParams['SCRIPT_NAME'], PHP_URL_PATH);
         $requestScriptDir = dirname($requestScriptName);
 
-        //获取请求资源
-        $requestUri = parse_url($serverParams['REQUEST_URI'], PHP_URL_PATH);
-
-        $basePath = '';
-        $virtualPath = $requestUri;
-
+        //获取基础路径
         if (stripos($requestUri, $requestScriptName) === 0) {
-            //URI没有隐藏脚本文件
             $basePath = $requestScriptName;
         } elseif ($requestScriptDir !== '/' && stripos($requestUri, $requestScriptDir) === 0) {
-            //请求路径与脚本文件路径一致
             $basePath = $requestScriptDir;
         }
 
-        if ($basePath) {
-            $virtualPath = '/'.trim(substr($requestUri, strlen($basePath)), '/');
+        if (isset($basePath)) {
+            //获取请求的路径
+            $requestUri = '/'.trim(substr($requestUri, strlen($basePath)), '/');
         }
 
-        return $virtualPath;
+        $type = $this->parseAcceptType($requestUri);
+
+        return [$requestUri,$type];
     }
 
     /**
-     * 注册路由分组中的路由
+     * 解析客户端请求的数据格式
      *
-     * @param $routeGroup array
+     * @param $requestUri
+     * @return string
      */
-    protected function compileRoute(array $routeGroup)
+    protected function parseAcceptType(& $requestUri)
     {
-        list($attributes,$action) = $routeGroup;
-        //保留父级分组属性
-        $parentGroupAttributes = $this->groupAttributes;
-
-        if (isset($attributes['middleware']) && is_string($attributes['middleware'])) {
-            $attributes['middleware'] = explode('|', $attributes['middleware']);
+        if(false !== ($pos = strrpos($requestUri,'.'))){
+            $type = substr($requestUri, $pos + 1);
+            $requestUri = strstr($requestUri, '.', true);
         }
 
-        //是否继承父级分组属性
-        if(isset($attributes['extend']) && $attributes['extend'] === false){
-            $this->groupAttributes = $attributes;
-        }else{
-            $this->groupAttributes = $this->extendParentGroupAttributes($attributes);
-        }
-
-        $action($this);
-
-        $this->groupAttributes = $parentGroupAttributes;
-    }
-
-    /**
-     * 继承父级分组属性
-     *
-     * @param array $attributes
-     * @return array
-     */
-    protected function extendParentGroupAttributes(array $attributes)
-    {
-        if($this->groupAttributes === null){
-            return $attributes;
-        }
-
-        $attributes = array_merge([
-            'prefix'    => '',
-            'suffix'    => '',
-            'namespace' => '',
-            'middleware'=> [],
-        ],$attributes);
-
-        //获取父级分组uri前缀与后缀
-        $fix = $this->mergeGroupPrefixAndSuffix(implode('-',[$attributes['prefix'],$attributes['suffix'],]));
-
-        list($attributes['prefix'],$attributes['suffix']) = explode('-',$fix);
-
-        //获取父级分组中间件
-        $attributes = $this->mergeMiddlewareGroup($attributes);
-
-        //获取父级分组命名空间
-        if(isset($this->groupAttributes['namespace'])){
-            $attributes['namespace'] = rtrim($this->groupAttributes['namespace'],'\\').'\\'.trim($attributes['namespace'],'\\');
-        }
-
-        return $attributes;
+        return isset($type) ? $type : 'html';
     }
 
     /**
@@ -385,7 +391,7 @@ class Router implements RouterInterface
     {
         return $this->dispatcher ?: \FastRoute\simpleDispatcher(function (RouteCollector $r) {
             foreach ($this->routes as $route) {
-                $r->addRoute($route->getMethod(), $route->getUri(), $route->getAction());
+                $r->addRoute($route->getMethod(), $route->getUri(), $route);
             }
         });
     }
@@ -418,7 +424,7 @@ class Router implements RouterInterface
      *
      * @param Route $action
      * @param array $args
-     * @return \Closure
+     * @return Route
      */
     protected function handleFoundRoute(Route $action,$args = [])
     {
@@ -426,9 +432,9 @@ class Router implements RouterInterface
             $this->routeMiddleware = $this->createMiddleware($action->getMiddleware());
         }
 
-        return function(...$params)use($action,$args){
-            return $this->callAction($action,array_merge($args,$params));
-        };
+        $action->setArguments($args);
+
+        return $action;
     }
 
     /**
@@ -487,45 +493,22 @@ class Router implements RouterInterface
      * 调用基于数组的路由
      *
      * @param $action Route
-     * @param array $args
-     * @return mixed|\Ant\Http\Response
+     * @return \Closure
      */
-    protected function callAction(Route $action,$args = [])
+    protected function callRoute(Route $action)
     {
-        $callback = $action->getCallable();
-        $args = array_merge($action->getArguments(),$args);
+        return function()use($action){
+            $callback = $action->getAction();
 
-        if (is_string($callback) && strpos($callback, '@') === false) {
-            $callback .= '@__invoke';
-        }
+            if (is_string($callback) && strpos($callback, '@') === false) {
+                $callback .= '@__invoke';
+            }
 
-        try{
-            return $this->container->call($callback,$args);
-        }catch (\BadMethodCallException $e){
-            throw new NotFoundException;
-        }
-    }
-
-    /**
-     * 启动路由器
-     *
-     * @param $req
-     * @param $res
-     * @return mixed
-     */
-    public function run($req,$res)
-    {
-        try{
-            //启动路由器
-            $this->routeStartEnable = true;
-            $routeCallback = $this->dispatch($req);
-
-            return (new Middleware)
-                ->send($req,$res)
-                ->through($this->routeMiddleware)
-                ->then($routeCallback);
-        }finally{
-            $this->routeStartEnable = false;
-        }
+            try{
+                return $this->container->call($callback,$action->getArguments());
+            }catch (\BadMethodCallException $e){
+                throw new NotFoundException;
+            }
+        };
     }
 }

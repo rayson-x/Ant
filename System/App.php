@@ -56,13 +56,13 @@ class App extends Container
      * @var array
      */
     protected $methods = [
-        'GET' => 1,             // 请求资源
-        'PUT' => 1,             // 创建资源
-        'POST' => 1,            // 创建或者完整的更新了资源
-        'DELETE' => 1,          // 删除资源
-        'HEAD' => 1,            // 只获取某个资源的头部信息
-        'PATCH' => 1,           // 局部更新资源
-        'OPTIONS ' => 1         // 获取资源支持的HTTP方法
+        'GET',             // 请求资源
+        'PUT',             // 创建资源
+        'POST',            // 创建或者完整的更新了资源
+        'DELETE',          // 删除资源
+        'HEAD',            // 只获取某个资源的头部信息
+        'PATCH',           // 局部更新资源
+        'OPTIONS'          // 获取资源支持的HTTP方法
     ];
 
     /**
@@ -303,8 +303,8 @@ class App extends Container
     {
         $method = strtoupper($request->getMethod());
 
-        if(!array_key_exists($method,$this->methods)){
-            throw new MethodNotAllowedException(array_keys($this->methods),sprintf(
+        if(!in_array($method,$this->methods)){
+            throw new MethodNotAllowedException($this->methods,sprintf(
                 'Unsupported HTTP method "%s" provided',
                 $method
             ));

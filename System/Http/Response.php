@@ -77,7 +77,7 @@ class Response extends Message implements ResponseInterface
      *
      * @var array
      */
-    public static $httpReasonPhrase = [
+    public $httpReasonPhrase = [
         //1xx Informational 请求过程
         100 => 'Continue',
         101 => 'Switching Protocols',
@@ -213,11 +213,13 @@ class Response extends Message implements ResponseInterface
      */
     public function getReasonPhrase()
     {
-        if($this->responsePhrase){
-            return $this->responsePhrase;
+        if(!$this->responsePhrase){
+            $this->httpReasonPhrase =  isset($this->httpReasonPhrase[$this->code])
+                ? $this->httpReasonPhrase[$this->code]
+                : null;
         }
 
-        return static::getStatusPhrase($this->code);
+        return $this->responsePhrase;
     }
 
     /**
@@ -229,23 +231,6 @@ class Response extends Message implements ResponseInterface
     public function write($data)
     {
         $this->getBody()->write($data);
-
-        return $this;
-    }
-
-    /**
-     * 设置响应内容
-     *
-     * @param $content
-     * @return $this
-     */
-    public function setContent($content)
-    {
-        if($this->shouldBeJson($content)){
-            $this->setJson($content);
-        }else{
-            $this->write($content);
-        }
 
         return $this;
     }
@@ -272,27 +257,6 @@ class Response extends Message implements ResponseInterface
     {
         return $this->withStatus($status)
                     ->withHeader('Location', $url);
-    }
-
-    /**
-     * 响应JSON数据
-     *
-     * @param $data
-     * @param null $status
-     * @param int $encodingOptions
-     * @return Response
-     */
-    public function setJson($data,$status = null,$encodingOptions = 0)
-    {
-        $this->getBody()->rewind();
-        $this->getBody()->write(safe_json_encode($data, $encodingOptions));
-
-        $this->withAddedHeader('Content-Type', 'application/json;charset=utf-8');
-        if (isset($status)) {
-            return $this->withStatus($status);
-        }
-
-        return $this;
     }
 
     /**
@@ -463,30 +427,6 @@ class Response extends Message implements ResponseInterface
     public function isServerError()
     {
         return $this->getStatusCode() >= 500 && $this->getStatusCode() < 600;
-    }
-
-    /**
-     * @param $code
-     * @return null
-     */
-    public static function getStatusPhrase($code) {
-        return isset(self::$httpReasonPhrase[$code])
-            ? self::$httpReasonPhrase[$code]
-            : null;
-    }
-
-    /**
-     * 是否序列化为json格式
-     *
-     * @param $content
-     * @return bool
-     */
-    protected function shouldBeJson($content)
-    {
-        //默认将实现了json序列化方法的对象进行JSON序列化
-        return $content instanceof JsonSerializable ||
-            $content instanceof ArrayObject ||
-            is_array($content);
     }
 
     /**

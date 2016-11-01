@@ -9,6 +9,8 @@ use Ant\Exception\NotFoundException;
 use Ant\Interfaces\Router\RouterInterface;
 use Ant\Exception\MethodNotAllowedException;
 use Ant\Interfaces\Container\ContainerInterface;
+use Psr\Http\Message\ResponseInterface as PsrResponse;
+use Psr\Http\Message\ServerRequestInterface as PsrRequest;
 
 /**
  * Class Routing
@@ -269,12 +271,12 @@ class Router implements RouterInterface
      * @param \Psr\Http\Message\ResponseInterface $res
      * @return \Psr\Http\Message\ResponseInterface
      */
-    public function dispatch($req,$res)
+    public function dispatch(PsrRequest $req, PsrResponse $res)
     {
         // 获取请求的方法,路由,跟返回类型
         list($method,$pathInfo,$type) = $this->parseIncomingRequest($req);
 
-        // 尽量不使用正则匹配
+        // 匹配路由
         if(isset($this->routes[$method.$pathInfo])){
             $route = $this->handleFoundRoute(
                 $this->routes[$method.$pathInfo]
@@ -297,7 +299,7 @@ class Router implements RouterInterface
             ->then($this->callRoute($route));
 
         // 渲染响应结果
-        if(!$result instanceof \Psr\Http\Message\ResponseInterface && !is_null($result)){
+        if(!$result instanceof PsrResponse && !is_null($result)){
             $result = Decorator::selectRenderer($type)
                 ->setWrapped($result)
                 ->renderResponse($res);
@@ -312,7 +314,7 @@ class Router implements RouterInterface
      * @param \Psr\Http\Message\ServerRequestInterface $request
      * @return array
      */
-    protected function parseIncomingRequest($request)
+    protected function parseIncomingRequest(PsrRequest $request)
     {
         $serverParams = $request->getServerParams();
         $requestRoute = [ $request->getMethod() ];
@@ -490,6 +492,7 @@ class Router implements RouterInterface
     {
         return function()use($action){
             $callback = $action->getAction();
+            $action->setArguments(func_get_args());
 
             if (is_string($callback) && strpos($callback, '@') === false) {
                 $callback .= '@__invoke';

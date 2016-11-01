@@ -118,12 +118,13 @@ class App extends Container
         $aliases = [
             \Ant\App::class                                     => 'app',
             \Ant\Container\Container::class                     => 'app',
-            \Ant\Interfaces\ContainerInterface::class           => 'app',
+            \Ant\Interfaces\Container\ContainerInterface::class => 'app',
             \Ant\Routing\Router::class                          => 'router',
             \Psr\Http\Message\ServerRequestInterface::class     => 'request',
             \Ant\Http\Request::class                            => 'request',
             \Psr\Http\Message\ResponseInterface::class          => 'response',
             \Ant\Http\Response::class                           => 'response',
+            \Ant\Debug\ExceptionHandle::class                   => 'debug',
         ];
 
         foreach($aliases as $alias => $serviceName){
@@ -173,7 +174,7 @@ class App extends Container
             $exception = new FatalThrowableError($exception);
         }
 
-        $handle = $this->make(\Ant\Debug\ExceptionHandle::class);
+        $handle = $this->make('debug');
         $response = $this['response']->replaceBody(fopen('php://temp','w+'));
 
         return $handle->render($exception,$response,true);
@@ -320,7 +321,7 @@ class App extends Container
     protected function handleResult($result)
     {
         if(!$result instanceof HttpResponse){
-            $result = $this['response']->setContent($result);
+            $result = $this['response'];
         }
 
         return $result;

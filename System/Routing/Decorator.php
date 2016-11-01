@@ -14,7 +14,6 @@ use Psr\Http\Message\ServerRequestInterface as PsrRequest;
  */
 class Decorator
 {
-    //Todo:;渲染不应该由路由完成,应该跟响应关联
     protected static $renderer = [
         'xml'   =>  XmlRenderer::class,
         'file'  =>  FileRenderer::class,

@@ -36,5 +36,5 @@ Interface RouterInterface
      * @param PsrResponse $response
      * @return PsrResponse
      */
-    public function dispatch($request,$response);
+    public function dispatch(PsrRequest $request, PsrResponse$response);
 }

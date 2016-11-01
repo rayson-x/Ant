@@ -10,10 +10,9 @@ namespace Ant\Interfaces\Container;
 interface ServiceProviderInterface
 {
     /**
-     * 将服务绑定至服务容器中
+     * 注册服务
      *
      * @param ContainerInterface $container
-     * @return mixed
      */
     public function register(ContainerInterface $container);
 }

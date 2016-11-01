@@ -8,8 +8,14 @@ use Ant\Http\Environment;
 use Ant\Interfaces\Container\ContainerInterface;
 use Ant\Interfaces\Container\ServiceProviderInterface;
 
+
 class BaseServiceProvider implements ServiceProviderInterface
 {
+    /**
+     * 注册服务
+     *
+     * @param ContainerInterface $container
+     */
     public function register(ContainerInterface $container)
     {
         $this->registerClass($container);
@@ -46,9 +52,7 @@ class BaseServiceProvider implements ServiceProviderInterface
          * 注册 Http Response 类
          */
         $container->singleton('response',function(){
-            $res = new Response();
-            $res->setImmutability(false);
-            return $res;
+            return (new Response())->keepImmutability(false);
         });
 
         /**
@@ -57,6 +61,11 @@ class BaseServiceProvider implements ServiceProviderInterface
         $container->singleton('router',function(){
             return new Router($this);
         });
+
+        /**
+         * 注册 Debug 对象
+         */
+        $container->bindIf('debug',\Ant\Debug\ExceptionHandle::class);
     }
 
     /**

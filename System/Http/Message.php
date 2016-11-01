@@ -213,10 +213,13 @@ abstract class Message implements MessageInterface
      * 本人出于损耗与易用性，给这个保持不变性加上了一个开关
      *
      * @param bool|false $enable
+     * @return self
      */
-    public function setImmutability($enable = false)
+    public function keepImmutability($enable = false)
     {
         $this->immutability = $enable;
+
+        return $this;
     }
 
     /**

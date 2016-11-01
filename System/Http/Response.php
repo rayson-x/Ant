@@ -288,6 +288,8 @@ class Response extends Message implements ResponseInterface
 
         if (function_exists("fastcgi_finish_request")) {
             fastcgi_finish_request();
+        }elseif('cli' != PHP_SAPI){
+            static::closeOutputBuffers(0,true);
         }
     }
 
@@ -427,6 +429,30 @@ class Response extends Message implements ResponseInterface
     public function isServerError()
     {
         return $this->getStatusCode() >= 500 && $this->getStatusCode() < 600;
+    }
+
+    /**
+     * 关闭并输出缓冲区
+     *
+     * @param $targetLevel
+     * @param $flush
+     */
+    public static function closeOutputBuffers($targetLevel, $flush)
+    {
+        $status = ob_get_status(true);
+        $level = count($status);
+        $flags = PHP_OUTPUT_HANDLER_REMOVABLE | ($flush ? PHP_OUTPUT_HANDLER_FLUSHABLE : PHP_OUTPUT_HANDLER_CLEANABLE);
+
+        while ($level-- > $targetLevel
+            && ($s = $status[$level])
+            && (!isset($s['del']) ? !isset($s['flags']) || $flags === ($s['flags'] & $flags) : $s['del'])
+        ){
+            if ($flush) {
+                ob_end_flush();
+            } else {
+                ob_end_clean();
+            }
+        }
     }
 
     /**

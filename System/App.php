@@ -144,8 +144,8 @@ class App extends Container
         });
 
         register_shutdown_function(function () {
-            if (!is_null($error = error_get_last()) &&
-                in_array($error['type'],[E_ERROR, E_CORE_ERROR, E_COMPILE_ERROR, E_PARSE])
+            if (!is_null($error = error_get_last())
+                && in_array($error['type'],[E_ERROR, E_CORE_ERROR, E_COMPILE_ERROR, E_PARSE])
             ){
                 throw new FatalErrorException(
                     $error['message'], $error['type'], 0, $error['file'], $error['line']

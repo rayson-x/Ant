@@ -8,7 +8,6 @@ use Ant\Http\Environment;
 use Ant\Interfaces\Container\ContainerInterface;
 use Ant\Interfaces\Container\ServiceProviderInterface;
 
-
 class BaseServiceProvider implements ServiceProviderInterface
 {
     /**
@@ -78,8 +77,7 @@ class BaseServiceProvider implements ServiceProviderInterface
         /**
          * 扩展 Http Request 处理类
          */
-        $container->extend('request',function($request){
-            /* @var $request Request */
+        $container->extend('request',function(Request $request){
             $request->setBodyParsers('json',function($input){
                 return safe_json_decode($input,true);
             });

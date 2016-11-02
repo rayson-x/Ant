@@ -1,7 +1,6 @@
 基础功能
 TODO::Config类
 TODO::日志功能 , psr-3 引入或自己开发
-TODO::监听异常与错误输出
 TODO::验证类
 TODO::字符处理,数组处理类
 

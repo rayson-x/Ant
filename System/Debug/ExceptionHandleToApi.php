@@ -1,61 +1,73 @@
 <?php
 namespace Ant\Debug;
 
+use Exception;
+use Ant\Exception\HttpException;
+use Psr\Http\Message\ResponseInterface;
+use Symfony\Component\Debug\Exception\FlattenException;
+use Symfony\Component\Debug\ExceptionHandler as SymfonyExceptionHandler;
+
 /**
  * Api的异常处理
  *
  * Class ExceptionHandleToApi
  * @package Ant\Debug
- *
- * @example
- *
- * //注册应用程序异常捕获之后的处理函数
- * $app->registerExceptionHandler(function($exception,$request,$response){
- *     $handle = new \Ant\Debug\ExceptionHandleToApi($exception);
- *     //设置响应状态码
- *     $response->withStatus($handle->getStatusCode());
- *     //设置Http头
- *     $response->addHeaderFromIterator($handle->getHeaders());
- *     //写入Body内容
- *     $response->write(safe_json_encode($handle->getContent()));
- * });
  */
 class ExceptionHandleToApi
 {
-    protected $statusCode;
-
-    protected $headers = [];
-
-    protected $content;
-
-    protected $debugEnable = true;
+    protected $renderer = 'json_encode';
 
     /**
-     * HandleException constructor.
-     *
-     * @param \Exception $exception
+     * @param Exception $exception
+     * @param ResponseInterface $response
      * @param bool|true $debug
      */
-    public function __construct(\Exception $exception, $debug = true)
+    public function render(Exception $exception, ResponseInterface $response, $debug = true)
     {
-        if($exception instanceof \Ant\Exception\HttpException){
+        $message = '';
+        $headers = [];
+        if($exception instanceof HttpException){
             // 获取HTTP状态码
-            $this->statusCode = $exception->getStatusCode();
-            $this->headers = $exception->getHeaders();
+            $statusCode = $exception->getStatusCode();
+            $headers = $exception->getHeaders();
         }else{
-            $this->statusCode = 500;
+            $statusCode = 500;
         }
 
         if($debug){
-            $this->headers = array_merge(
-                $this->headers,$this->getExceptionInfo($exception)
-            );
+            $message = $exception->getMessage() ?: 'Error';
+            $headers = array_merge($headers,$this->getExceptionInfo($exception));
         }
 
-        $this->content = [
-            'status'    => $this->statusCode ,
-            'message'   => $exception->getMessage() ?: 'Error'
-        ];
+        foreach($headers as $name => $value){
+            $response->withAddedHeader($name,$value);
+        }
+
+        $response->withStatus($statusCode);
+
+        $response->getBody()->write($this->decorate([
+            'status'    => $statusCode ,
+            'message'   => $message ?: 'Error'
+        ]));
+    }
+
+    /**
+     * 注册渲染器
+     *
+     * @param callable $renderer
+     */
+    public function registerRenderer(callable $renderer)
+    {
+        $this->renderer = $renderer;
+    }
+
+    /**
+     * @param $content
+     * @return mixed
+     */
+    protected function decorate($content)
+    {
+        return call_user_func($this->renderer,$content);
     }
 
     /**
@@ -72,9 +84,7 @@ class ExceptionHandleToApi
         }
 
         $exceptionInfo = [];
-        $exceptionInfo['Exception'] = sprintf(
-            "{$exception->getFile()}({$exception->getLine()}) %s %s",get_class($exception),$exception->getMessage()
-        );
+        $exceptionInfo['X-Exception-Message'] = $exception->getMessage();
 
         foreach(explode("\n",$exception->getTraceAsString()) as $index => $line){
             $key = sprintf('X-Exception-Trace-%02d', $index);
@@ -84,35 +94,5 @@ class ExceptionHandleToApi
         array_pop($exceptionInfo);
 
         return $exceptionInfo;
-    }
-
-    /**
-     * 获取HTTP状态码
-     *
-     * @return int
-     */
-    public function getStatusCode()
-    {
-        return $this->statusCode;
-    }
-
-    /**
-     * 获取HTTP头
-     *
-     * @return array
-     */
-    public function getHeaders()
-    {
-        return $this->headers;
-    }
-
-    /**
-     * 获取错误内容
-     *
-     * @return array
-     */
-    public function getContent()
-    {
-        return $this->content;
     }
 }

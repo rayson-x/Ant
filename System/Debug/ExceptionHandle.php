@@ -14,16 +14,16 @@ use Symfony\Component\Debug\ExceptionHandler as SymfonyExceptionHandler;
 class ExceptionHandle
 {
     /**
-     * @param Exception $exeption
+     * @param Exception $exception
      * @param ResponseInterface $response
      * @return ResponseInterface
      */
-    public function render(Exception $exeption, ResponseInterface $response, $debug = true)
+    public function render(Exception $exception, ResponseInterface $response, $debug = true)
     {
-        if($exeption instanceof HttpException){
-            $fe = FlattenException::create($exeption,$exeption->getStatusCode(),$exeption->getHeaders());
+        if($exception instanceof HttpException){
+            $fe = FlattenException::create($exception,$exception->getStatusCode(),$exception->getHeaders());
         }else{
-            $fe = FlattenException::create($exeption);
+            $fe = FlattenException::create($exception);
         }
 
         $handler = new SymfonyExceptionHandler($debug);

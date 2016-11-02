@@ -30,6 +30,7 @@ $app->addMiddleware(function (Ant\Http\Request $request,Ant\Http\Response $respo
 
 /* 获取路由器 */
 $router = $app['router'];
+
 /* 注册路由 */
 $router->group(['type' => ['html']],function(Ant\Routing\Router $router){
     $router->get('/',function(){

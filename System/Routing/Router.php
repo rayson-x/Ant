@@ -319,20 +319,20 @@ class Router implements RouterInterface
         $serverParams = $request->getServerParams();
         $requestRoute = [ $request->getMethod() ];
 
-        return array_merge($requestRoute,$this->getRoute(
+        return array_merge($requestRoute,$this->getRequestRoute(
             parse_url($serverParams['REQUEST_URI'], PHP_URL_PATH),
             parse_url($serverParams['SCRIPT_NAME'], PHP_URL_PATH)
         ));
     }
 
     /**
-     * 获取路由
+     * 获取请求的路由
      *
      * @param string $requestScriptName
      * @param string $requestUri
      * @return array
      */
-    protected function getRoute($requestUri,$requestScriptName)
+    protected function getRequestRoute($requestUri,$requestScriptName)
     {
         $requestScriptDir = dirname($requestScriptName);
 

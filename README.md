@@ -33,4 +33,6 @@ $router = $app['router'];
 $router->get('/',function(){
     return 'Hello World';
 });
+
+$app->run();
 ```

@@ -21,7 +21,7 @@ class FileRenderer extends Renderer
         ];
 
         foreach($headers as $name => $value){
-            $response->withAddedHeader($name,$value);
+            $response = $response->withAddedHeader($name,$value);
         }
 
         if(!is_string($this->wrapped) && !is_integer($this->wrapped)){

@@ -8,11 +8,12 @@ class JsonRenderer extends Renderer
     public function renderResponse(ResponseInterface $response)
     {
         $response->getBody()->write($this->toJson());
-        $response->withAddedHeader('Content-Type', 'application/json;charset=utf-8');
-
-        return $response;
+        return $response->withAddedHeader('Content-Type', 'application/json;charset=utf-8');
     }
 
+    /**
+     * @return mixed|string|void
+     */
     public function toJson()
     {
         $output = json_encode($this->wrapped);

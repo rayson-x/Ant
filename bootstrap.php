@@ -32,9 +32,9 @@ $app->addMiddleware(function (Ant\Http\Request $request,Ant\Http\Response $respo
 $router = $app['router'];
 
 /* 注册路由 */
-$router->group(['type' => ['html']],function(Ant\Routing\Router $router){
-    $router->get('/',function(){
-       return 'Ant-Framework';
+$router->group(['type' => ['json','xml']],function(Ant\Routing\Router $router){
+    $router->get('test/',function() {
+        return 'Ant-Framework';
     });
 });
 

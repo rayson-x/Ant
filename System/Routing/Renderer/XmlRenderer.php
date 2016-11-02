@@ -8,21 +8,41 @@ class XmlRenderer extends  Renderer
     public function renderResponse(ResponseInterface $response)
     {
         $response->getBody()->write($this->toXml());
-        $response->withAddedHeader('Content-Type', 'application/xml;charset=utf-8');
-
-        return $response;
+        return $response->withAddedHeader('Content-Type', 'application/xml;charset=utf-8');
     }
 
-    public function toXml()
+    /**
+     * 输出XML格式数据
+     *
+     * @return string
+     */
+    protected function toXml()
     {
-        $output = $this->wrapped;
+        $sxe = new \SimpleXMLElement('<xml/>');
+        $this->addChildToElement($sxe,$this->wrapped);
 
-        $doc = new \DOMDocument();
+        return $sxe->asXML();
+    }
 
-        foreach ($output as $key => $val) {
-            $doc->appendChild($doc->createElement($key, $val));
+    /**
+     * 添加子节点
+     *
+     * @param \SimpleXMLElement $element
+     * @param array|object $data
+     */
+    protected function addChildToElement(\SimpleXMLElement $element, $data)
+    {
+        if(is_string($data) || is_integer($data)){
+            $data = ['item' => $data];
         }
 
-        return $doc->saveXML();
+        foreach($data as $key => $val){
+            if(is_array($val)){
+                $childElement = $element->addChild($key);
+                $this->addChildToElement($childElement,$val);
+            }else{
+                $element->addChild($key,$val);
+            }
+        }
     }
 }

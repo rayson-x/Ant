@@ -7,6 +7,12 @@ abstract class Renderer
 {
     protected $wrapped;
 
+    /**
+     * 设置数据
+     *
+     * @param $wrappable
+     * @return $this
+     */
     public function setWrapped($wrappable)
     {
         $this->wrapped = $wrappable;
@@ -15,7 +21,7 @@ abstract class Renderer
     }
 
     /**
-     * 渲染数据
+     * 渲染响应数据
      *
      * @return ResponseInterface
      */

@@ -73,17 +73,17 @@ class Uri implements UriInterface
     protected $fragment;
 
     /**
-     * @param Environment $server
+     * @param Environment $env
      * @return static
      */
-    public static function createFromEnvironment(Environment $server)
+    public static function createFromRequestEnvironment(Environment $env)
     {
-        $scheme = (empty($scheme) || $server->get('HTTPS') == 'off') ? 'http' : 'https';
-        $user = $server->get('PHP_AUTH_USER','');
-        $password = $server->get('PHP_AUTH_PW','');
+        $scheme = ($env['HTTPS'] == 'off') ? 'http' : 'https';
+        $user = $env['PHP_AUTH_USER'] ?: '';
+        $password = $env['PHP_AUTH_PW'] ?: '';
 
         //HTTP_HOST在http1.0下可以返回空
-        if($httpHost = $server->get('HTTP_HOST',false)){
+        if($httpHost = $env['HTTP_HOST'] ?: false){
             if(strpos($httpHost,':')){
                 list($host,$port) = explode(':',$httpHost,2);
                 $port = (int)$port;
@@ -92,11 +92,11 @@ class Uri implements UriInterface
                 $port = null;
             }
         }else{
-            $host = $server->get('SERVER_NAME')?:$server->get('SERVER_ADDR');
-            $port = $server->get('SERVER_PORT');
+            $host = $env['SERVER_NAME'] ?: $env['SERVER_ADDR'];
+            $port = $env['SERVER_PORT'];
         }
 
-        return new static($scheme,$host,$server->get('REQUEST_URI','/'),$port,$user,$password);
+        return new static($scheme, $host, $env['REQUEST_URI'], $port, $user, $password);
     }
 
     /**
@@ -110,7 +110,7 @@ class Uri implements UriInterface
      * @param string $user
      * @param string $password
      */
-    public function __construct($scheme,$host,$url,$port = null,$user = '',$password = '')
+    public function __construct($scheme, $host, $url, $port = null, $user = '', $password = '')
     {
         $parsed = [];
         if ($url) {

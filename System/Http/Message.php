@@ -215,7 +215,7 @@ abstract class Message implements MessageInterface
      * @param bool|false $enable
      * @return self
      */
-    public function keepImmutability($enable = false)
+    public function keepImmutability($enable = true)
     {
         $this->immutability = $enable;
 

@@ -154,7 +154,7 @@ class App extends Container
         });
 
         set_exception_handler(function($e){
-            $this->handleUncaughtException($e)->send();
+            $this->send($this->handleUncaughtException($e));
         });
     }
 
@@ -175,7 +175,7 @@ class App extends Container
         }
 
         $handle = $this->make('debug');
-        $response = $this['response']->replaceBody(fopen('php://temp','w+'));
+        $response = $this['response']->withBody(new Body(fopen('php://temp','w+')));
 
         return $handle->render($exception,$response,true);
     }
@@ -265,11 +265,9 @@ class App extends Container
         $request = $this['request'];
         $response = $this['response'];
 
-        $result = $this->handleResult(
-            $this->process($request,$response)
-        );
+        $result = $this->process($request,$response);
 
-        $result->send();
+        $this->send($result);
     }
 
     /**
@@ -313,21 +311,6 @@ class App extends Container
     }
 
     /**
-     * 解析响应结果
-     *
-     * @param $result
-     * @return HttpResponse
-     */
-    protected function handleResult($result)
-    {
-        if(!$result instanceof HttpResponse){
-            $result = $this['response'];
-        }
-
-        return $result;
-    }
-
-    /**
      * 发送请求与响应通过中间件到达回调函数
      *
      * @param array $args
@@ -345,5 +328,109 @@ class App extends Container
         }
 
         return $then(...$args);
+    }
+
+    /**
+     * 向客户端发送数据
+     *
+     * @param mixed $result
+     */
+    public function send($result)
+    {
+        $response = $this->handleResult($result);
+        $this->sendHeader($response)->sendContent($response);
+
+        if (function_exists("fastcgi_finish_request")) {
+            fastcgi_finish_request();
+        }elseif('cli' != PHP_SAPI){
+            $this->closeOutputBuffers(0,true);
+        }
+    }
+
+    /**
+     * 解析响应结果
+     *
+     * @param $result
+     * @return HttpResponse
+     */
+    protected function handleResult($result)
+    {
+        if(!$result instanceof HttpResponse){
+            $result = $this['response'];
+        }
+
+        return $result;
+    }
+
+    /**
+     * 发送头信息
+     *
+     * @return $this
+     */
+    public function sendHeader(HttpResponse $response)
+    {
+        if(!headers_sent()){
+            header(sprintf(
+                'HTTP/%s %s %s',
+                $response->getProtocolVersion(),
+                $response->getStatusCode(),
+                $response->getReasonPhrase()
+            ));
+
+            foreach($response->getHeaders() as $name => $value){
+                if (is_array($value)) {
+                    $value = implode(',', $value);
+                }
+
+                $name = implode('-',array_map('ucfirst',explode('-',$name)));
+                header(sprintf('%s: %s',$name,$value));
+            }
+
+            foreach($response->getCookies() as list($name, $value, $expire, $path, $domain , $secure, $httponly)){
+                setcookie($name, $value, $expire, $path, $domain , $secure, $httponly);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * 发送消息主体
+     *
+     * @return $this
+     */
+    public function sendContent(HttpResponse $response)
+    {
+        if(!$response->isEmpty()){
+            echo (string) $response->getBody();
+        }else{
+            echo '';
+        }
+
+        return $this;
+    }
+
+    /**
+     * 关闭并输出缓冲区
+     *
+     * @param $targetLevel
+     * @param $flush
+     */
+    public function closeOutputBuffers($targetLevel, $flush)
+    {
+        $status = ob_get_status(true);
+        $level = count($status);
+        $flags = PHP_OUTPUT_HANDLER_REMOVABLE | ($flush ? PHP_OUTPUT_HANDLER_FLUSHABLE : PHP_OUTPUT_HANDLER_CLEANABLE);
+
+        while ($level-- > $targetLevel
+            && ($s = $status[$level])
+            && (!isset($s['del']) ? !isset($s['flags']) || $flags === ($s['flags'] & $flags) : $s['del'])
+        ){
+            if ($flush) {
+                ob_end_flush();
+            } else {
+                ob_end_clean();
+            }
+        }
     }
 }

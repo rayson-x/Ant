@@ -12,7 +12,7 @@ class JsonRenderer extends Renderer
     }
 
     /**
-     * @return mixed|string|void
+     * @return string
      */
     public function toJson()
     {

@@ -236,17 +236,6 @@ class Response extends Message implements ResponseInterface
     }
 
     /**
-     * 替换现有Body
-     *
-     * @param $stream
-     * @return $this|Message
-     */
-    public function replaceBody($stream)
-    {
-        return $this->withBody(new Body($stream));
-    }
-
-    /**
      * http重定向
      *
      * @param $url
@@ -271,74 +260,17 @@ class Response extends Message implements ResponseInterface
      * @param bool|true $httponly   是否只有http可以使用cookie(启用后,JS将无法访问该cookie)
      * @return $this
      */
-    public function setCookie($name, $value, $expire = 0, $path = '/', $domain = '', $secure = false, $httponly = true)
+    public function setCookie($name, $value, $expire = 0, $path = '/', $domain = '', $secure = false, $httponly = false)
     {
-        $this->cookie[] = [$name, $value, $expire, $path, $domain, $secure, $httponly];
-
-        return $this;
+        $this->cookie[] = [$name, $value, $expire, $path, $domain , $secure, $httponly];
     }
 
     /**
-     * 开始响应
+     * @return array
      */
-    public function send()
+    public function getCookies()
     {
-        $this->sendHeader();
-        $this->sendContent();
-
-        if (function_exists("fastcgi_finish_request")) {
-            fastcgi_finish_request();
-        }elseif('cli' != PHP_SAPI){
-            static::closeOutputBuffers(0,true);
-        }
-    }
-
-    /**
-     * 发送头信息
-     *
-     * @return $this
-     */
-    public function sendHeader()
-    {
-        if(!headers_sent()){
-            header(sprintf(
-                'HTTP/%s %s %s',
-                $this->getProtocolVersion(),
-                $this->getStatusCode(),
-                $this->getReasonPhrase()
-            ));
-
-            foreach($this->getHeaders() as $name => $value){
-                if (is_array($value)) {
-                    $value = implode(',', $value);
-                }
-
-                $name = implode('-',array_map('ucfirst',explode('-',$name)));
-                header(sprintf('%s: %s',$name,$value));
-            }
-
-            foreach($this->cookie as list($name, $value, $expire, $path, $domain, $secure, $httponly)){
-                setcookie($name, $value, $expire, $path, $domain, $secure, $httponly);
-            }
-        }
-
-        return $this;
-    }
-
-    /**
-     * 发送消息主体
-     *
-     * @return $this
-     */
-    public function sendContent()
-    {
-        if(!$this->isEmpty()){
-            echo (string) $this->getBody();
-        }else{
-            echo '';
-        }
-
-        return $this;
+        return $this->cookie;
     }
 
     /**
@@ -429,30 +361,6 @@ class Response extends Message implements ResponseInterface
     public function isServerError()
     {
         return $this->getStatusCode() >= 500 && $this->getStatusCode() < 600;
-    }
-
-    /**
-     * 关闭并输出缓冲区
-     *
-     * @param $targetLevel
-     * @param $flush
-     */
-    public static function closeOutputBuffers($targetLevel, $flush)
-    {
-        $status = ob_get_status(true);
-        $level = count($status);
-        $flags = PHP_OUTPUT_HANDLER_REMOVABLE | ($flush ? PHP_OUTPUT_HANDLER_FLUSHABLE : PHP_OUTPUT_HANDLER_CLEANABLE);
-
-        while ($level-- > $targetLevel
-            && ($s = $status[$level])
-            && (!isset($s['del']) ? !isset($s['flags']) || $flags === ($s['flags'] & $flags) : $s['del'])
-        ){
-            if ($flush) {
-                ob_end_flush();
-            } else {
-                ob_end_clean();
-            }
-        }
     }
 
     /**

@@ -96,8 +96,8 @@ class Request extends Message implements ServerRequestInterface
         return new static(
             Uri::createFromRequestEnvironment($env),
             $env->createHeader(),
-            $env->toArray(),
             $env->createCookie(),
+            $env->toArray(),
             new RequestBody(),
             UploadedFile::parseUploadedFiles($_FILES)
         );
@@ -108,16 +108,16 @@ class Request extends Message implements ServerRequestInterface
      *
      * @param UriInterface $uri
      * @param array $headers
-     * @param array $serverParams
      * @param array $cookies
+     * @param array $serverParams
      * @param StreamInterface|null $body
      * @param array $uploadFiles
      */
     public function __construct(
         UriInterface $uri,
         array $headers = [],
-        array $serverParams = [],
         array $cookies = [],
+        array $serverParams = [],
         StreamInterface $body = null,
         array $uploadFiles = []
     ){
@@ -601,5 +601,31 @@ class Request extends Message implements ServerRequestInterface
         }
 
         $this->bodyParsers[$subtype] = $parsers;
+    }
+
+    /**
+     * @return string
+     */
+    public function __toString()
+    {
+        $input = sprintf(
+            '%s %s HTTP/%s',
+            $this->getMethod(),
+            $this->getRequestTarget(),
+            $this->getProtocolVersion()
+        );
+        $input .= PHP_EOL;
+        foreach($this->getHeaders() as $name => $value){
+            if (is_array($value)) {
+                $value = implode(',', $value);
+            }
+
+            $name = implode('-',array_map('ucfirst',explode('-',$name)));
+            $input .= sprintf('%s: %s',$name,$value).PHP_EOL;
+        }
+        $input .= PHP_EOL;
+        $input .= (string)$this->getBody();
+
+        return $input;
     }
 }

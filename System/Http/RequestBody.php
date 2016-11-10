@@ -16,5 +16,4 @@ class RequestBody extends Body
 
         parent::__construct($stream);
     }
-
 }

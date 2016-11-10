@@ -44,7 +44,7 @@ class BaseServiceProvider implements ServiceProviderInterface
          * 注册 Http Request 处理类
          */
         $container->singleton('request',function(){
-            return Request::createRequestFromEnvironment($this['environment']);
+            return Request::createFromRequestEnvironment($this['environment']);
         });
 
         /**

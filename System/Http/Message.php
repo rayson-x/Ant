@@ -5,8 +5,6 @@ use Psr\Http\Message\StreamInterface;
 use Psr\Http\Message\MessageInterface;
 
 /**
- * TODO::将Cookie交给Message类处理
- *
  * Class Message
  * @package Ant\Http
  */
@@ -215,7 +213,7 @@ abstract class Message implements MessageInterface
      * @param bool|false $enable
      * @return self
      */
-    public function keepImmutability($enable = false)
+    public function keepImmutability($enable = true)
     {
         $this->immutability = $enable;
 

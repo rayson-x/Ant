@@ -32,17 +32,31 @@ class XmlRenderer extends  Renderer
      */
     protected function addChildToElement(\SimpleXMLElement $element, $data)
     {
-        if(is_string($data) || is_integer($data)){
+        if(!$this->checkType($data)){
             $data = ['item' => $data];
         }
 
-        foreach($data as $key => $val){
-            if(is_array($val)){
+        foreach($data as $key => $val) {
+            if($this->checkType($val)) {
                 $childElement = $element->addChild($key);
                 $this->addChildToElement($childElement,$val);
             }else{
                 $element->addChild($key,$val);
             }
         }
+    }
+
+    /**
+     * 检查数据类型
+     *
+     * @return bool
+     */
+    protected function checkType($data)
+    {
+        if(is_array($data) || is_object($data)){
+            return true;
+        }
+
+        return false;
     }
 }

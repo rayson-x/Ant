@@ -1,7 +1,6 @@
 {
     "name": "ant-framework/ant",
-    "description": "The Laravel Lumen Framework.",
-    "keywords": ["framework", "Ant" , "PSR-7"],
+    "keywords": ["framework", "PHP" , "PSR-7"],
     "license": "MIT",
     "require": {
         "psr/http-message": "^1.0",

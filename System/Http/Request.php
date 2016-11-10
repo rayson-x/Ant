@@ -8,12 +8,10 @@ use Psr\Http\Message\StreamInterface;
 use Psr\Http\Message\UploadedFileInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
-//TODO::添加COOKIE处理类
 /**
  * Class Request
  * @package Ant\Http
  * @see http://www.php-fig.org/psr/psr-7/
- * 可能改变实例的所有方法都必须保证请求实例不能被改变,使得它们保持当前消息的内部状态,并返回一个包含改变状态的实例.
  */
 class Request extends Message implements ServerRequestInterface
 {
@@ -76,7 +74,7 @@ class Request extends Message implements ServerRequestInterface
     /**
      * body 解析器 根据subtype进行调用
      *
-     * @var array[callable...]
+     * @var array
      */
     protected $bodyParsers = [];
 
@@ -88,51 +86,77 @@ class Request extends Message implements ServerRequestInterface
     protected $attributes = [];
 
     /**
-     * 通过上下文环境创建一个request
+     * 通过请求上下文环境创建
      *
-     * @param Environment $server
+     * @param Environment $env
      * @return static
      */
-    public static function createRequestFromEnvironment(Environment $server)
+    public static function createFromRequestEnvironment(Environment $env)
     {
-        $uri = Uri::createFromEnvironment($server);
-        $headers = Header::createFromEnvironment($server);
-        $cookieParams = $_COOKIE;
-        $serverParams = $server->all();
-        $body = new RequestBody();
-        $uploadFiles = UploadedFile::parseUploadedFiles($_FILES);
+        return new static(
+            Uri::createFromRequestEnvironment($env),
+            $env->createHeader(),
+            $env->createCookie(),
+            $env->toArray(),
+            new RequestBody(),
+            UploadedFile::parseUploadedFiles($_FILES)
+        );
+    }
 
-        return new static($uri,$headers,$cookieParams,$serverParams,$body,$uploadFiles);
+    /**
+     * 通过Http Request字符串获取
+     *
+     * @param $request
+     */
+    public static function createFromRequestString($request)
+    {
+        if(!is_string($request)){
+            throw new \InvalidArgumentException('Request must be string');
+        }
+
+        $request = explode("\r\n",$request);
+        $flag = explode(' ', array_shift($request) ,3);
+
+        if(count($flag) !== 3){
+            throw new \RuntimeException('Http header first line error');
+        }
+
+        list($method, $requestTarget, $version) = $flag;
+
+        $headers = [];
+
+        foreach($request as $header){
+            list($name,$header) = explode(':',$header);
+            $headers[$name] = explode(',', $header);
+        }
+
+        debug($request);
     }
 
     /**
      * Request constructor.
+     *
      * @param UriInterface $uri
      * @param array $headers
-     * @param array $cookieParams
+     * @param array $cookies
      * @param array $serverParams
      * @param StreamInterface|null $body
      * @param array $uploadFiles
      */
     public function __construct(
         UriInterface $uri,
-        array $headers,
-        array $cookieParams,
-        array $serverParams,
+        array $headers = [],
+        array $cookies = [],
+        array $serverParams = [],
         StreamInterface $body = null,
         array $uploadFiles = []
     ){
         $this->uri = $uri;
         $this->headers = $headers;
-        $this->cookieParams = $cookieParams;
         $this->serverParams = $serverParams;
         $this->uploadFiles = $uploadFiles;
-        $this->body = $body ?:new RequestBody();
-
-        $type = ['application/x-www-form-urlencoded','multipart/form-data'];
-        if($serverParams['REQUEST_METHOD'] === 'POST' && in_array($this->getContentType(),$type)){
-            $this->bodyParsed = $_POST;
-        }
+        $this->cookieParams = $cookies;
+        $this->body = $body ?: new Body(fopen('php://temp','w+'));
     }
 
     /**
@@ -173,7 +197,7 @@ class Request extends Message implements ServerRequestInterface
         if ($method == 'POST') {
             $override = $this->post('_method') ?: $this->getHeaderLine('x-http-method-override');
             if($override){
-                $method = $override;
+                $method = strtoupper($override);
             }
         }
 
@@ -348,7 +372,15 @@ class Request extends Message implements ServerRequestInterface
             return $this->bodyParsed;
         }
 
-        if(!(string) $this->body){
+        // "Content-Type" 为 "multipart/form-data" 时候 php://input 是无效的
+        // 为 "application/x-www-form-urlencoded" 的时候,body是加密的
+        if($this->getServerParam('REQUEST_METHOD') === 'POST'
+            && in_array($this->getContentType(),['multipart/form-data','application/x-www-form-urlencoded'])
+        ){
+            return $this->bodyParsed = $_POST;
+        }
+
+        if($this->body->getSize() === 0){
             return null;
         }
 
@@ -362,8 +394,8 @@ class Request extends Message implements ServerRequestInterface
             if (!(is_null($parsed) || is_object($parsed) || is_array($parsed))){
                 throw new RuntimeException('Request body media type parser return value must be an array, an object, or null');
             }
-            $this->bodyParsed = $parsed;
-            return $this->bodyParsed;
+
+            return $this->bodyParsed = $parsed;
         }
 
         return null;
@@ -599,5 +631,31 @@ class Request extends Message implements ServerRequestInterface
         }
 
         $this->bodyParsers[$subtype] = $parsers;
+    }
+
+    /**
+     * @return string
+     */
+    public function __toString()
+    {
+        $input = sprintf(
+            '%s %s HTTP/%s',
+            $this->getMethod(),
+            $this->getRequestTarget(),
+            $this->getProtocolVersion()
+        );
+        $input .= PHP_EOL;
+        foreach($this->getHeaders() as $name => $value){
+            if (is_array($value)) {
+                $value = implode(',', $value);
+            }
+
+            $name = implode('-',array_map('ucfirst',explode('-',$name)));
+            $input .= sprintf('%s: %s',$name,$value).PHP_EOL;
+        }
+        $input .= PHP_EOL;
+        $input .= (string)$this->getBody();
+
+        return $input;
     }
 }

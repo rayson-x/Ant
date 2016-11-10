@@ -1,15 +1,30 @@
 <?php
 namespace Ant\Http;
 
+use ArrayAccess;
 use ArrayIterator;
 use IteratorAggregate;
 
-class Environment implements IteratorAggregate
+class Environment implements IteratorAggregate,ArrayAccess
 {
     /**
      * @var array
      */
-    protected $items = [];
+    protected $serverParams = [];
+
+    /**
+     * 在“$_SERVER”中不是以“HTTP_”开头的Http头
+     *
+     * @var array
+     */
+    protected $special = [
+        'CONTENT_TYPE' => 1,
+        'CONTENT_LENGTH' => 1,
+        'PHP_AUTH_USER' => 1,
+        'PHP_AUTH_PW' => 1,
+        'PHP_AUTH_DIGEST' => 1,
+        'AUTH_TYPE' => 1,
+    ];
 
     /**
      * 模拟Http请求
@@ -42,48 +57,11 @@ class Environment implements IteratorAggregate
 
     /**
      * Environment constructor.
-     * @param array $items
+     * @param array $serverParams
      */
-    public function __construct($items)
+    public function __construct(array $serverParams)
     {
-        $items = is_array($items) ? $items : func_get_args();
-
-        $this->items = $items;
-    }
-
-    /**
-     * 设置数据集
-     *
-     * @param $key
-     * @param $value
-     */
-    public function set($key, $value)
-    {
-        $this->items[$key] = $value;
-    }
-
-    /**
-     * 通过key从数据集中取得数据
-     *
-     * @param $key
-     * @param null $default
-     * @return null
-     */
-    public function get($key, $default = null)
-    {
-        return $this->has($key) ? $this->items[$key] : $default;
-    }
-
-    /**
-     * 替换现有数据集
-     *
-     * @param array $items
-     */
-    public function replace(array $items)
-    {
-        foreach($items as $offset => $item){
-            $this->set($offset,$item);
-        }
+        $this->serverParams = $serverParams;
     }
 
     /**
@@ -91,44 +69,89 @@ class Environment implements IteratorAggregate
      *
      * @return array
      */
-    public function all()
+    public function toArray()
     {
-        return $this->items;
+        return $this->serverParams;
     }
 
     /**
-     * 通过key检查数据是否存在于数据集之中
+     * 从上下文环境中提取HTTP头
      *
-     * @param $key
+     * @return array
+     */
+    public function createHeader()
+    {
+        $headers = [];
+        foreach ($this->serverParams as $key => $value) {
+            //提取HTTP头
+            if (isset($this->special[$key]) || strpos($key, 'HTTP_') === 0) {
+                $key = strtolower(str_replace('_', '-', $key));
+                $key = (strpos($key, 'http-') === 0) ? substr($key, 5) : $key;
+                $headers[$key] = explode(',', $value);
+            }
+        }
+
+        return $headers;
+    }
+
+    /**
+     * 从上下文环境中提取Cookie
+     *
+     * @return array
+     */
+    public function createCookie()
+    {
+        if(!$_COOKIE){
+            $_COOKIE = explode(',',$this->serverParams['COOKIE']);
+        }
+
+        return $_COOKIE;
+    }
+
+    /**
+     * @param string $offset
+     * @param mixed $value
+     */
+    public function offsetSet($offset,$value)
+    {
+        $this->serverParams[$offset] = $value;
+    }
+
+    /**
+     * @param string $offset
+     * @return null|mixed
+     */
+    public function offsetGet($offset)
+    {
+        return $this->offsetExists($offset)
+            ? $this->serverParams[$offset]
+            : null;
+    }
+
+    /**
+     * @param string $offset
      * @return bool
      */
-    public function has($key)
+    public function offsetExists($offset)
     {
-        return array_key_exists($key, $this->items);
+        return array_key_exists($offset,$this->serverParams);
     }
 
     /**
-     * 通过key删除指定数据
-     *
-     * @param $key
+     * @param string $offset
      */
-    public function remove($key)
+    public function offsetUnset($offset)
     {
-        if($this->has($key)){
-            unset($this->items[$key]);
+        if($this->offsetExists($offset)){
+            unset($this->serverParams[$offset]);
         }
     }
 
     /**
-     * 重置数据集
+     * @return ArrayIterator
      */
-    public function reset()
-    {
-        $this->items = [];
-    }
-
     public function getIterator()
     {
-        return new ArrayIterator($this->items);
+        return new ArrayIterator($this->serverParams);
     }
 }

@@ -520,7 +520,9 @@ class Container implements ContainerInterface,ArrayAccess
      */
     protected function keyParametersByArgument(array $dependencies, array $parameters)
     {
-        foreach ($parameters as $key => $value) {
+        $count = count($dependencies);
+
+        while($count-- > 0 && list($key,$value) = each($parameters)){
             if (is_numeric($key)) {
                 unset($parameters[$key]);
 

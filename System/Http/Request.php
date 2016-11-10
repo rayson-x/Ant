@@ -110,29 +110,27 @@ class Request extends Message implements ServerRequestInterface
      */
     public static function createFromRequestString($request)
     {
-        if(!is_string($request)){
+        if (!is_string($request)) {
             throw new \InvalidArgumentException('Request must be string');
         }
 
-        $request = explode("\r\n",$request);
-        $flag = explode(' ', array_shift($request) ,3);
+        $request = explode("\r\n", $request);
+        $flag = explode(' ', array_shift($request), 3);
 
-        if(count($flag) !== 3){
+        if (count($flag) !== 3) {
             throw new \RuntimeException('Http header first line error');
         }
 
         list($method, $requestTarget, $version) = $flag;
 
         $headers = [];
-
-        foreach($request as $header){
-            list($name,$header) = explode(':',$header);
+        foreach ($request as $header) {
+            list($name, $header) = explode(':', $header);
             $headers[$name] = explode(',', $header);
         }
 
         debug($request);
     }
-
     /**
      * Request constructor.
      *

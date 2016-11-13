@@ -127,6 +127,7 @@ class UploadedFile implements UploadedFileInterface
                 throw new RuntimeException(sprintf('Error moving uploaded file %1s to %2s', $this->file['name'], $targetPath));
             }
         } else {
+            //当以Cli启动时的文件上传
             if (!rename($this->file['tmp_name'], $targetPath)) {
                 throw new RuntimeException(sprintf('Error moving uploaded file %1s to %2s', $this->file['name'], $targetPath));
             }

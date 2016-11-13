@@ -102,7 +102,7 @@ class Environment implements IteratorAggregate,ArrayAccess
     public function createCookie()
     {
         if(!$_COOKIE){
-            $_COOKIE = explode(',',$this->serverParams['COOKIE']);
+            parse_str(str_replace('; ', '&', $this->serverParams['COOKIE']), $_COOKIE);
         }
 
         return $_COOKIE;

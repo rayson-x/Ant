@@ -21,66 +21,65 @@ class Uri implements UriInterface
      *
      * @var string
      */
-    protected $scheme;
+    protected $scheme = null;
 
     /**
      * 请求主机地址
      *
      * @var string
      */
-    protected $host;
+    protected $host = null;
 
     /**
      * 请求的端口号
      *
      * @var null|int
      */
-    protected $port;
+    protected $port = null;
 
     /**
      * http用户
      *
      * @var string
      */
-    protected $user;
+    protected $user = null;
 
     /**
      * http用户连接密码
      *
      * @var string
      */
-    protected $password;
+    protected $password = null;
 
     /**
      * 请求资源路径
      *
      * @var string
      */
-    protected $path;
+    protected $path = null;
 
     /**
      * 查询参数
      *
      * @var string
      */
-    protected $query;
+    protected $query = null;
 
     /**
      * 分段
      *
      * @var string
      */
-    protected $fragment;
+    protected $fragment = null;
 
     /**
      * @param Environment $env
      * @return static
      */
-    public static function createFromRequestEnvironment(Environment $env)
+    public static function createFromEnvironment(Environment $env)
     {
         $scheme = ($env['HTTPS'] == 'off') ? 'http' : 'https';
-        $user = $env['PHP_AUTH_USER'] ?: '';
-        $password = $env['PHP_AUTH_PW'] ?: '';
+        $userInfo = $env['PHP_AUTH_USER'].($env['PHP_AUTH_PW'] ? ':' . $env['PHP_AUTH_PW'] : '');
 
         //HTTP_HOST在http1.0下可以返回空
         if($httpHost = $env['HTTP_HOST'] ?: false){
@@ -96,45 +95,34 @@ class Uri implements UriInterface
             $port = $env['SERVER_PORT'];
         }
 
-        return new static($scheme, $host, $env['REQUEST_URI'], $port, $user, $password);
+        $uri = $scheme.':';
+        $uri .= '//'.($userInfo ? $userInfo."@" : ''). $host .($port !== null ? ':' . $port : '');
+        $uri .= '/'.$env['REQUEST_URI'];
+
+        return new static($uri);
     }
 
     /**
      * 初始化Uri类
      *
      * Uri constructor.
-     * @param $scheme
-     * @param $host
-     * @param $url
-     * @param null $port
-     * @param string $user
-     * @param string $password
+     * @param $uri
      */
-    public function __construct($scheme, $host, $url, $port = null, $user = '', $password = '')
+    public function __construct($uri)
     {
-        $parsed = [];
-        if ($url) {
-            $parsed = parse_url($url) ?: [];
+        foreach(parse_url($uri) as $key => $value){
+            $this->$key = $value;
         }
-
-        $this->scheme = $scheme;
-        $this->host = $host;
-        $this->port = $port;
-        $this->user = $user;
-        $this->password = $password;
-        $this->path = isset($parsed['path']) ? $parsed['path'] : '/';
-        $this->query = isset($parsed['query']) ? $parsed['query'] : '';
-        $this->fragment = isset($parsed['fragment']) ? $parsed['fragment'] : '';
     }
 
     /**
-     * 获取Scheme(连接方式)
+     * 获取应用协议
      *
      * @return mixed
      */
     public function getScheme()
     {
-        return $this->scheme;
+        return $this->scheme ?: 'http';
     }
 
     /**
@@ -222,17 +210,15 @@ class Uri implements UriInterface
      */
     public function getPort()
     {
-        $port = $this->port;
-        if($port != null){
-            return $port;
+        if($this->port){
+            return $this->port;
         }
 
-        $scheme = $this->scheme;
-        if(!$scheme){
+        if(!$this->scheme){
             return null;
         }
 
-        return $this->standardPort[$scheme];
+        return $this->port = $this->standardPort[$this->scheme];
     }
 
     /**
@@ -272,7 +258,7 @@ class Uri implements UriInterface
      */
     public function getPath()
     {
-        return $this->path;
+        return $this->path ?: '/';
     }
 
     /**
@@ -288,7 +274,7 @@ class Uri implements UriInterface
         }
 
         $clone = clone $this;
-        $clone->path = $path ?: '/';
+        $clone->path = $path;
 
         return $clone;
     }

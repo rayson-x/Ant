@@ -2,21 +2,17 @@
 include 'vendor/autoload.php';
 
 $request = <<<EOT
-GET /test HTTP/1.1
+POST /index.php HTTP/1.1
 Host: 127.0.0.1
-Connection: keep-alive
-Cache-Control: max-age=0
-Upgrade-Insecure-Requests: 1
-User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/54.0.2840.87 Safari/537.36
-Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8
-Accept-Encoding: gzip, deflate, sdch, br
-Accept-Language: zh-CN,zh;q=0.8
-Cookie: PHPSESSID=8t3l0bqeot5ralsj57c6deoee0
+Cache-Control: no-cache
+Postman-Token: 7d62a411-4901-653c-3989-fd6ec79a32a1
 
-Test
+{
+	"test":"tset"
+}
 EOT;
 
-Ant\Http\Request::createFromRequestString($request);
+Ant\Http\Request::createFromTcpStream($request);
 /* 初始化框架 */
 //$app = new Ant\App(realpath(__DIR__));
 

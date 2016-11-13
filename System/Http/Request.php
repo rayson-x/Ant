@@ -94,42 +94,66 @@ class Request extends Message implements ServerRequestInterface
     public static function createFromRequestEnvironment(Environment $env)
     {
         return new static(
-            Uri::createFromRequestEnvironment($env),
+            Uri::createFromEnvironment($env),
             $env->createHeader(),
             $env->createCookie(),
             $env->toArray(),
-            new RequestBody(),
+            RequestBody::createFromCgi(),
             UploadedFile::parseUploadedFiles($_FILES)
         );
     }
 
     /**
-     * 通过Http Request字符串获取
+     * 通过Tcp输入流解析Http请求
      *
-     * @param $request
+     * @param string $receiveBuffer
      */
-    public static function createFromRequestString($request)
+    public static function createFromTcpStream($receiveBuffer)
     {
-        if (!is_string($request)) {
+        if (!is_string($receiveBuffer)) {
             throw new \InvalidArgumentException('Request must be string');
         }
 
-        $request = explode("\r\n", $request);
-        $flag = explode(' ', array_shift($request), 3);
+        list($header, $body) = explode("\r\n\r\n", $receiveBuffer, 2);
 
-        if (count($flag) !== 3) {
-            throw new \RuntimeException('Http header first line error');
-        }
-
-        list($method, $requestTarget, $version) = $flag;
+        $headerData = explode("\r\n",$header);
+        list($method, $requestTarget, $version) = explode(' ', array_shift($headerData), 3);
 
         $headers = [];
-        foreach ($request as $header) {
-            list($name, $header) = explode(':', $header);
-            $headers[$name] = explode(',', $header);
+        $bodyBoundary = '';
+        foreach ($headerData as $content) {
+            if (empty($content)) {
+                continue;
+            }
+            list($name, $value) = explode(':', $content, 2);
+            $name = strtoupper($name);
+            $value = trim($value);
+            switch ($name) {
+                case 'COOKIE':
+                    parse_str(str_replace('; ', '&', $value), $_COOKIE);
+                    break;
+                case 'CONTENT_TYPE':
+                    // 判断是否为浏览器表单数据
+                    if (preg_match('/boundary="?(\S+)"?/', $value, $match)) {
+                        $headers[$name] = 'multipart/form-data';
+                        $bodyBoundary = '--' . $match[1];
+                    } else {
+                        $headers[$name] = $value;
+                    }
+                    break;
+                default:
+                    $headers[$name] = $value;
+                    break;
+            }
         }
 
-        debug($request);
+        if(!in_array($method,['GET','HEAD','OPTIONS'])){
+            if(isset($headers['CONTENT_TYPE']) && $headers['CONTENT_TYPE'] === 'multipart/form-data'){
+                //Todo::解析表单内容
+            }else{
+                $body = RequestBody::createFromTcpStream($body);
+            }
+        }
     }
     /**
      * Request constructor.
@@ -164,7 +188,7 @@ class Request extends Message implements ServerRequestInterface
      */
     public function getRequestTarget()
     {
-        return $this->serverParams['REQUEST_URI'] ?:'/';
+        return $this->getServerParam('REQUEST_URI') ?: '/';
     }
 
     /**
@@ -371,7 +395,6 @@ class Request extends Message implements ServerRequestInterface
         }
 
         // "Content-Type" 为 "multipart/form-data" 时候 php://input 是无效的
-        // 为 "application/x-www-form-urlencoded" 的时候,body是加密的
         if($this->getServerParam('REQUEST_METHOD') === 'POST'
             && in_array($this->getContentType(),['multipart/form-data','application/x-www-form-urlencoded'])
         ){

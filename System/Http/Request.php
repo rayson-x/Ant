@@ -126,13 +126,13 @@ class Request extends Message implements ServerRequestInterface
                 continue;
             }
             list($name, $value) = explode(':', $content, 2);
-            $name = strtoupper($name);
+            $name = strtolower($name);
             $value = trim($value);
             switch ($name) {
-                case 'COOKIE':
+                case 'cookie':
                     parse_str(str_replace('; ', '&', $value), $_COOKIE);
                     break;
-                case 'CONTENT_TYPE':
+                case 'content-type':
                     // 判断是否为浏览器表单数据
                     if (preg_match('/boundary="?(\S+)"?/', $value, $match)) {
                         $headers[$name] = 'multipart/form-data';
@@ -148,8 +148,9 @@ class Request extends Message implements ServerRequestInterface
         }
 
         if(!in_array($method,['GET','HEAD','OPTIONS'])){
-            if(isset($headers['CONTENT_TYPE']) && $headers['CONTENT_TYPE'] === 'multipart/form-data'){
+            if(isset($headers['content-type']) && $headers['content-type'] === 'multipart/form-data'){
                 //Todo::解析表单内容
+                list($bodyParams,$uploadedFiles) = RequestBody::parseForm($body,$bodyBoundary);
             }else{
                 $body = RequestBody::createFromTcpStream($body);
             }

@@ -1,18 +1,9 @@
 <?php
 include 'vendor/autoload.php';
 
-$request = <<<EOT
-POST /index.php HTTP/1.1
-Host: 127.0.0.1
-Cache-Control: no-cache
-Postman-Token: 7d62a411-4901-653c-3989-fd6ec79a32a1
 
-{
-	"test":"tset"
-}
-EOT;
 
-Ant\Http\Request::createFromTcpStream($request);
+Ant\Http\Request::createFromTcpStream(file_get_contents('body.log'));
 /* 初始化框架 */
 //$app = new Ant\App(realpath(__DIR__));
 

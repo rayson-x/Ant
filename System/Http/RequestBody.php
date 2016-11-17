@@ -18,16 +18,20 @@ class RequestBody extends Body
     /**
      * 通过Tcp流获取请求内容
      *
-     * @param string $stream
+     * @param string $data
+     * @return static
      */
-    public static function createFromTcpStream($stream)
+    public static function createFromTcpStream($data)
     {
-        if(!is_string($stream)){
+        if(!is_string($data)){
             throw new \InvalidArgumentException("");
         }
 
-        $body = new static(fopen("php://temp","w+"));
-        return $body->write($stream);
+        $stream = fopen("php://temp","w+");
+        fwrite($stream,$data);
+        rewind($stream);
+
+        return new static($stream);
     }
 
     /**

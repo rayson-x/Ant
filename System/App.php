@@ -72,10 +72,10 @@ class App extends Container
      */
     public function __construct($path = null)
     {
-        $this->basePath = trim($path);
+        $this->basePath = rtrim($path,DIRECTORY_SEPARATOR);
         $this->registerError();
         $this->bootstrapContainer();
-        $this->registerNamespace('App',$this->basePath.DIRECTORY_SEPARATOR.'app');
+        $this->registerNamespace('App',$this->basePath.DIRECTORY_SEPARATOR.'App');
     }
 
     /**
@@ -144,8 +144,8 @@ class App extends Container
         });
 
         register_shutdown_function(function () {
-            if (!is_null($error = error_get_last())
-                && in_array($error['type'],[E_ERROR, E_CORE_ERROR, E_COMPILE_ERROR, E_PARSE])
+            if (!is_null($error = error_get_last()) &&
+                in_array($error['type'],[E_ERROR, E_CORE_ERROR, E_COMPILE_ERROR, E_PARSE])
             ){
                 throw new FatalErrorException(
                     $error['message'], $error['type'], 0, $error['file'], $error['line']
@@ -220,27 +220,30 @@ class App extends Container
     public function registerNamespace($namespace, $path)
     {
         $namespace = trim($namespace, '\\');
-        $path = rtrim($path, '/\\');
+        $path = rtrim($path, DIRECTORY_SEPARATOR);
 
         spl_autoload_register(function ($className) use ($namespace, $path) {
+            // 如果已经存在,直接返回
             if (class_exists($className, false) || interface_exists($className, false)) {
                 return true;
             }
 
             $className = trim($className, '\\');
 
+            // 检查类是否存在于此命名空间之下
             if ($namespace && stripos($className, $namespace) !== 0) {
                 return false;
-            } else {
-                $filename = trim(substr($className, strlen($namespace)), '\\');
             }
 
+            // 根据命名空间截取出文件路径
+            $filename = trim(substr($className, strlen($namespace)), '\\');
+            // 拼接路径
             $filename = $path.DIRECTORY_SEPARATOR.str_replace('\\', DIRECTORY_SEPARATOR, $filename).'.php';
 
             if (!file_exists($filename)) {
                 return false;
             }
-
+            // 引入文件
             require $filename;
 
             return class_exists($className, false) || interface_exists($className, false);

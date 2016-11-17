@@ -6,11 +6,13 @@ use FastRoute\RouteCollector;
 use InvalidArgumentException;
 use Ant\Middleware\Middleware;
 use Ant\Exception\NotFoundException;
+use Ant\Exception\NotAcceptableException;
 use Ant\Interfaces\Router\RouterInterface;
 use Ant\Exception\MethodNotAllowedException;
 use Ant\Interfaces\Container\ContainerInterface;
 use Psr\Http\Message\ResponseInterface as PsrResponse;
 use Psr\Http\Message\ServerRequestInterface as PsrRequest;
+use Symfony\Component\HttpKernel\Exception\NotAcceptableHttpException;
 
 /**
  * Class Routing
@@ -289,7 +291,7 @@ class Router implements RouterInterface
 
         // 请求的类型是否能够响应
         if(!in_array($type,$route->getResponseType())){
-            throw new \RuntimeException("Requested [$type] format cannot be returned");
+            throw new NotAcceptableException(406);
         }
 
         // 调用中间件
@@ -317,12 +319,18 @@ class Router implements RouterInterface
     protected function parseIncomingRequest(PsrRequest $request)
     {
         $serverParams = $request->getServerParams();
-        $requestRoute = [ $request->getMethod() ];
+        $requestMethod = $request->getMethod();
 
-        return array_merge($requestRoute,$this->getRequestRoute(
+        $requestUri = $this->getRequestUri(
             parse_url($serverParams['REQUEST_URI'], PHP_URL_PATH),
             parse_url($serverParams['SCRIPT_NAME'], PHP_URL_PATH)
-        ));
+        );
+
+        //Todo::获取客户端Accept格式
+        $acceptType = $this->parseAcceptType($requestUri);
+
+        // 返回客户端请求的方法,资源,以及资源的返回方式
+        return [$requestMethod,$requestUri,$acceptType];
     }
 
     /**
@@ -332,7 +340,7 @@ class Router implements RouterInterface
      * @param string $requestUri
      * @return array
      */
-    protected function getRequestRoute($requestUri,$requestScriptName)
+    protected function getRequestUri($requestUri,$requestScriptName)
     {
         $requestScriptDir = dirname($requestScriptName);
 
@@ -348,9 +356,7 @@ class Router implements RouterInterface
             $requestUri = '/'.trim(substr($requestUri, strlen($basePath)), '/');
         }
 
-        $type = $this->parseAcceptType($requestUri);
-
-        return [$requestUri,$type];
+        return $requestUri;
     }
 
     /**

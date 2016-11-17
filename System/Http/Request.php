@@ -110,17 +110,19 @@ class Request extends Message implements ServerRequestInterface
      */
     public static function createFromTcpStream($receiveBuffer)
     {
+        //Todo::待完善
         if (!is_string($receiveBuffer)) {
             throw new \InvalidArgumentException('Request must be string');
         }
 
         list($header, $body) = explode("\r\n\r\n", $receiveBuffer, 2);
 
-        $headerData = explode("\r\n",$header);
-        list($method, $requestTarget, $version) = explode(' ', array_shift($headerData), 3);
+        list($request_method, $request_uri, $server_protocol) = explode(' ', array_shift($headerData), 3);
 
         $headers = [];
         $bodyBoundary = '';
+        $headerData = explode("\r\n",$header);
+
         foreach ($headerData as $content) {
             if (empty($content)) {
                 continue;
@@ -147,7 +149,7 @@ class Request extends Message implements ServerRequestInterface
             }
         }
 
-        if(!in_array($method,['GET','HEAD','OPTIONS'])){
+        if(!in_array($request_method,['GET','HEAD','OPTIONS'])){
             if(isset($headers['content-type']) && $headers['content-type'] === 'multipart/form-data'){
                 //Todo::解析表单内容
                 list($bodyParams,$uploadedFiles) = RequestBody::parseForm($body,$bodyBoundary);

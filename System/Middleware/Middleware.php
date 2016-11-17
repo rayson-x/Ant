@@ -29,6 +29,22 @@ class Middleware
     protected $arguments = [];
 
     /**
+     * 7.0之前使用第二次协同返回数据,7.0之后通过getReturn返回数据
+     *
+     * @var bool
+     */
+    protected $getReturnValue = false;
+
+    /**
+     * Middleware constructor.
+     */
+    public function __construct()
+    {
+        $this->getReturnValue = version_compare(PHP_VERSION, '7.0.0', '>=');
+
+    }
+
+    /**
      * 设置在中间件中传输的参数
      *
      * @return self $this
@@ -73,7 +89,8 @@ class Middleware
 
                     $yieldValue = $generator->current();
                     if ($yieldValue === false) {
-                        break;
+                        //打断中间件执行流程
+                        return null;
                     }elseif($yieldValue instanceof Arguments){
                         //替换传递参数
                         $arguments = $yieldValue->toArray();
@@ -83,8 +100,6 @@ class Middleware
 
             $result = $destination(...$arguments);
             $isSend = ($result !== null);
-            //7.0之前使用第二次协同返回数据,7.0之后通过getReturn返回数据
-            $getReturnValue = version_compare(PHP_VERSION, '7.0.0', '>=');
             //回调函数栈
             while ($generator = array_pop($stack)) {
                 /* @var $generator Generator */
@@ -95,7 +110,7 @@ class Middleware
                 }
 
                 //尝试用协同返回数据进行替换,如果无返回则继续使用之前结果
-                if ($getReturnValue) {
+                if ($this->getReturnValue) {
                     $result = $generator->getReturn() ?: $result;
                 }else{
                     $result = $generator->current() ?: $result;
@@ -103,8 +118,6 @@ class Middleware
 
                 $isSend = ($result !== null);
             }
-
-            return $result;
         }catch(Exception $e){
             $exceptionHandle = function($e){
                 throw $e;
@@ -115,8 +128,10 @@ class Middleware
                 $exceptionHandle = $this->createExceptionHandle($stack,$exceptionHandle);
             }
 
-            $exceptionHandle($e);
+            $result = $exceptionHandle($e);
         }
+
+        return $result;
     }
 
     /**
@@ -140,6 +155,10 @@ class Middleware
                 try{
                     //将异常交给内层中间件
                     $generator->throw($exception);
+
+                    return $this->getReturnValue
+                        ? $generator->getReturn()
+                        : $generator->current();
                 }catch(Exception $e) {
                     //将异常交给外层中间件
                     $stack($e);

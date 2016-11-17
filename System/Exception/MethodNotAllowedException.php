@@ -22,7 +22,7 @@ class MethodNotAllowedException extends HttpException
         array $allowed,
         $message = null,
         \Exception $previous = null,
-        array $headers = array(),
+        array $headers = [],
         $code = 0
     ){
         $allowed = ['allowed' => implode(',',$allowed)];

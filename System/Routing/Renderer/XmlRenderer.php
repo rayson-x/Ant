@@ -36,13 +36,8 @@ class XmlRenderer extends  Renderer
             $data = ['item' => $data];
         }
 
-<<<<<<< HEAD
-        foreach($data as $key => $val) {
-            if($this->checkType($val)) {
-=======
         foreach($data as $key => $val){
             if(!is_string($val) && !is_int($val)){
->>>>>>> d91386f783508015f798ccb70687cd5001601348
                 $childElement = $element->addChild($key);
                 $this->addChildToElement($childElement,$val);
             }else{

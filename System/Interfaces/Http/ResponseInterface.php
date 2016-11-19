@@ -20,7 +20,12 @@ interface ResponseInterface extends PsrResponseInterface
      * @param string $domain
      * @param bool|false $secure
      * @param bool|false $httponly
-     * @return mixed
+     * @return $this
      */
     public function setCookie($name, $value, $expire = 0, $path = '/', $domain = '', $secure = false, $httponly = false);
+
+    /**
+     * @return array
+     */
+    public function getCookies();
 }

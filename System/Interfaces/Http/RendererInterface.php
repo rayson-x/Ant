@@ -8,7 +8,7 @@ namespace Ant\Interfaces\Http;
 interface RendererInterface
 {
     /**
-     * ÉèÖÃ°ü¹ü
+     * è®¾ç½®åŒ…è£¹
      *
      * @param $package
      * @return $this
@@ -16,7 +16,7 @@ interface RendererInterface
     public function setPackage($package);
 
     /**
-     * ×°ÊÎ°ü¹ü
+     * è£…é¥°åŒ…è£¹
      *
      * @param \Psr\Http\Message\MessageInterface $http
      * @return \Psr\Http\Message\MessageInterface

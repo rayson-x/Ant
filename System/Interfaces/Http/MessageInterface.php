@@ -6,7 +6,7 @@ use Psr\Http\Message\MessageInterface as PsrMessageInterface;
 interface MessageInterface extends PsrMessageInterface
 {
     /**
-     * Ñ¡ÔñBody×°ÊÎÆ÷
+     * é€‰æ‹©Bodyè£…é¥°å™¨
      *
      * @param $type
      * @return RendererInterface
@@ -14,7 +14,7 @@ interface MessageInterface extends PsrMessageInterface
     public function selectRenderer($type);
 
     /**
-     * ÉèÖÃBody×°ÊÎÆ÷
+     * è®¾ç½®Bodyè£…é¥°å™¨
      *
      * @param $type
      * @param RendererInterface $renderer

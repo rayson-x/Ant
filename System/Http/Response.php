@@ -3,7 +3,7 @@ namespace Ant\Http;
 
 use InvalidArgumentException;
 use Psr\Http\Message\StreamInterface;
-use Psr\Http\Message\ResponseInterface;
+use Ant\Interfaces\Http\ResponseInterface;
 
 /**
  * Todo::添加静态方法,通过http响应内容获取Response类
@@ -261,6 +261,8 @@ class Response extends Message implements ResponseInterface
     public function setCookie($name, $value, $expire = 0, $path = '/', $domain = '', $secure = false, $httponly = false)
     {
         $this->cookie[] = [$name, $value, $expire, $path, $domain , $secure, $httponly];
+
+        return $this;
     }
 
     /**

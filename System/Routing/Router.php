@@ -1,6 +1,7 @@
 <?php
 namespace Ant\Routing;
 
+use Ant\Http\Response as AntResponse;
 use FastRoute\Dispatcher;
 use FastRoute\RouteCollector;
 use InvalidArgumentException;
@@ -12,7 +13,6 @@ use Ant\Exception\MethodNotAllowedException;
 use Ant\Interfaces\Container\ContainerInterface;
 use Psr\Http\Message\ResponseInterface as PsrResponse;
 use Psr\Http\Message\ServerRequestInterface as PsrRequest;
-use Symfony\Component\HttpKernel\Exception\NotAcceptableHttpException;
 
 /**
  * Class Routing
@@ -289,22 +289,24 @@ class Router implements RouterInterface
             );
         }
 
-        // 请求的类型是否能够响应
-        if(!in_array($type,$route->getResponseType())){
-            throw new NotAcceptableException(406);
-        }
-
         // 调用中间件
         $result = (new Middleware)
             ->send($req,$res)
             ->through($this->routeMiddleware)
             ->then($this->callRoute($route));
 
-        // 渲染响应结果
-        if(!$result instanceof PsrResponse && !is_null($result)){
-            $result = Decorator::selectRenderer($type)
-                ->setWrapped($result)
-                ->renderResponse($res);
+        if($res instanceof AntResponse){
+            // 请求的类型是否能够响应
+            if(!in_array($type,$route->getResponseType())){
+                throw new NotAcceptableException(
+                    sprintf('Response type must be [%s]',implode(',',$route->getResponseType()))
+                );
+            }
+
+            // 渲染响应结果
+            $result = $res->selectRenderer($type)
+                ->setPackage($result)
+                ->decorate($res);
         }
 
         return $result;

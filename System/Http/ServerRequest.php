@@ -5,81 +5,111 @@ use RuntimeException;
 use InvalidArgumentException;
 use Psr\Http\Message\UriInterface;
 use Psr\Http\Message\StreamInterface;
-use Psr\Http\Message\RequestInterface;
+use Psr\Http\Message\ServerRequestInterface;
 
-class Request extends Message implements RequestInterface
+/**
+ * Class ServerRequest
+ * @package Ant\Http
+ * @see http://www.php-fig.org/psr/psr-7/
+ */
+class ServerRequest extends Message implements ServerRequestInterface
 {
     /**
-     * ÇëÇó×ÊÔ´
+     * è¯·æ±‚èµ„æº
      *
      * @var string
      */
     protected $requestTarget;
 
     /**
-     * http ÇëÇó·½Ê½
+     * http è¯·æ±‚æ–¹å¼
      *
      * @var string
      */
     protected $method;
 
     /**
-     * Uri ÊµÀı
+     * Uri å®ä¾‹
      *
      * @var \Psr\Http\Message\UriInterface
      */
     protected $uri;
 
     /**
-     * cookie²ÎÊı
+     * æœåŠ¡å™¨å’Œæ‰§è¡Œç¯å¢ƒä¿¡æ¯
+     *
+     * @var array
+     */
+    protected $serverParams;
+
+    /**
+     * cookieå‚æ•°
      *
      * @var array
      */
     protected $cookieParams;
 
     /**
-     * ²éÑ¯²ÎÊı
+     * æŸ¥è¯¢å‚æ•°
      *
      * @var array
      */
     protected $queryParams;
 
     /**
-     * httpÉÏ´«ÎÄ¼ş \Psr\Http\Message\UploadedFileInterface ÊµÀı
+     * httpä¸Šä¼ æ–‡ä»¶ \Psr\Http\Message\UploadedFileInterface å®ä¾‹
      *
      * @var array
      */
     protected $uploadFiles;
 
     /**
-     * body ²ÎÊı
+     * body å‚æ•°
      *
      * @var array|object|null
      */
     protected $bodyParsed;
 
     /**
-     * body ½âÎöÆ÷ ¸ù¾İsubtype½øĞĞµ÷ÓÃ
+     * body è§£æå™¨ æ ¹æ®subtypeè¿›è¡Œè°ƒç”¨
      *
      * @var array
      */
     protected $bodyParsers = [];
 
     /**
-     * ÊôĞÔ
+     * å±æ€§
      *
      * @var array
      */
     protected $attributes = [];
 
     /**
-     * Í¨¹ıTcpÊäÈëÁ÷½âÎöHttpÇëÇó
+     * é€šè¿‡è¯·æ±‚ä¸Šä¸‹æ–‡ç¯å¢ƒåˆ›å»º
+     *
+     * @param Environment $env
+     * @return static
+     */
+    public static function createFromRequestEnvironment(Environment $env)
+    {
+        return new static(
+            Uri::createFromEnvironment($env),
+            $env->createHeader(),
+            $env->createCookie(),
+            $env->toArray(),
+            RequestBody::createFromCgi(),
+            UploadedFile::parseUploadedFiles($_FILES)
+        );
+    }
+
+    /**
+     * é€šè¿‡Tcpè¾“å…¥æµè§£æHttpè¯·æ±‚
      *
      * @param string $receiveBuffer
      */
     public static function createFromTcpStream($receiveBuffer)
     {
-        //Todo::´ıÍêÉÆ
+        //Todo::å¾…å®Œå–„
         if (!is_string($receiveBuffer)) {
             throw new \InvalidArgumentException('Request must be string');
         }
@@ -104,7 +134,7 @@ class Request extends Message implements RequestInterface
                     parse_str(str_replace('; ', '&', $value), $_COOKIE);
                     break;
                 case 'content-type':
-                    // ÅĞ¶ÏÊÇ·ñÎªä¯ÀÀÆ÷±íµ¥Êı¾İ
+                    // åˆ¤æ–­æ˜¯å¦ä¸ºæµè§ˆå™¨è¡¨å•æ•°æ®
                     if (preg_match('/boundary="?(\S+)"?/', $value, $match)) {
                         $headers[$name] = 'multipart/form-data';
                         $bodyBoundary = '--' . $match[1];
@@ -120,16 +150,41 @@ class Request extends Message implements RequestInterface
 
         if(!in_array($request_method,['GET','HEAD','OPTIONS'])){
             if(isset($headers['content-type']) && $headers['content-type'] === 'multipart/form-data'){
-                //Todo::½âÎö±íµ¥ÄÚÈİ
+                //Todo::è§£æè¡¨å•å†…å®¹
                 list($bodyParams,$uploadedFiles) = RequestBody::parseForm($body,$bodyBoundary);
             }else{
                 $body = RequestBody::createFromTcpStream($body);
             }
         }
     }
+    /**
+     * Request constructor.
+     *
+     * @param UriInterface $uri
+     * @param array $headers
+     * @param array $cookies
+     * @param array $serverParams
+     * @param StreamInterface|null $body
+     * @param array $uploadFiles
+     */
+    public function __construct(
+        UriInterface $uri,
+        array $headers = [],
+        array $cookies = [],
+        array $serverParams = [],
+        StreamInterface $body = null,
+        array $uploadFiles = []
+    ){
+        $this->uri = $uri;
+        $this->headers = $headers;
+        $this->serverParams = $serverParams;
+        $this->uploadFiles = $uploadFiles;
+        $this->cookieParams = $cookies;
+        $this->body = $body ?: new Body(fopen('php://temp','w+'));
+    }
 
     /**
-     * »ñÈ¡ÇëÇóÄ¿±ê(×ÊÔ´)
+     * è·å–è¯·æ±‚ç›®æ ‡(èµ„æº)
      *
      * @return string
      */
@@ -139,7 +194,7 @@ class Request extends Message implements RequestInterface
     }
 
     /**
-     * ÉèÖÃÇëÇó×ÊÔ´
+     * è®¾ç½®è¯·æ±‚èµ„æº
      *
      * @param mixed $requestTarget
      * @return Request
@@ -150,7 +205,7 @@ class Request extends Message implements RequestInterface
     }
 
     /**
-     * »ñÈ¡httpÇëÇó·½Ê½,Ö§³ÖÖØĞ´ÇëÇó·½Ê½
+     * è·å–httpè¯·æ±‚æ–¹å¼,æ”¯æŒé‡å†™è¯·æ±‚æ–¹å¼
      *
      * @return string
      */
@@ -162,9 +217,9 @@ class Request extends Message implements RequestInterface
 
         $method = isset($this->serverParams['REQUEST_METHOD']) ? strtoupper($this->serverParams['REQUEST_METHOD']) : 'GET';
 
-        // ³¢ÊÔÖØĞ´ÇëÇó·½·¨
+        // å°è¯•é‡å†™è¯·æ±‚æ–¹æ³•
         if ($method == 'POST') {
-            $override = $this->getBodyParam('_method') ?: $this->getHeaderLine('x-http-method-override');
+            $override = $this->post('_method') ?: $this->getHeaderLine('x-http-method-override');
             if($override){
                 $method = strtoupper($override);
             }
@@ -174,7 +229,7 @@ class Request extends Message implements RequestInterface
     }
 
     /**
-     * ÉèÖÃÇëÇó·½Ê½
+     * è®¾ç½®è¯·æ±‚æ–¹å¼
      *
      * @param string $method
      * @return Request
@@ -185,7 +240,7 @@ class Request extends Message implements RequestInterface
     }
 
     /**
-     * »ñÈ¡URI
+     * è·å–URI
      *
      * @return UriInterface
      */
@@ -195,12 +250,12 @@ class Request extends Message implements RequestInterface
     }
 
     /**
-     * ÉèÖÃuri
+     * è®¾ç½®uri
      *
-     * Èç¹û¿ªÆôhost±£»¤
-     * HOSTÎª¿Õ,ĞÂµÄURI°üº¬HOST,¸üĞÂ
-     * HOSTÎª¿Õ,ĞÂµÄURI²»°üº¬,²»¸üĞÂ
-     * HOST²»Îª¿Õ,²»¸üĞÂ
+     * å¦‚æœå¼€å¯hostä¿æŠ¤
+     * HOSTä¸ºç©º,æ–°çš„URIåŒ…å«HOST,æ›´æ–°
+     * HOSTä¸ºç©º,æ–°çš„URIä¸åŒ…å«,ä¸æ›´æ–°
+     * HOSTä¸ä¸ºç©º,ä¸æ›´æ–°
      *
      * @param UriInterface $uri
      * @param bool|false $preserveHost
@@ -209,7 +264,7 @@ class Request extends Message implements RequestInterface
     public function withUri(UriInterface $uri,$preserveHost = false)
     {
         if(!$preserveHost){
-            $host = explode(',',$uri->getHost());
+                $host = explode(',',$uri->getHost());
         }else{
             if( (!$this->hasHeader('host') || empty($this->getHeaderLine('host'))) && $uri->getHost() !== ''){
                 $host = explode(',',$uri->getHost());
@@ -224,7 +279,30 @@ class Request extends Message implements RequestInterface
     }
 
     /**
-     * »ñÈ¡cookie²ÎÊı
+     * è·å–serverå‚æ•°
+     *
+     * @return array
+     */
+    public function getServerParams()
+    {
+        return $this->serverParams;
+    }
+
+    /**
+     * @param $key
+     * @return array|null
+     */
+    public function getServerParam($key = null)
+    {
+        if($key === null){
+            return $this->serverParams;
+        }
+
+        return isset($this->serverParams[$key]) ? $this->serverParams[$key] : null;
+    }
+
+    /**
+     * è·å–cookieå‚æ•°
      *
      * @return array
      */
@@ -234,7 +312,7 @@ class Request extends Message implements RequestInterface
     }
 
     /**
-     * ÉèÖÃcookie²ÎÊı
+     * è®¾ç½®cookieå‚æ•°
      *
      * @param array $cookies
      * @return Request
@@ -245,7 +323,7 @@ class Request extends Message implements RequestInterface
     }
 
     /**
-     * »ñÈ¡²éÑ¯²ÎÊı
+     * è·å–æŸ¥è¯¢å‚æ•°
      *
      * @return array
      */
@@ -265,7 +343,7 @@ class Request extends Message implements RequestInterface
     }
 
     /**
-     * ÉèÖÃ²éÑ¯²ÎÊı
+     * è®¾ç½®æŸ¥è¯¢å‚æ•°
      *
      * @param array $query
      * @return Request
@@ -276,7 +354,7 @@ class Request extends Message implements RequestInterface
     }
 
     /**
-     * ÏògetÖĞÌí¼Ó²ÎÊı
+     * å‘getä¸­æ·»åŠ å‚æ•°
      *
      * @param array $query
      * @return Request
@@ -287,7 +365,7 @@ class Request extends Message implements RequestInterface
     }
 
     /**
-     * »ñÈ¡ÉÏ´«ÎÄ¼şĞÅÏ¢
+     * è·å–ä¸Šä¼ æ–‡ä»¶ä¿¡æ¯
      *
      * @return array
      */
@@ -297,7 +375,7 @@ class Request extends Message implements RequestInterface
     }
 
     /**
-     * Ìí¼ÓÉÏ´«ÎÄ¼şĞÅÏ¢
+     * æ·»åŠ ä¸Šä¼ æ–‡ä»¶ä¿¡æ¯
      *
      * @param array $uploadedFiles
      * @return Request
@@ -308,7 +386,7 @@ class Request extends Message implements RequestInterface
     }
 
     /**
-     * »ñÈ¡body½âÎö½á¹û
+     * è·å–bodyè§£æç»“æœ
      *
      * @return array|null|object
      */
@@ -318,7 +396,7 @@ class Request extends Message implements RequestInterface
             return $this->bodyParsed;
         }
 
-        // "Content-Type" Îª "multipart/form-data" Ê±ºò php://input ÊÇÎŞĞ§µÄ
+        // "Content-Type" ä¸º "multipart/form-data" æ—¶å€™ php://input æ˜¯æ— æ•ˆçš„
         if($this->getServerParam('REQUEST_METHOD') === 'POST'
             && in_array($this->getContentType(),['multipart/form-data','application/x-www-form-urlencoded'])
         ){
@@ -332,7 +410,7 @@ class Request extends Message implements RequestInterface
         list($type,$subtype) = explode('/',$this->getContentType(),2);
 
         if(in_array(strtolower($type),['application','text']) && isset($this->bodyParsers[$subtype])){
-            //µ÷ÓÃbody½âÎöº¯Êı
+            //è°ƒç”¨bodyè§£æå‡½æ•°
             $body = (string)$this->getBody();
             $parsed = call_user_func($this->bodyParsers[$subtype],$body);
 
@@ -347,7 +425,7 @@ class Request extends Message implements RequestInterface
     }
 
     /**
-     * ÉèÖÃbody½âÎö½á¹û
+     * è®¾ç½®bodyè§£æç»“æœ
      *
      * @param array|null|object $data
      * @return Request
@@ -362,7 +440,58 @@ class Request extends Message implements RequestInterface
     }
 
     /**
-     * ¼ì²éÇëÇó·½Ê½
+     * è·å–æ‰€æœ‰å±æ€§
+     *
+     * @return mixed[]
+     */
+    public function getAttributes()
+    {
+        return $this->attributes;
+    }
+
+    /**
+     * è·å–ä¸€ä¸ªå±æ€§çš„å€¼
+     *
+     * @param string $name
+     * @param mixed $default
+     * @return mixed
+     */
+    public function getAttribute($name, $default = null)
+    {
+        return $this->attributes[$name];
+    }
+
+    /**
+     * è®¾ç½®ä¸€ä¸ªå±æ€§.
+     *
+     * @param string $name
+     * @param mixed $value
+     * @return self
+     */
+    public function withAttribute($name, $value)
+    {
+        return $this->changeAttribute(['attributes',$name],$value);
+    }
+
+    /**
+     * åˆ é™¤ä¸€ä¸ªå±æ€§
+     *
+     * @see getAttributes()
+     * @param string $name .
+     * @return self
+     */
+    public function withoutAttribute($name)
+    {
+        $result = clone $this;
+        if(array_key_exists($name,$result->attributes)){
+            unset($result->attributes[$name]);
+        }
+
+        return $result;
+    }
+
+    /**
+     * æ£€æŸ¥è¯·æ±‚æ–¹å¼
      *
      * @param $method
      * @return bool
@@ -373,7 +502,7 @@ class Request extends Message implements RequestInterface
     }
 
     /**
-     * ²é¿´ÊÇ·ñÊÇGETÇëÇó
+     * æŸ¥çœ‹æ˜¯å¦æ˜¯GETè¯·æ±‚
      *
      * @return bool
      */
@@ -383,7 +512,7 @@ class Request extends Message implements RequestInterface
     }
 
     /**
-     * ²é¿´ÊÇ·ñÊÇPOSTÇëÇó
+     * æŸ¥çœ‹æ˜¯å¦æ˜¯POSTè¯·æ±‚
      *
      * @return bool
      */
@@ -393,7 +522,7 @@ class Request extends Message implements RequestInterface
     }
 
     /**
-     * ²é¿´ÊÇ·ñÊÇPUTÇëÇó
+     * æŸ¥çœ‹æ˜¯å¦æ˜¯PUTè¯·æ±‚
      *
      * @return bool
      */
@@ -403,7 +532,7 @@ class Request extends Message implements RequestInterface
     }
 
     /**
-     * ²é¿´ÊÇ·ñÊÇDELETEÇëÇó
+     * æŸ¥çœ‹æ˜¯å¦æ˜¯DELETEè¯·æ±‚
      *
      * @return bool
      */
@@ -413,8 +542,8 @@ class Request extends Message implements RequestInterface
     }
 
     /**
-     * ¼ì²éÊÇ·ñÊÇÒì²½ÇëÇó
-     * ×¢Òâ : Ö÷Á÷JS¿ò¼Ü·¢ÆğAJAX¶¼ÓĞ´Ë²ÎÊı,Èç¹ûÊÇÔ­ÉúAJAXĞèÒªÊÖ¶¯Ìí¼Óµ½httpÍ·
+     * æ£€æŸ¥æ˜¯å¦æ˜¯å¼‚æ­¥è¯·æ±‚
+     * æ³¨æ„ : ä¸»æµJSæ¡†æ¶å‘èµ·AJAXéƒ½æœ‰æ­¤å‚æ•°,å¦‚æœæ˜¯åŸç”ŸAJAXéœ€è¦æ‰‹åŠ¨æ·»åŠ åˆ°httpå¤´
      *
      * @return bool
      */
@@ -424,7 +553,54 @@ class Request extends Message implements RequestInterface
     }
 
     /**
-     * »ñÈ¡body²ÎÊı
+     * è·å–GETå‚æ•°
+     *
+     * @param null $key
+     * @return array|null
+     */
+    public function get($key = null)
+    {
+        $get = $this->getQueryParams();
+        if($key === null){
+            return $get;
+        }
+
+        return isset($get[$key]) ? $get[$key] : null;
+    }
+
+    /**
+     * è·å–POSTå‚æ•°,ä»…åœ¨è¯·æ±‚æ–¹å¼ä¸ºPOSTæ—¶æœ‰æ•ˆ
+     *
+     * @param null $key
+     * @return array|null|object
+     */
+    public function post($key = null)
+    {
+        if($this->serverParams['REQUEST_METHOD'] === 'POST'){
+            return $this->getBodyParam($key);
+        }
+
+        return $key ? [] : null;
+    }
+
+    /**
+     * è·å–cookieå‚æ•°
+     *
+     * @param null $key
+     * @return array|null
+     */
+    public function cookie($key = null)
+    {
+        $cookie = $this->getCookieParams();
+        if($key === null){
+            return $cookie;
+        }
+
+        return isset($cookie[$key]) ? $cookie[$key] : null;
+    }
+
+    /**
+     * è·å–bodyå‚æ•°
      *
      * @param null $key
      * @return array|null|object
@@ -447,7 +623,7 @@ class Request extends Message implements RequestInterface
     }
 
     /**
-     * »ñÈ¡content-type
+     * è·å–content-type
      *
      * @return null
      */
@@ -466,7 +642,7 @@ class Request extends Message implements RequestInterface
     }
 
     /**
-     * ÉèÖÃbody½âÎöÆ÷
+     * è®¾ç½®bodyè§£æå™¨
      *
      * @param $subtype string
      * @param $parsers callable

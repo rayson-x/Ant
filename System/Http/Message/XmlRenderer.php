@@ -1,14 +1,15 @@
 <?php
-namespace Ant\Routing\Renderer;
+namespace Ant\Http\Message;
 
-use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\MessageInterface;
 
 class XmlRenderer extends  Renderer
 {
-    public function renderResponse(ResponseInterface $response)
+    public function decorate(MessageInterface $http)
     {
-        $response->getBody()->write($this->toXml());
-        return $response->withAddedHeader('Content-Type', 'application/xml;charset=utf-8');
+        $http->getBody()->write($this->toXml());
+
+        return $http->withAddedHeader('Content-Type', 'application/xml'.$this->getCharset($http));
     }
 
     /**
@@ -19,7 +20,7 @@ class XmlRenderer extends  Renderer
     protected function toXml()
     {
         $sxe = new \SimpleXMLElement('<xml/>');
-        $this->addChildToElement($sxe,$this->wrapped);
+        $this->addChildToElement($sxe,$this->package);
 
         return $sxe->asXML();
     }

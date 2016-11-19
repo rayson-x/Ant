@@ -1,14 +1,14 @@
 <?php
-namespace Ant\Routing\Renderer;
+namespace Ant\Http\Message;
 
-use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\MessageInterface;
 
 class JsonRenderer extends Renderer
 {
-    public function renderResponse(ResponseInterface $response)
+    public function decorate(MessageInterface $http)
     {
-        $response->getBody()->write($this->toJson());
-        return $response->withAddedHeader('Content-Type', 'application/json;charset=utf-8');
+        $http->getBody()->write($this->toJson());
+        return $http->withAddedHeader('Content-Type', 'application/json'.$this->getCharset($http));
     }
 
     /**
@@ -16,7 +16,7 @@ class JsonRenderer extends Renderer
      */
     public function toJson()
     {
-        $output = json_encode($this->wrapped);
+        $output = json_encode($this->package);
 
         if ($output === false && json_last_error() !== JSON_ERROR_NONE) {
             throw new \UnexpectedValueException(json_last_error_msg(), json_last_error());

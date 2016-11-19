@@ -1,10 +1,10 @@
 <?php
 namespace Ant;
 
-use Ant\Http\Request;
 use Ant\Http\Response;
 use Ant\Routing\Router;
 use Ant\Http\Environment;
+use Ant\Http\ServerRequest;
 use Ant\Interfaces\Container\ContainerInterface;
 use Ant\Interfaces\Container\ServiceProviderInterface;
 
@@ -44,7 +44,7 @@ class BaseServiceProvider implements ServiceProviderInterface
          * 注册 Http Request 处理类
          */
         $container->singleton('request',function(){
-            return Request::createFromRequestEnvironment($this['environment']);
+            return ServerRequest::createFromRequestEnvironment($this['environment']);
         });
 
         /**
@@ -77,7 +77,7 @@ class BaseServiceProvider implements ServiceProviderInterface
         /**
          * 扩展 Http Request 处理类
          */
-        $container->extend('request',function(Request $request){
+        $container->extend('request',function(ServerRequest $request){
             $request->setBodyParsers('json',function($input){
                 return safe_json_decode($input,true);
             });

@@ -1,8 +1,6 @@
 <?php
 namespace Ant\Http;
 
-use ArrayObject;
-use JsonSerializable;
 use InvalidArgumentException;
 use Psr\Http\Message\StreamInterface;
 use Psr\Http\Message\ResponseInterface;

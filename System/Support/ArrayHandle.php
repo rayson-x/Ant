@@ -67,4 +67,47 @@ class ArrayHandle
     {
         static::setIn($target,$path,$value,true);
     }
+
+    /**
+     * 从数组获取指定数据
+     *
+     * @param array $array
+     * @param $keys
+     * @return array
+     */
+    public static function getKeywordsFromArray($array,array $keys)
+    {
+        $result = [];
+        $array = is_array($array) ? $array : [];
+        foreach($keys as $key){
+            if(!array_key_exists($key,$array)){
+                // 缺少必要参数
+                throw new \InvalidArgumentException("{$key} does not exist");
+            }
+
+            $result[$key] = $array[$key];
+        }
+
+        return $result;
+    }
+
+    /**
+     * 检查非法字段
+     *
+     * @param $array
+     * @param array $keys
+     * @return array
+     */
+    public static function checkIllegalKeywords($array,array $keys)
+    {
+        $array = is_array($array) ? $array : [];
+        foreach($keys as $key){
+            if(array_key_exists($key,$array)){
+                // 非法参数
+                throw new \InvalidArgumentException("[$key] is illegal fields");
+            }
+        }
+
+        return $array;
+    }
 }

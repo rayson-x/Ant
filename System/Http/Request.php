@@ -7,79 +7,78 @@ use Psr\Http\Message\UriInterface;
 use Psr\Http\Message\StreamInterface;
 use Psr\Http\Message\RequestInterface;
 
+/**
+ * Class ServerRequest
+ * @package Ant\Http
+ * @see http://www.php-fig.org/psr/psr-7/
+ */
 class Request extends Message implements RequestInterface
 {
     /**
-     * ÇëÇó×ÊÔ´
+     * è¯·æ±‚èµ„æº
      *
      * @var string
      */
     protected $requestTarget;
 
     /**
-     * http ÇëÇó·½Ê½
+     * http è¯·æ±‚æ–¹å¼
      *
      * @var string
      */
     protected $method;
 
     /**
-     * Uri ÊµÀı
+     * Uri å®ä¾‹
      *
      * @var \Psr\Http\Message\UriInterface
      */
     protected $uri;
 
     /**
-     * cookie²ÎÊı
+     * cookieå‚æ•°
      *
      * @var array
      */
     protected $cookieParams;
 
     /**
-     * ²éÑ¯²ÎÊı
+     * æŸ¥è¯¢å‚æ•°
      *
      * @var array
      */
     protected $queryParams;
 
     /**
-     * httpÉÏ´«ÎÄ¼ş \Psr\Http\Message\UploadedFileInterface ÊµÀı
+     * httpä¸Šä¼ æ–‡ä»¶ \Psr\Http\Message\UploadedFileInterface å®ä¾‹
      *
      * @var array
      */
     protected $uploadFiles;
 
     /**
-     * body ²ÎÊı
+     * body å‚æ•°
      *
      * @var array|object|null
      */
     protected $bodyParsed;
 
     /**
-     * body ½âÎöÆ÷ ¸ù¾İsubtype½øĞĞµ÷ÓÃ
+     * body è§£æå™¨ æ ¹æ®subtypeè¿›è¡Œè°ƒç”¨
      *
      * @var array
      */
     protected $bodyParsers = [];
 
-    /**
-     * ÊôĞÔ
-     *
-     * @var array
-     */
-    protected $attributes = [];
 
     /**
-     * Í¨¹ıTcpÊäÈëÁ÷½âÎöHttpÇëÇó
+     * é€šè¿‡Tcpè¾“å…¥æµè§£æHttpè¯·æ±‚
      *
      * @param string $receiveBuffer
      */
     public static function createFromTcpStream($receiveBuffer)
     {
-        //Todo::´ıÍêÉÆ
+        //Todo::å¾…å®Œå–„
         if (!is_string($receiveBuffer)) {
             throw new \InvalidArgumentException('Request must be string');
         }
@@ -104,7 +103,7 @@ class Request extends Message implements RequestInterface
                     parse_str(str_replace('; ', '&', $value), $_COOKIE);
                     break;
                 case 'content-type':
-                    // ÅĞ¶ÏÊÇ·ñÎªä¯ÀÀÆ÷±íµ¥Êı¾İ
+                    // åˆ¤æ–­æ˜¯å¦ä¸ºæµè§ˆå™¨è¡¨å•æ•°æ®
                     if (preg_match('/boundary="?(\S+)"?/', $value, $match)) {
                         $headers[$name] = 'multipart/form-data';
                         $bodyBoundary = '--' . $match[1];
@@ -120,7 +119,7 @@ class Request extends Message implements RequestInterface
 
         if(!in_array($request_method,['GET','HEAD','OPTIONS'])){
             if(isset($headers['content-type']) && $headers['content-type'] === 'multipart/form-data'){
-                //Todo::½âÎö±íµ¥ÄÚÈİ
+                //Todo::è§£æè¡¨å•å†…å®¹
                 list($bodyParams,$uploadedFiles) = RequestBody::parseForm($body,$bodyBoundary);
             }else{
                 $body = RequestBody::createFromTcpStream($body);
@@ -129,28 +128,28 @@ class Request extends Message implements RequestInterface
     }
 
     /**
-     * »ñÈ¡ÇëÇóÄ¿±ê(×ÊÔ´)
+     * è·å–è¯·æ±‚ç›®æ ‡(èµ„æº)
      *
      * @return string
      */
     public function getRequestTarget()
     {
-        return $this->getServerParam('REQUEST_URI') ?: '/';
+        return $this->requestTarget;
     }
 
     /**
-     * ÉèÖÃÇëÇó×ÊÔ´
+     * è®¾ç½®è¯·æ±‚èµ„æº
      *
      * @param mixed $requestTarget
      * @return Request
      */
     public function withRequestTarget($requestTarget)
     {
-        return $this->changeAttribute(['serverParams','REQUEST_URI'],$requestTarget);
+        return $this->changeAttribute('requestTarget',$requestTarget);
     }
 
     /**
-     * »ñÈ¡httpÇëÇó·½Ê½,Ö§³ÖÖØĞ´ÇëÇó·½Ê½
+     * è·å–httpè¯·æ±‚æ–¹å¼,æ”¯æŒé‡å†™è¯·æ±‚æ–¹å¼
      *
      * @return string
      */
@@ -160,9 +159,9 @@ class Request extends Message implements RequestInterface
             return $this->method;
         }
 
-        $method = isset($this->serverParams['REQUEST_METHOD']) ? strtoupper($this->serverParams['REQUEST_METHOD']) : 'GET';
+        $method = $this->getMethod();
 
-        // ³¢ÊÔÖØĞ´ÇëÇó·½·¨
+        // å°è¯•é‡å†™è¯·æ±‚æ–¹æ³•
         if ($method == 'POST') {
             $override = $this->getBodyParam('_method') ?: $this->getHeaderLine('x-http-method-override');
             if($override){
@@ -174,7 +173,7 @@ class Request extends Message implements RequestInterface
     }
 
     /**
-     * ÉèÖÃÇëÇó·½Ê½
+     * è®¾ç½®è¯·æ±‚æ–¹å¼
      *
      * @param string $method
      * @return Request
@@ -185,7 +184,7 @@ class Request extends Message implements RequestInterface
     }
 
     /**
-     * »ñÈ¡URI
+     * è·å–URI
      *
      * @return UriInterface
      */
@@ -195,12 +194,12 @@ class Request extends Message implements RequestInterface
     }
 
     /**
-     * ÉèÖÃuri
+     * è®¾ç½®uri
      *
-     * Èç¹û¿ªÆôhost±£»¤
-     * HOSTÎª¿Õ,ĞÂµÄURI°üº¬HOST,¸üĞÂ
-     * HOSTÎª¿Õ,ĞÂµÄURI²»°üº¬,²»¸üĞÂ
-     * HOST²»Îª¿Õ,²»¸üĞÂ
+     * å¦‚æœå¼€å¯hostä¿æŠ¤
+     * HOSTä¸ºç©º,æ–°çš„URIåŒ…å«HOST,æ›´æ–°
+     * HOSTä¸ºç©º,æ–°çš„URIä¸åŒ…å«,ä¸æ›´æ–°
+     * HOSTä¸ä¸ºç©º,ä¸æ›´æ–°
      *
      * @param UriInterface $uri
      * @param bool|false $preserveHost
@@ -224,7 +223,7 @@ class Request extends Message implements RequestInterface
     }
 
     /**
-     * »ñÈ¡cookie²ÎÊı
+     * è·å–cookieå‚æ•°
      *
      * @return array
      */
@@ -234,7 +233,7 @@ class Request extends Message implements RequestInterface
     }
 
     /**
-     * ÉèÖÃcookie²ÎÊı
+     * è®¾ç½®cookieå‚æ•°
      *
      * @param array $cookies
      * @return Request
@@ -245,7 +244,7 @@ class Request extends Message implements RequestInterface
     }
 
     /**
-     * »ñÈ¡²éÑ¯²ÎÊı
+     * è·å–æŸ¥è¯¢å‚æ•°
      *
      * @return array
      */
@@ -265,7 +264,7 @@ class Request extends Message implements RequestInterface
     }
 
     /**
-     * ÉèÖÃ²éÑ¯²ÎÊı
+     * è®¾ç½®æŸ¥è¯¢å‚æ•°
      *
      * @param array $query
      * @return Request
@@ -276,7 +275,7 @@ class Request extends Message implements RequestInterface
     }
 
     /**
-     * ÏògetÖĞÌí¼Ó²ÎÊı
+     * å‘getä¸­æ·»åŠ å‚æ•°
      *
      * @param array $query
      * @return Request
@@ -287,7 +286,7 @@ class Request extends Message implements RequestInterface
     }
 
     /**
-     * »ñÈ¡ÉÏ´«ÎÄ¼şĞÅÏ¢
+     * è·å–ä¸Šä¼ æ–‡ä»¶ä¿¡æ¯
      *
      * @return array
      */
@@ -297,7 +296,7 @@ class Request extends Message implements RequestInterface
     }
 
     /**
-     * Ìí¼ÓÉÏ´«ÎÄ¼şĞÅÏ¢
+     * æ·»åŠ ä¸Šä¼ æ–‡ä»¶ä¿¡æ¯
      *
      * @param array $uploadedFiles
      * @return Request
@@ -308,7 +307,7 @@ class Request extends Message implements RequestInterface
     }
 
     /**
-     * »ñÈ¡body½âÎö½á¹û
+     * è·å–bodyè§£æç»“æœ
      *
      * @return array|null|object
      */
@@ -318,8 +317,8 @@ class Request extends Message implements RequestInterface
             return $this->bodyParsed;
         }
 
-        // "Content-Type" Îª "multipart/form-data" Ê±ºò php://input ÊÇÎŞĞ§µÄ
-        if($this->getServerParam('REQUEST_METHOD') === 'POST'
+        // "Content-Type" ä¸º "multipart/form-data" æ—¶å€™ php://input æ˜¯æ— æ•ˆçš„
+        if($this->getMethod() === 'POST'
             && in_array($this->getContentType(),['multipart/form-data','application/x-www-form-urlencoded'])
         ){
             return $this->bodyParsed = $_POST;
@@ -332,7 +331,7 @@ class Request extends Message implements RequestInterface
         list($type,$subtype) = explode('/',$this->getContentType(),2);
 
         if(in_array(strtolower($type),['application','text']) && isset($this->bodyParsers[$subtype])){
-            //µ÷ÓÃbody½âÎöº¯Êı
+            //è°ƒç”¨bodyè§£æå‡½æ•°
             $body = (string)$this->getBody();
             $parsed = call_user_func($this->bodyParsers[$subtype],$body);
 
@@ -347,7 +346,7 @@ class Request extends Message implements RequestInterface
     }
 
     /**
-     * ÉèÖÃbody½âÎö½á¹û
+     * è®¾ç½®bodyè§£æç»“æœ
      *
      * @param array|null|object $data
      * @return Request
@@ -362,7 +361,7 @@ class Request extends Message implements RequestInterface
     }
 
     /**
-     * ¼ì²éÇëÇó·½Ê½
+     * æ£€æŸ¥è¯·æ±‚æ–¹å¼
      *
      * @param $method
      * @return bool
@@ -373,7 +372,7 @@ class Request extends Message implements RequestInterface
     }
 
     /**
-     * ²é¿´ÊÇ·ñÊÇGETÇëÇó
+     * æŸ¥çœ‹æ˜¯å¦æ˜¯GETè¯·æ±‚
      *
      * @return bool
      */
@@ -383,7 +382,7 @@ class Request extends Message implements RequestInterface
     }
 
     /**
-     * ²é¿´ÊÇ·ñÊÇPOSTÇëÇó
+     * æŸ¥çœ‹æ˜¯å¦æ˜¯POSTè¯·æ±‚
      *
      * @return bool
      */
@@ -393,7 +392,7 @@ class Request extends Message implements RequestInterface
     }
 
     /**
-     * ²é¿´ÊÇ·ñÊÇPUTÇëÇó
+     * æŸ¥çœ‹æ˜¯å¦æ˜¯PUTè¯·æ±‚
      *
      * @return bool
      */
@@ -403,7 +402,7 @@ class Request extends Message implements RequestInterface
     }
 
     /**
-     * ²é¿´ÊÇ·ñÊÇDELETEÇëÇó
+     * æŸ¥çœ‹æ˜¯å¦æ˜¯DELETEè¯·æ±‚
      *
      * @return bool
      */
@@ -413,8 +412,8 @@ class Request extends Message implements RequestInterface
     }
 
     /**
-     * ¼ì²éÊÇ·ñÊÇÒì²½ÇëÇó
-     * ×¢Òâ : Ö÷Á÷JS¿ò¼Ü·¢ÆğAJAX¶¼ÓĞ´Ë²ÎÊı,Èç¹ûÊÇÔ­ÉúAJAXĞèÒªÊÖ¶¯Ìí¼Óµ½httpÍ·
+     * æ£€æŸ¥æ˜¯å¦æ˜¯å¼‚æ­¥è¯·æ±‚
+     * æ³¨æ„ : ä¸»æµJSæ¡†æ¶å‘èµ·AJAXéƒ½æœ‰æ­¤å‚æ•°,å¦‚æœæ˜¯åŸç”ŸAJAXéœ€è¦æ‰‹åŠ¨æ·»åŠ åˆ°httpå¤´
      *
      * @return bool
      */
@@ -424,7 +423,7 @@ class Request extends Message implements RequestInterface
     }
 
     /**
-     * »ñÈ¡body²ÎÊı
+     * è·å–bodyå‚æ•°
      *
      * @param null $key
      * @return array|null|object
@@ -447,7 +446,7 @@ class Request extends Message implements RequestInterface
     }
 
     /**
-     * »ñÈ¡content-type
+     * è·å–content-type
      *
      * @return null
      */
@@ -466,7 +465,7 @@ class Request extends Message implements RequestInterface
     }
 
     /**
-     * ÉèÖÃbody½âÎöÆ÷
+     * è®¾ç½®bodyè§£æå™¨
      *
      * @param $subtype string
      * @param $parsers callable

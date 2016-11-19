@@ -2,7 +2,7 @@
 namespace Ant\Debug;
 
 use Exception;
-use Ant\Exception\HttpException;
+use Ant\Http\Exception\HttpException;
 use Psr\Http\Message\ResponseInterface;
 use Symfony\Component\Debug\Exception\FlattenException;
 use Symfony\Component\Debug\ExceptionHandler as SymfonyExceptionHandler;
@@ -24,18 +24,18 @@ class ExceptionHandleToApi
      */
     public function render(Exception $exception, ResponseInterface $response, $debug = true)
     {
-        $message = '';
         $headers = [];
         if($exception instanceof HttpException){
             // 获取HTTP状态码
             $statusCode = $exception->getStatusCode();
             $headers = $exception->getHeaders();
+            $message = $exception->getMessage() ?: "Error";
         }else{
             $statusCode = 500;
+            $message = $debug ? $exception->getMessage() : "Error";
         }
 
         if($debug){
-            $message = $exception->getMessage() ?: 'Error';
             $headers = array_merge($headers,$this->getExceptionInfo($exception));
         }
 
@@ -46,8 +46,10 @@ class ExceptionHandleToApi
         $response->withStatus($statusCode);
 
         $response->getBody()->write($this->decorate([
-            'status'    => $statusCode ,
-            'message'   => $message ?: 'Error'
+            "error" =>  [
+                'code'      => $exception->getCode() ,
+                'message'   => $message ?: 'Error',
+            ]
         ]));
     }
 

@@ -1,6 +1,12 @@
 <?php
-namespace Ant\Exception;
+namespace Ant\Http\Exception;
 
+/**
+ * 406异常,当无法响应客户端请求的内容格式时抛出
+ *
+ * Class NotAcceptableException
+ * @package Ant\Http\Exception
+ */
 class NotAcceptableException extends HttpException
 {
     /**

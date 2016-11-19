@@ -252,6 +252,8 @@ class Route implements RouteInterface
         foreach($arguments as $name => $value){
             $this->arguments[$name] = $value;
         }
+
+        return $this;
     }
 
     /**
@@ -264,17 +266,23 @@ class Route implements RouteInterface
 
     /**
      * @param array $responseType
+     * @return $this
      */
     public function setResponseType(array $responseType)
     {
         $this->responseType = $responseType;
+
+        return $this;
     }
 
     /**
      * @param $type
+     * @return $this
      */
     public function withAddResponseType($type)
     {
-        array_push($this->responseType,$type);
+        $this->responseType[] = $type;
+
+        return $this;
     }
 }

@@ -3,5 +3,3 @@ composer.lock
 *.log
 vendor
 test.php
-*.cache.php
-app

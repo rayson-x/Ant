@@ -4,7 +4,7 @@ include 'vendor/autoload.php';
 $app = new Ant\App(realpath(__DIR__));
 
 /* 注册应用程序中间件 */
-$app->addMiddleware(function (Ant\Http\Request $request,Ant\Http\Response $response){
+$app->addMiddleware(function (Ant\Http\ServerRequest $request,Ant\Http\Response $response){
     // code...
 
     yield;
@@ -32,7 +32,7 @@ $app->addMiddleware(function (Ant\Http\Request $request,Ant\Http\Response $respo
 $router = $app['router'];
 
 /* 注册路由 */
-$router->group(['type' => ['json','xml','html']],function(Ant\Routing\Router $router){
+$router->group(['type' => ['json','xml','html','js']],function(Ant\Routing\Router $router){
     $router->get('/',function(){
         return "Ant-Framework";
     });

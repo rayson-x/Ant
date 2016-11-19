@@ -20,6 +20,26 @@ cd Ant
 composer install
 ```
 
+## nginx配置
+```
+server {
+    listen 80;
+    server_name ant.com;
+    root /path;
+    index index.php;s
+
+    location / {
+        try_files $uri $uri/ /index.php$is_args$args;
+    }
+
+    location ~ \.php$ {
+           include fastcgi.conf;
+           fastcgi_pass 127.0.0.1:9000;
+           fastcgi_param  SCRIPT_FILENAME  $document_root$fastcgi_script_name;
+    }
+}
+```
+
 ## 快速开始
 ```php
 include 'vendor/autoload.php';

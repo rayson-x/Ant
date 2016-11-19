@@ -1,8 +1,8 @@
 <?php
-namespace Ant\Exception;
+namespace Ant\Http\Exception;
 
 /**
- * 405 Method Not Allowed Exception
+ * 405异常,请求方式错误时抛出
  *
  * Class MethodNotAllowedException
  * @package Ant\Http\Exception

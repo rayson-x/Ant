@@ -8,9 +8,18 @@ use Ant\Interfaces\Http\RendererInterface;
 abstract class Renderer implements RendererInterface
 {
     /**
-     * @var mixed 包裹
+     * 待装饰的包裹
+     *
+     * @var mixed
      */
     protected $package;
+
+    /**
+     * 响应编码
+     *
+     * @var string
+     */
+    protected $charset = 'utf-8';
 
     /**
      * 设置包裹
@@ -31,6 +40,6 @@ abstract class Renderer implements RendererInterface
      */
     public function getCharset(MessageInterface $http)
     {
-        return ($http instanceof ResponseInterface) ? ';charset=utf-8' : '';
+        return ($http instanceof ResponseInterface) ? ';charset='.$this->charset : '';
     }
 }

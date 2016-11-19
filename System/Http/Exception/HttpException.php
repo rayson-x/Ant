@@ -1,5 +1,5 @@
 <?php
-namespace Ant\Exception;
+namespace Ant\Http\Exception;
 
 use RuntimeException;
 

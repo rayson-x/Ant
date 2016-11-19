@@ -1,15 +1,15 @@
 <?php
 namespace Ant\Routing;
 
-use Ant\Http\Response as AntResponse;
 use FastRoute\Dispatcher;
 use FastRoute\RouteCollector;
 use InvalidArgumentException;
 use Ant\Middleware\Middleware;
-use Ant\Exception\NotFoundException;
-use Ant\Exception\NotAcceptableException;
+use Ant\Http\Response as AntResponse;
+use Ant\Http\Exception\NotFoundException;
 use Ant\Interfaces\Router\RouterInterface;
-use Ant\Exception\MethodNotAllowedException;
+use Ant\Http\Exception\NotAcceptableException;
+use Ant\Http\Exception\MethodNotAllowedException;
 use Ant\Interfaces\Container\ContainerInterface;
 use Psr\Http\Message\ResponseInterface as PsrResponse;
 use Psr\Http\Message\ServerRequestInterface as PsrRequest;

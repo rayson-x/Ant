@@ -24,9 +24,9 @@ class JsonpRenderer extends JsonRenderer
         $callName = isset($_GET[$this->getName]) ? $_GET[$this->getName] : $this->callName;
 
         $http->getBody()->write(
-            "function {$callName}(){return '{$this->toJson()}'};"
+            "{$callName}({$this->toJson()});"
         );
 
-        return $http->withAddedHeader('Content-Type', 'application/json'.$this->getCharset($http));
+        return $http->withAddedHeader('Content-Type', 'application/javascript'.$this->getCharset($http));
     }
 }

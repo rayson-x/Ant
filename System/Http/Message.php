@@ -1,16 +1,15 @@
 <?php
 namespace Ant\Http;
 
-use Ant\Interfaces\Http\RendererInterface;
 use InvalidArgumentException;
+use Ant\Http\Message\XmlRenderer;
+use Ant\Http\Message\JsonRenderer;
+use Ant\Http\Message\FileRenderer;
+use Ant\Http\Message\HtmlRenderer;
+use Ant\Http\Message\JsonpRenderer;
 use Psr\Http\Message\StreamInterface;
-use Ant\Http\Message\Renderer\Renderer;
 use Ant\Interfaces\Http\MessageInterface;
-use Ant\Http\Message\Renderer\XmlRenderer;
-use Ant\Http\Message\Renderer\JsonRenderer;
-use Ant\Http\Message\Renderer\FileRenderer;
-use Ant\Http\Message\Renderer\HtmlRenderer;
-use Ant\Http\Message\Renderer\JsonpRenderer;
+use Ant\Interfaces\Http\RendererInterface;
 
 /**
  * Class Message
@@ -50,13 +49,6 @@ abstract class Message implements MessageInterface
     protected $content = null;
 
     /**
-     * 响应格式
-     *
-     * @var string
-     */
-    protected $responseType = 'html';
-
-    /**
      * 装饰器列表
      *
      * @var array
@@ -66,7 +58,7 @@ abstract class Message implements MessageInterface
         'file'  =>  FileRenderer::class,
         'json'  =>  JsonRenderer::class,
         'html'  =>  HtmlRenderer::class,
-        'jsonp' =>  JsonpRenderer::class,
+        'js'    =>  JsonpRenderer::class,
     ];
 
     /**
@@ -248,7 +240,7 @@ abstract class Message implements MessageInterface
             throw new InvalidArgumentException('type must be a string');
         }
 
-        if(!array_key_exists($this->responseType,$this->renderer)){
+        if(!array_key_exists($type,$this->renderer)){
             throw new \RuntimeException('Decorative device does not exist');
         }
 

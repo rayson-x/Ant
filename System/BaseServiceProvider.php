@@ -64,7 +64,7 @@ class BaseServiceProvider implements ServiceProviderInterface
         /**
          * 注册 Debug 对象
          */
-        $container->bindIf('debug',\Ant\Debug\ExceptionHandle::class);
+        $container->bindIf('debug',\Ant\Debug\ExceptionHandleToApi::class);
     }
 
     /**

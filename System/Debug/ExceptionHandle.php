@@ -2,7 +2,7 @@
 namespace Ant\Debug;
 
 use Exception;
-use Ant\Exception\HttpException;
+use Ant\Http\Exception\HttpException;
 use Psr\Http\Message\ResponseInterface;
 use Symfony\Component\Debug\Exception\FlattenException;
 use Symfony\Component\Debug\ExceptionHandler as SymfonyExceptionHandler;

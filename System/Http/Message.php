@@ -8,8 +8,8 @@ use Ant\Http\Message\FileRenderer;
 use Ant\Http\Message\HtmlRenderer;
 use Ant\Http\Message\JsonpRenderer;
 use Psr\Http\Message\StreamInterface;
-use Ant\Interfaces\Http\MessageInterface;
-use Ant\Interfaces\Http\RendererInterface;
+use Ant\Http\Interfaces\MessageInterface;
+use Ant\Http\Interfaces\RendererInterface;
 
 /**
  * Class Message
@@ -42,11 +42,11 @@ abstract class Message implements MessageInterface
     protected $body;
 
     /**
-     * 响应内容
+     * 响应格式
      *
      * @var mixed
      */
-    protected $content = null;
+    protected $contentType = 'html';
 
     /**
      * 装饰器列表
@@ -229,10 +229,10 @@ abstract class Message implements MessageInterface
     }
 
     /**
-     * 设置内容格式
+     * 选择装饰器
      *
      * @param $type
-     * @return RendererInterface
+     * @return $this
      */
     public function selectRenderer($type)
     {
@@ -244,16 +244,29 @@ abstract class Message implements MessageInterface
             throw new \RuntimeException('Decorative device does not exist');
         }
 
-        return new $this->renderer[$type];
+        $this->contentType = $type;
+
+        return $this;
+    }
+
+    /**
+     * @return RendererInterface
+     */
+    public function getRenderer()
+    {
+        return new $this->renderer[$this->contentType];
     }
 
     /**
      * @param string $type
      * @param RendererInterface $renderer
+     * @return $this
      */
     public function setRenderer($type,RendererInterface $renderer)
     {
         $this->renderer[$type] = $renderer;
+
+        return $this;
     }
 
     /**

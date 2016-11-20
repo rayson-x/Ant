@@ -3,7 +3,7 @@ namespace Ant\Http;
 
 use InvalidArgumentException;
 use Psr\Http\Message\StreamInterface;
-use Ant\Interfaces\Http\ResponseInterface;
+use Ant\Http\Interfaces\ResponseInterface;
 
 /**
  * Todo::添加静态方法,通过http响应内容获取Response类
@@ -211,8 +211,8 @@ class Response extends Message implements ResponseInterface
      */
     public function getReasonPhrase()
     {
-        if(!$this->responsePhrase){
-            $this->httpReasonPhrase =  isset($this->httpReasonPhrase[$this->code])
+        if(empty($this->responsePhrase)){
+            $this->responsePhrase = isset($this->httpReasonPhrase[$this->code])
                 ? $this->httpReasonPhrase[$this->code]
                 : null;
         }

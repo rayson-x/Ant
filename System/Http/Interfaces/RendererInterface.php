@@ -1,5 +1,5 @@
 <?php
-namespace Ant\Interfaces\Http;
+namespace Ant\Http\Interfaces;
 
 /**
  * Interface RendererInterface

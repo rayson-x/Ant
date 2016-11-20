@@ -1,8 +1,8 @@
 <?php
 namespace Ant\Interfaces\Router;
 
+use Psr\Http\Message\RequestInterface as PsrRequest;
 use Psr\Http\Message\ResponseInterface as PsrResponse;
-use Psr\Http\Message\ServerRequestInterface as PsrRequest;
 
 /**
  * 路由器接口类

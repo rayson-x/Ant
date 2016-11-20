@@ -3,7 +3,7 @@ namespace Ant\Http\Message;
 
 use Psr\Http\Message\MessageInterface;
 use Psr\Http\Message\ResponseInterface;
-use Ant\Interfaces\Http\RendererInterface;
+use Ant\Http\Interfaces\RendererInterface;
 
 abstract class Renderer implements RendererInterface
 {

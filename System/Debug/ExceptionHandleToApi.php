@@ -29,10 +29,10 @@ class ExceptionHandleToApi
             // 获取HTTP状态码
             $statusCode = $exception->getStatusCode();
             $headers = $exception->getHeaders();
-            $message = $exception->getMessage() ?: "Error";
+            $message = $exception->getMessage();
         }else{
             $statusCode = 500;
-            $message = $debug ? $exception->getMessage() : "Error";
+            $message = $debug ? $exception->getMessage() : null;
         }
 
         if($debug){
@@ -48,7 +48,7 @@ class ExceptionHandleToApi
         $response->getBody()->write($this->decorate([
             "error" =>  [
                 'code'      => $exception->getCode() ,
-                'message'   => $message ?: 'Error',
+                'message'   => $message ?: $response->getReasonPhrase(),
             ]
         ]));
     }

@@ -21,7 +21,7 @@ class Uri implements UriInterface
      *
      * @var string
      */
-    protected $scheme = null;
+    protected $scheme;
 
     /**
      * 请求主机地址
@@ -78,7 +78,7 @@ class Uri implements UriInterface
      */
     public static function createFromEnvironment(Environment $env)
     {
-        $scheme = ($env['HTTPS'] == 'off') ? 'http' : 'https';
+        $scheme = ($env['HTTPS'] == 'on') ? 'https' : 'http';
         $userInfo = $env['PHP_AUTH_USER'].($env['PHP_AUTH_PW'] ? ':' . $env['PHP_AUTH_PW'] : '');
 
         //HTTP_HOST在http1.0下可以返回空
@@ -97,7 +97,7 @@ class Uri implements UriInterface
 
         $uri = $scheme.':';
         $uri .= '//'.($userInfo ? $userInfo."@" : ''). $host .($port !== null ? ':' . $port : '');
-        $uri .= '/'.$env['REQUEST_URI'];
+        $uri .= $env['REQUEST_URI'];
 
         return new static($uri);
     }
@@ -122,7 +122,7 @@ class Uri implements UriInterface
      */
     public function getScheme()
     {
-        return $this->scheme ?: 'http';
+        return $this->scheme;
     }
 
     /**

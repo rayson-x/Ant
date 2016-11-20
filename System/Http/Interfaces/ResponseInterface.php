@@ -1,12 +1,5 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: root
- * Date: 2016/11/19
- * Time: 19:28
- */
-
-namespace Ant\Interfaces\Http;
+namespace Ant\Http\Interfaces;
 
 use Psr\Http\Message\ResponseInterface as PsrResponseInterface;
 

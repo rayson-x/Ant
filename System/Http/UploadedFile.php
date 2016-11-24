@@ -19,7 +19,7 @@ class UploadedFile implements UploadedFileInterface
     protected $moved = false;
 
     /**
-     * @var null
+     * @var Stream
      */
     protected $stream = null;
 
@@ -63,8 +63,12 @@ class UploadedFile implements UploadedFileInterface
      */
     public function __construct($file)
     {
-        if(!isset($file['tmp_name'])){
+        if(!isset($file['tmp_name']) && !isset($file['resources'])){
             throw new InvalidArgumentException('File is invalid or not upload file via POST');
+        }
+
+        if(isset($file['resources']) && $file['resources'] instanceof StreamInterface){
+            $this->stream = $file['resources'];
         }
 
         $this->file = $file;
@@ -104,32 +108,36 @@ class UploadedFile implements UploadedFileInterface
             throw new RuntimeException('File was moved to other directory');
         }
 
-        $targetIsStream = strpos($targetPath, '://') > 0;
-        if (!$targetIsStream && !is_writable(dirname($targetPath))){
-            throw new InvalidArgumentException('Upload target path is not writable');
-        }
-
-        if ($targetIsStream) {
-            //处理流
-            if (!copy($this->file['tmp_name'], $targetPath)) {
-                throw new RuntimeException(sprintf('Error moving uploaded file %1s to %2s', $this->file['name'], $targetPath));
-            }
-            if (!unlink($this->file['tmp_name'])) {
-                throw new RuntimeException(sprintf('Error removing uploaded file %1s', $this->file['name']));
-            }
-        } elseif ($this->isCgi()) {
-            //处理post上传
-            if (!is_uploaded_file($this->file['tmp_name'])) {
-                throw new RuntimeException(sprintf('%1s is not a valid uploaded file', $this->file['name']));
+        if($this->stream !== null){
+            stream_copy_to_stream($this->stream->detach(),fopen($targetPath,'w+'));
+        }else{
+            $targetIsStream = strpos($targetPath, '://') > 0;
+            if (!$targetIsStream && !is_writable(dirname($targetPath))){
+                throw new InvalidArgumentException('Upload target path is not writable');
             }
 
-            if (!move_uploaded_file($this->file['tmp_name'], $targetPath)) {
-                throw new RuntimeException(sprintf('Error moving uploaded file %1s to %2s', $this->file['name'], $targetPath));
-            }
-        } else {
-            //当以Cli启动时的文件上传
-            if (!rename($this->file['tmp_name'], $targetPath)) {
-                throw new RuntimeException(sprintf('Error moving uploaded file %1s to %2s', $this->file['name'], $targetPath));
+            if ($targetIsStream) {
+                //处理流
+                if (!copy($this->file['tmp_name'], $targetPath)) {
+                    throw new RuntimeException(sprintf('Error moving uploaded file %1s to %2s', $this->file['name'], $targetPath));
+                }
+                if (!unlink($this->file['tmp_name'])) {
+                    throw new RuntimeException(sprintf('Error removing uploaded file %1s', $this->file['name']));
+                }
+            } elseif ($this->isCgi()) {
+                //处理post上传
+                if (!is_uploaded_file($this->file['tmp_name'])) {
+                    throw new RuntimeException(sprintf('%1s is not a valid uploaded file', $this->file['name']));
+                }
+
+                if (!move_uploaded_file($this->file['tmp_name'], $targetPath)) {
+                    throw new RuntimeException(sprintf('Error moving uploaded file %1s to %2s', $this->file['name'], $targetPath));
+                }
+            } else {
+                //当以Cli启动时的文件上传
+                if (!rename($this->file['tmp_name'], $targetPath)) {
+                    throw new RuntimeException(sprintf('Error moving uploaded file %1s to %2s', $this->file['name'], $targetPath));
+                }
             }
         }
 
@@ -149,7 +157,7 @@ class UploadedFile implements UploadedFileInterface
      */
     public function getError()
     {
-        return $this->file['error'];
+        return isset($this->file['error']) ? $this->file['error'] : null;
     }
 
     /**
@@ -172,7 +180,7 @@ class UploadedFile implements UploadedFileInterface
      * @return bool
      */
     public function isError(){
-        return $this->file['error'] !== UPLOAD_ERR_OK;
+        return $this->getError() !== UPLOAD_ERR_OK;
     }
 
     /**

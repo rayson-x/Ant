@@ -359,14 +359,13 @@ class Uri implements UriInterface
             $uri = '';
         }
 
-        $uri .= '/'.$this->getPath();
+        $uri .= '/'.ltrim($this->getPath(),'/');
 
         if ($query = $this->getQuery()) {
             $uri .= '?'.$query;
         }
 
-        $fragment = $this->getFragment();
-        if ($fragment !== '') {
+        if ($fragment = $this->getFragment()) {
             $uri .= '#'.$fragment;
         }
 

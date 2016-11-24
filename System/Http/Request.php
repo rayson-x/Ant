@@ -8,7 +8,7 @@ use Psr\Http\Message\StreamInterface;
 use Psr\Http\Message\RequestInterface;
 
 /**
- * Class ServerRequest
+ * Class Request
  * @package Ant\Http
  * @see http://www.php-fig.org/psr/psr-7/
  */
@@ -70,61 +70,67 @@ class Request extends Message implements RequestInterface
      */
     protected $bodyParsers = [];
 
-
     /**
      * 通过Tcp输入流解析Http请求
      *
      * @param string $receiveBuffer
+     * @return static
      */
     public static function createFromTcpStream($receiveBuffer)
     {
-        //Todo::待完善
         if (!is_string($receiveBuffer)) {
             throw new \InvalidArgumentException('Request must be string');
         }
 
-        list($header, $body) = explode("\r\n\r\n", $receiveBuffer, 2);
+        list($headerBuffer, $bodyBuffer) = explode("\r\n\r\n", $receiveBuffer, 2);
+        $headerData = explode("\r\n",$headerBuffer);
 
-        list($request_method, $request_uri, $server_protocol) = explode(' ', array_shift($headerData), 3);
+        list($method, $requestTarget, $protocol) = explode(' ', array_shift($headerData), 3);
 
         $headers = [];
-        $bodyBoundary = '';
-        $headerData = explode("\r\n",$header);
-
         foreach ($headerData as $content) {
             if (empty($content)) {
                 continue;
             }
             list($name, $value) = explode(':', $content, 2);
-            $name = strtolower($name);
-            $value = trim($value);
-            switch ($name) {
-                case 'cookie':
-                    parse_str(str_replace('; ', '&', $value), $_COOKIE);
-                    break;
-                case 'content-type':
-                    // 判断是否为浏览器表单数据
-                    if (preg_match('/boundary="?(\S+)"?/', $value, $match)) {
-                        $headers[$name] = 'multipart/form-data';
-                        $bodyBoundary = '--' . $match[1];
-                    } else {
-                        $headers[$name] = $value;
-                    }
-                    break;
-                default:
-                    $headers[$name] = $value;
-                    break;
-            }
+            $headers[strtolower($name)] = explode(',',trim($value));
         }
 
-        if(!in_array($request_method,['GET','HEAD','OPTIONS'])){
-            if(isset($headers['content-type']) && $headers['content-type'] === 'multipart/form-data'){
-                //Todo::解析表单内容
-                list($bodyParams,$uploadedFiles) = RequestBody::parseForm($body,$bodyBoundary);
-            }else{
-                $body = RequestBody::createFromTcpStream($body);
+        $uri = new Uri((isset($headers['host']) ? 'http://'.$headers['host'][0] : '') .$requestTarget);
+
+        if(!in_array($method,['GET','HEAD','OPTIONS'])){
+            $body = RequestBody::createFromTcpStream($bodyBuffer);
+        }else{
+            $body = new RequestBody(fopen('php://temp','r+'));
+        }
+
+        return new static($method,$requestTarget,$protocol,$uri,$headers,$body);
+    }
+
+    public function __construct(
+        $method,
+        $requestTarget,
+        $protocol,
+        UriInterface $uri,
+        array $headers,
+        StreamInterface $body
+    ){
+        $this->requestTarget = $requestTarget;
+        $this->uri = $uri;
+        $this->headers = $headers;
+        $this->body = $body;
+
+        // 尝试重写请求方法
+        if ($method == 'POST') {
+            $override = $this->getBodyParam('_method') ?: $this->getHeaderLine('x-http-method-override');
+            if($override){
+                $method = strtoupper($override);
             }
         }
+        $protocol = explode('/',$protocol);
+
+        $this->method = $method;
+        $this->protocolVersion = $protocol[1];
     }
 
     /**
@@ -155,21 +161,7 @@ class Request extends Message implements RequestInterface
      */
     public function getMethod()
     {
-        if($this->method){
-            return $this->method;
-        }
-
-        $method = $this->getMethod();
-
-        // 尝试重写请求方法
-        if ($method == 'POST') {
-            $override = $this->getBodyParam('_method') ?: $this->getHeaderLine('x-http-method-override');
-            if($override){
-                $method = strtoupper($override);
-            }
-        }
-
-        return $this->method = $method;
+        return $this->method;
     }
 
     /**
@@ -313,21 +305,24 @@ class Request extends Message implements RequestInterface
      */
     public function getParsedBody()
     {
-        if(!empty($this->bodyParsed)){
-            return $this->bodyParsed;
-        }
-
-        // "Content-Type" 为 "multipart/form-data" 时候 php://input 是无效的
-        if($this->getMethod() === 'POST'
-            && in_array($this->getContentType(),['multipart/form-data','application/x-www-form-urlencoded'])
-        ){
-            return $this->bodyParsed = $_POST;
-        }
-
+        //为空返回null
         if($this->body->getSize() === 0){
             return null;
         }
 
+        //解析成功直接返回解析结果
+        if(!empty($this->bodyParsed)){
+            return $this->bodyParsed;
+        }
+
+        //判断是否是表单
+        if($this->getMethod() === 'POST' && $this->getContentType() == 'multipart/form-data'){
+            if($this->parseForm()){
+                return $this->bodyParsed;
+            }
+        }
+
+        //用自定义方法解析Body内容
         list($type,$subtype) = explode('/',$this->getContentType(),2);
 
         if(in_array(strtolower($type),['application','text']) && isset($this->bodyParsers[$subtype])){
@@ -343,6 +338,54 @@ class Request extends Message implements RequestInterface
         }
 
         return null;
+    }
+
+    /**
+     * 解析表单内容
+     *
+     * @return array
+     */
+    public function parseForm()
+    {
+        if (preg_match('/boundary="?(\S+)"?/', $this->getHeaderLine('content-type'), $match)) {
+            $bodyBoundary = '--' . $match[1];
+        } else {
+            return false;
+        }
+
+        //将最后一行分界符剔除
+        $body = substr((string)$this->getBody(), 0 ,$this->getBody()->getSize() - (strlen($bodyBoundary) + 4));
+        foreach(explode($bodyBoundary . "\r\n", $body) as $buffer){
+            if($buffer == ''){
+                continue;
+            }
+
+            //将Body头信息跟内容拆分
+            list($header, $bufferBody) = explode("\r\n\r\n", $buffer, 2);
+            $bufferBody = substr($bufferBody, 0, -2);
+            foreach (explode("\r\n", $header) as $item) {
+                list($headerName, $headerData) = explode(":", $item);
+                $headerName = trim(strtolower($headerName));
+                if($headerName == 'content-disposition'){
+                    if (preg_match('/name=".*?"; filename="(.*?)"$/', $headerData, $match)) {
+                        $file = new Stream(fopen('php://temp','w'));
+                        $file->write($bufferBody);
+                        $file->rewind();
+
+                        $this->uploadFiles[$match[1]] = new UploadedFile([
+                            'resources' => $file,
+                            'name'      => $match[1],
+                            'size'      => $file->getSize()
+                        ]);
+                        $uploadedFiles[$match[1]] = $file;
+                    }elseif(preg_match('/name="(.*?)"$/', $headerData, $match)) {
+                        $this->bodyParsed[$match[1]] = $bufferBody;
+                    }
+                }
+            }
+        }
+
+        return true;
     }
 
     /**

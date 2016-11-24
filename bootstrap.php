@@ -1,5 +1,10 @@
 <?php
 include 'vendor/autoload.php';
+
+$fd = fopen('body.log','r');
+
+\Ant\Http\Request::createFromTcpStream(stream_get_contents($fd));
+die;
 /* 初始化框架 */
 $app = new Ant\App(realpath(__DIR__));
 

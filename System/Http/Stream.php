@@ -79,8 +79,8 @@ class Stream implements StreamInterface
         $meta = $this->getMetadata();
         $mode = $meta['mode'];
         $this->isSeekable = $meta['seekable'];
-        $this->isReadable = isset($this->readMode[$mode]) ? true : false;
-        $this->isWritable = isset($this->writeMode[$mode]) ? true : false;
+        $this->isReadable = isset($this->readMode[$mode]) ?: false;
+        $this->isWritable = isset($this->writeMode[$mode]) ?: false;
     }
 
 

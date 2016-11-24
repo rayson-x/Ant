@@ -103,61 +103,6 @@ class ServerRequest extends Message implements ServerRequestInterface
     }
 
     /**
-     * 通过Tcp输入流解析Http请求
-     *
-     * @param string $receiveBuffer
-     */
-    public static function createFromTcpStream($receiveBuffer)
-    {
-        //Todo::待完善
-        if (!is_string($receiveBuffer)) {
-            throw new \InvalidArgumentException('Request must be string');
-        }
-
-        list($header, $body) = explode("\r\n\r\n", $receiveBuffer, 2);
-
-        list($request_method, $request_uri, $server_protocol) = explode(' ', array_shift($headerData), 3);
-
-        $headers = [];
-        $bodyBoundary = '';
-        $headerData = explode("\r\n",$header);
-
-        foreach ($headerData as $content) {
-            if (empty($content)) {
-                continue;
-            }
-            list($name, $value) = explode(':', $content, 2);
-            $name = strtolower($name);
-            $value = trim($value);
-            switch ($name) {
-                case 'cookie':
-                    parse_str(str_replace('; ', '&', $value), $_COOKIE);
-                    break;
-                case 'content-type':
-                    // 判断是否为浏览器表单数据
-                    if (preg_match('/boundary="?(\S+)"?/', $value, $match)) {
-                        $headers[$name] = 'multipart/form-data';
-                        $bodyBoundary = '--' . $match[1];
-                    } else {
-                        $headers[$name] = $value;
-                    }
-                    break;
-                default:
-                    $headers[$name] = $value;
-                    break;
-            }
-        }
-
-        if(!in_array($request_method,['GET','HEAD','OPTIONS'])){
-            if(isset($headers['content-type']) && $headers['content-type'] === 'multipart/form-data'){
-                //Todo::解析表单内容
-                list($bodyParams,$uploadedFiles) = RequestBody::parseForm($body,$bodyBoundary);
-            }else{
-                $body = RequestBody::createFromTcpStream($body);
-            }
-        }
-    }
-    /**
      * Request constructor.
      *
      * @param UriInterface $uri
@@ -176,6 +121,7 @@ class ServerRequest extends Message implements ServerRequestInterface
         array $uploadFiles = []
     ){
         $this->uri = $uri;
+        $this->requestTarget = $uri->getPath();
         $this->headers = $headers;
         $this->serverParams = $serverParams;
         $this->uploadFiles = $uploadFiles;
@@ -190,7 +136,7 @@ class ServerRequest extends Message implements ServerRequestInterface
      */
     public function getRequestTarget()
     {
-        return $this->getServerParam('REQUEST_URI') ?: '/';
+        return $this->requestTarget ?: '/';
     }
 
     /**
@@ -201,7 +147,7 @@ class ServerRequest extends Message implements ServerRequestInterface
      */
     public function withRequestTarget($requestTarget)
     {
-        return $this->changeAttribute(['serverParams','REQUEST_URI'],$requestTarget);
+        return $this->changeAttribute('requestTarget',$requestTarget);
     }
 
     /**

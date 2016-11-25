@@ -8,7 +8,7 @@ class JsonRenderer extends Renderer
     public function decorate(MessageInterface $http)
     {
         $http->getBody()->write($this->toJson());
-        return $http->withAddedHeader('Content-Type', 'application/json'.$this->getCharset($http));
+        return $http->withHeader('Content-Type', 'application/json'.$this->getCharset($http));
     }
 
     /**

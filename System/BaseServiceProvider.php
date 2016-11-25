@@ -1,12 +1,15 @@
 <?php
 namespace Ant;
 
+use Ant\Http\Request;
+use Ant\Http\RequestBody;
 use Ant\Http\Response;
+use Ant\Http\Uri;
 use Ant\Routing\Router;
 use Ant\Http\Environment;
 use Ant\Http\ServerRequest;
-use Ant\Interfaces\Container\ContainerInterface;
-use Ant\Interfaces\Container\ServiceProviderInterface;
+use Ant\Container\Interfaces\ContainerInterface;
+use Ant\Container\Interfaces\ServiceProviderInterface;
 
 class BaseServiceProvider implements ServiceProviderInterface
 {
@@ -44,7 +47,15 @@ class BaseServiceProvider implements ServiceProviderInterface
          * 注册 Http Request 处理类
          */
         $container->singleton('request',function(){
-            return ServerRequest::createFromRequestEnvironment($this['environment']);
+            return new Request(
+                $_SERVER['REQUEST_METHOD'],
+                $_SERVER['REQUEST_URI'],
+                $_SERVER['SERVER_PROTOCOL'],
+                new Uri((isset($_SERVER['HTTP_HOST']) ? 'http://'.$_SERVER['HTTP_HOST'] : '') .$_SERVER['REQUEST_URI']),
+                $this['environment']->createHeader(),
+                RequestBody::createFromCgi()
+            );
+//            return ServerRequest::createFromRequestEnvironment($this['environment']);
         });
 
         /**
@@ -77,7 +88,7 @@ class BaseServiceProvider implements ServiceProviderInterface
         /**
          * 扩展 Http Request 处理类
          */
-        $container->extend('request',function(ServerRequest $request){
+        $container->extend('request',function(Request $request){
             $request->setBodyParsers('json',function($input){
                 return safe_json_decode($input,true);
             });

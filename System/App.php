@@ -299,9 +299,9 @@ class App extends Container
     /**
      * 过滤非法请求方式
      *
-     * @param ServerRequestInterface $request
+     * @param HttpRequest $request
      */
-    protected function filterMethod(ServerRequestInterface $request)
+    protected function filterMethod(HttpRequest $request)
     {
         $method = strtoupper($request->getMethod());
 

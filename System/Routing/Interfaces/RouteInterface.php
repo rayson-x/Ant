@@ -1,5 +1,5 @@
 <?php
-namespace Ant\Interfaces\Router;
+namespace Ant\Routing\Interfaces;
 
 interface RouteInterface
 {

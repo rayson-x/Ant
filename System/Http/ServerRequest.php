@@ -8,11 +8,12 @@ use Psr\Http\Message\StreamInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
 /**
+ * Todo::重构ServerRequest
  * Class ServerRequest
  * @package Ant\Http
  * @see http://www.php-fig.org/psr/psr-7/
  */
-class ServerRequest extends Message implements ServerRequestInterface
+class ServerRequest extends Request implements ServerRequestInterface
 {
     /**
      * 请求资源

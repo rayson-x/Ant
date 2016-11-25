@@ -7,8 +7,8 @@ use ReflectionClass;
 use ReflectionMethod;
 use ReflectionFunction;
 use ReflectionParameter;
-use Ant\Interfaces\Container\ContainerInterface;
-use Ant\Interfaces\Container\ServiceProviderInterface;
+use Ant\Container\Interfaces\ContainerInterface;
+use Ant\Container\Interfaces\ServiceProviderInterface;
 
 /**
  * 这个是参考Laravel的服务容器进行的开发,相当于laravel的服务容器删减版

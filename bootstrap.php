@@ -1,17 +1,10 @@
 <?php
 include 'vendor/autoload.php';
-
-$fd = fopen('body.log','r');
-
-\Ant\Http\Request::createFromTcpStream(stream_get_contents($fd));
-die;
-/* 初始化框架 */
 $app = new Ant\App(realpath(__DIR__));
 
 /* 注册应用程序中间件 */
-$app->addMiddleware(function (Ant\Http\ServerRequest $request,Ant\Http\Response $response){
+$app->addMiddleware(function (Ant\Http\Request $request,Ant\Http\Response $response){
     // code...
-
     yield;
 
     // 设置响应头
@@ -29,7 +22,7 @@ $app->addMiddleware(function (Ant\Http\ServerRequest $request,Ant\Http\Response 
         // 缓存控制
         'Cache-Control' => 'no-cache',
         // 脚本运行时间
-        'X-Run-Time' => (int)((microtime(true) - $request->getServerParam('REQUEST_TIME_FLOAT')) * 1000).'ms',
+        'X-Run-Time' => (int)((microtime(true) - $_SERVER['REQUEST_TIME_FLOAT']) * 1000).'ms'
     ]);
 });
 

@@ -1,7 +1,7 @@
 <?php
 
 use Ant\App;
-use Ant\Support\ArrayHandle;
+use Ant\Support\Arr;
 
 /**
  * 打印信息
@@ -20,7 +20,7 @@ function ArraySetIn(&$array,$path,$value)
         $path = explode('.',$path);
     }
 
-    ArrayHandle::setIn($array,$path,$value);
+    Arr::setIn($array,$path,$value);
 }
 
 function container($serviceName = null, $parameters = [])

@@ -2,7 +2,7 @@
 namespace Ant\Routing;
 
 use BadFunctionCallException;
-use Ant\Interfaces\Router\RouteInterface;
+use Ant\Routing\Interfaces\RouteInterface;
 
 /**
  * Class Route

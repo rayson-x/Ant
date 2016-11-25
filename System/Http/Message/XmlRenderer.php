@@ -9,7 +9,7 @@ class XmlRenderer extends  Renderer
     {
         $http->getBody()->write($this->toXml());
 
-        return $http->withAddedHeader('Content-Type', 'application/xml'.$this->getCharset($http));
+        return $http->withHeader('Content-Type', 'application/xml'.$this->getCharset($http));
     }
 
     /**

@@ -1,4 +1,5 @@
 基础功能
+Todo::更灵活的路由,对RESTful支持更完善
 TODO::Config类
 TODO::日志功能 , psr-3 引入或自己开发
 TODO::验证类

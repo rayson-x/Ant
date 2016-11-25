@@ -1,7 +1,7 @@
 <?php
 namespace Ant\Support;
 
-class ArrayHandle
+class Arr
 {
     /**
      * 从多维数组中获取值
@@ -21,6 +21,25 @@ class ArrayHandle
         }
 
         return $target;
+    }
+
+    /**
+     * 从数组中取出指定的值
+     *
+     * @param $array
+     * @param $keys
+     * @return array
+     */
+    public static function take($array, $keys)
+    {
+        $result = [];
+        foreach($keys as $key){
+            if(array_key_exists($key,$array)){
+                $result[] = $array[$key];
+            }
+        }
+
+        return $result;
     }
 
     /**

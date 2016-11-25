@@ -27,6 +27,6 @@ class JsonpRenderer extends JsonRenderer
             "{$callName}({$this->toJson()});"
         );
 
-        return $http->withAddedHeader('Content-Type', 'application/javascript'.$this->getCharset($http));
+        return $http->withHeader('Content-Type', 'application/javascript'.$this->getCharset($http));
     }
 }

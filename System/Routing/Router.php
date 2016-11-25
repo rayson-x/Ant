@@ -1,19 +1,18 @@
 <?php
 namespace Ant\Routing;
 
+use Ant\Http\Request;
+use Ant\Http\Response;
 use FastRoute\Dispatcher;
+use Ant\Http\ServerRequest;
 use FastRoute\RouteCollector;
 use InvalidArgumentException;
 use Ant\Middleware\Middleware;
-use Ant\Http\Response as AntResponse;
 use Ant\Http\Exception\NotFoundException;
-use Ant\Interfaces\Router\RouterInterface;
+use Ant\Routing\Interfaces\RouterInterface;
 use Ant\Http\Exception\NotAcceptableException;
 use Ant\Http\Exception\MethodNotAllowedException;
-use Ant\Interfaces\Container\ContainerInterface;
-use Psr\Http\Message\RequestInterface as PsrRequest;
-use Psr\Http\Message\ResponseInterface as PsrResponse;
-use Psr\Http\Message\ServerRequestInterface as ServerRequest;
+use Ant\Container\Interfaces\ContainerInterface;
 
 /**
  * Todo::写一版专门兼容Psr的Router
@@ -272,27 +271,11 @@ class Router implements RouterInterface
     }
 
     /**
-     * @param \Psr\Http\Message\RequestInterface $req
-     * @param \Psr\Http\Message\ResponseInterface $res
-     * @return \Psr\Http\Message\ResponseInterface|mixed|null
+     * @param Request $req
+     * @param Response $res
+     * @return mixed|null|\Psr\Http\Message\MessageInterface
      */
-    public function dispatch(PsrRequest $req, PsrResponse $res)
-    {
-        if($res instanceof AntResponse){
-            return $this->whenResponseIsAnt($req,$res);
-        }else{
-            return $this->whenResponseIsPsr($req,$res);
-        }
-    }
-
-    /**
-     * 当响应格式为Ant框架的Response类时
-     *
-     * @param PsrRequest $req
-     * @param AntResponse $res
-     * @return AntResponse
-     */
-    protected function whenResponseIsAnt(PsrRequest $req, AntResponse $res)
+    public function dispatch(Request $req, Response $res)
     {
         // 获取请求的方法,路由,跟返回类型
         list($method, $pathInfo, $type) = $this->parseIncomingRequest($req);
@@ -332,48 +315,19 @@ class Router implements RouterInterface
     }
 
     /**
-     * 兼容Psr7的Response接口
-     *
-     * @param PsrRequest $req
-     * @param PsrResponse $res
-     * @return mixed|null
-     */
-    protected function whenResponseIsPsr(PsrRequest $req, PsrResponse $res)
-    {
-        list($method, $pathInfo) = $this->parseIncomingRequest($req);
-
-        if (isset($this->routes[$method . $pathInfo])) {
-            $route = $this->handleFoundRoute(
-                $this->routes[$method . $pathInfo]
-            );
-        } else {
-            $route = $this->handleDispatcher(
-                $this->createDispatcher()->dispatch($method, $pathInfo)
-            );
-        }
-
-        $result = (new Middleware)
-            ->send($req,$res)
-            ->through($this->routeMiddleware)
-            ->then($this->callRoute($route));
-
-        return $result;
-    }
-
-    /**
      * 解析请求
      *
-     * @param PsrRequest $request
+     * @param Request $request
      * @return array
      */
-    protected function parseIncomingRequest(PsrRequest $request)
+    protected function parseIncomingRequest(Request $request)
     {
         $requestMethod = $request->getMethod();
         $requestUri = $request->getUri()->getPath();
 
         //获取启动脚本路径
         if($request instanceof ServerRequest){
-            $scriptName = $request->getServerParams()['SCRIPT_NAME'];
+            $scriptName = $request->getServerParam('SCRIPT_NAME');
         }else{
             //追踪栈
             $backtrace = debug_backtrace();

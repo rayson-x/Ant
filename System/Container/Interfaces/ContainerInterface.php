@@ -1,5 +1,5 @@
 <?php
-namespace Ant\Interfaces\Container;
+namespace Ant\Container\Interfaces;
 
 use Closure;
 

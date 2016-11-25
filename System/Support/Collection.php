@@ -1,10 +1,12 @@
 <?php
 namespace Ant\Support;
 
+use Countable;
+use ArrayAccess;
 use ArrayIterator;
-use Ant\Interfaces\CollectionInterface;
+use IteratorAggregate;
 
-class Collection implements CollectionInterface
+class Collection implements ArrayAccess, Countable, IteratorAggregate
 {
     protected $items = [];
 

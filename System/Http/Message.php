@@ -10,6 +10,7 @@ use Ant\Http\Message\JsonpRenderer;
 use Psr\Http\Message\StreamInterface;
 use Ant\Http\Interfaces\MessageInterface;
 use Ant\Http\Interfaces\RendererInterface;
+use Ant\Http\Exception\NotAcceptableException;
 
 /**
  * Class Message
@@ -145,7 +146,7 @@ abstract class Message implements MessageInterface
      */
     public function withHeader($name, $value)
     {
-        return $this->changeAttribute(['headers',$name],is_array($value) ? $value : explode(',',$value));
+        return $this->changeAttribute(['headers',strtolower($name)],is_array($value) ? $value : explode(',',$value));
     }
 
     /**
@@ -192,7 +193,7 @@ abstract class Message implements MessageInterface
     public function addHeaderFromIterator($iterator)
     {
         if(!$iterator instanceof \Iterator && !is_array($iterator)){
-            throw new \RuntimeException();
+            throw new \RuntimeException('');
         }
 
         $self = $this;
@@ -241,7 +242,7 @@ abstract class Message implements MessageInterface
         }
 
         if(!array_key_exists($type,$this->renderer)){
-            throw new \RuntimeException('Decorative device does not exist');
+            throw new NotAcceptableException('Decorative device does not exist');
         }
 
         $this->contentType = $type;
@@ -286,6 +287,27 @@ abstract class Message implements MessageInterface
         $this->immutability = $enable;
 
         return $this;
+    }
+
+    /**
+     * 输出Http头字符串
+     *
+     * @return string
+     */
+    protected function headerToString()
+    {
+        $result = [];
+
+        foreach($this->getHeaders() as $headerName => $headerValue){
+            if (is_array($headerValue)) {
+                $headerValue = implode(',', $headerValue);
+            }
+
+            $headerName = implode('-',array_map('ucfirst',explode('-',$headerName)));
+            $result[] = sprintf('%s: %s',$headerName,$headerValue);
+        }
+
+        return implode(PHP_EOL,$result).PHP_EOL;
     }
 
     /**

@@ -14,7 +14,7 @@ class FileRenderer extends Renderer
         ];
 
         foreach($headers as $name => $value){
-            $http = $http->withAddedHeader($name,$value);
+            $http = $http->withHeader($name,$value);
         }
 
         if(!is_string($this->package) && !is_integer($this->package)){

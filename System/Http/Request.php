@@ -5,7 +5,7 @@ use RuntimeException;
 use InvalidArgumentException;
 use Psr\Http\Message\UriInterface;
 use Psr\Http\Message\StreamInterface;
-use Psr\Http\Message\RequestInterface;
+use Ant\Http\Interfaces\RequestInterface;
 
 /**
  * Class Request
@@ -40,28 +40,28 @@ class Request extends Message implements RequestInterface
      *
      * @var array
      */
-    protected $cookieParams;
+    protected $cookieParams = [];
 
     /**
      * 查询参数
      *
      * @var array
      */
-    protected $queryParams;
+    protected $queryParams = [];
 
     /**
      * http上传文件 \Psr\Http\Message\UploadedFileInterface 实例
      *
      * @var array
      */
-    protected $uploadFiles;
+    protected $uploadFiles = [];
 
     /**
      * body 参数
      *
      * @var array|object|null
      */
-    protected $bodyParsed;
+    protected $bodyParams;
 
     /**
      * body 解析器 根据subtype进行调用
@@ -76,7 +76,7 @@ class Request extends Message implements RequestInterface
      * @param string $receiveBuffer
      * @return static
      */
-    public static function createFromTcpStream($receiveBuffer)
+    public static function createFromRequestStr($receiveBuffer)
     {
         if (!is_string($receiveBuffer)) {
             throw new \InvalidArgumentException('Request must be string');
@@ -86,51 +86,61 @@ class Request extends Message implements RequestInterface
         $headerData = explode("\r\n",$headerBuffer);
 
         list($method, $requestTarget, $protocol) = explode(' ', array_shift($headerData), 3);
+        $protocol = explode('/',$protocol,2)[1];
 
         $headers = [];
         foreach ($headerData as $content) {
-            if (empty($content)) {
-                continue;
+            if (isset($content)) {
+                list($name, $value) = explode(':', $content, 2);
+                $headers[strtolower($name)] = explode(',',trim($value));
             }
-            list($name, $value) = explode(':', $content, 2);
-            $headers[strtolower($name)] = explode(',',trim($value));
         }
 
         $uri = new Uri((isset($headers['host']) ? 'http://'.$headers['host'][0] : '') .$requestTarget);
 
-        if(!in_array($method,['GET','HEAD','OPTIONS'])){
-            $body = RequestBody::createFromTcpStream($bodyBuffer);
-        }else{
-            $body = new RequestBody(fopen('php://temp','r+'));
-        }
+        $body = in_array($method,['GET','OPTIONS'])
+            ? new RequestBody(fopen('php://temp','r+'))
+            : RequestBody::createFromTcpStream($bodyBuffer);
 
-        return new static($method,$requestTarget,$protocol,$uri,$headers,$body);
+        return new static($method, $requestTarget, $protocol, $uri, $headers, $body);
     }
 
+    /**
+     * Request constructor.
+     * @param $method
+     * @param $requestTarget
+     * @param $protocol
+     * @param UriInterface $uri
+     * @param array $headers
+     * @param StreamInterface $body
+     */
     public function __construct(
         $method,
         $requestTarget,
         $protocol,
         UriInterface $uri,
-        array $headers,
-        StreamInterface $body
+        array $headers = [],
+        StreamInterface $body = null
     ){
+        $this->method = $method;
         $this->requestTarget = $requestTarget;
-        $this->uri = $uri;
+        $this->protocolVersion = $protocol;
         $this->headers = $headers;
+        $this->uri = $uri;
         $this->body = $body;
 
-        // 尝试重写请求方法
-        if ($method == 'POST') {
+        //当请求方式为Post时,
+        if ($this->method == 'POST') {
+            //判断是否是表单
+            if($this->getContentType() == 'multipart/form-data'){
+                $this->parseForm();
+            }
+
             $override = $this->getBodyParam('_method') ?: $this->getHeaderLine('x-http-method-override');
             if($override){
-                $method = strtoupper($override);
+                $this->method = strtoupper($override);
             }
         }
-        $protocol = explode('/',$protocol);
-
-        $this->method = $method;
-        $this->protocolVersion = $protocol[1];
     }
 
     /**
@@ -188,23 +198,17 @@ class Request extends Message implements RequestInterface
     /**
      * 设置uri
      *
-     * 如果开启host保护
-     * HOST为空,新的URI包含HOST,更新
-     * HOST为空,新的URI不包含,不更新
-     * HOST不为空,不更新
-     *
      * @param UriInterface $uri
      * @param bool|false $preserveHost
      * @return Request
      */
     public function withUri(UriInterface $uri,$preserveHost = false)
     {
+        //如果开启host保护,原Host为空且新Uri包含Host时才更新
         if(!$preserveHost){
             $host = explode(',',$uri->getHost());
-        }else{
-            if( (!$this->hasHeader('host') || empty($this->getHeaderLine('host'))) && $uri->getHost() !== ''){
-                $host = explode(',',$uri->getHost());
-            }
+        }elseif((!$this->hasHeader('host') || empty($this->getHeaderLine('host'))) && $uri->getHost() !== ''){
+            $host = explode(',',$uri->getHost());
         }
 
         if(empty($host)){
@@ -242,7 +246,7 @@ class Request extends Message implements RequestInterface
      */
     public function getQueryParams()
     {
-        if(is_array($this->queryParams)){
+        if(!empty($this->queryParams)){
             return $this->queryParams;
         }
 
@@ -305,21 +309,14 @@ class Request extends Message implements RequestInterface
      */
     public function getParsedBody()
     {
+        //解析成功直接返回解析结果
+        if(!empty($this->bodyParams)){
+            return $this->bodyParams;
+        }
+
         //为空返回null
         if($this->body->getSize() === 0){
             return null;
-        }
-
-        //解析成功直接返回解析结果
-        if(!empty($this->bodyParsed)){
-            return $this->bodyParsed;
-        }
-
-        //判断是否是表单
-        if($this->getMethod() === 'POST' && $this->getContentType() == 'multipart/form-data'){
-            if($this->parseForm()){
-                return $this->bodyParsed;
-            }
         }
 
         //用自定义方法解析Body内容
@@ -331,10 +328,12 @@ class Request extends Message implements RequestInterface
             $parsed = call_user_func($this->bodyParsers[$subtype],$body);
 
             if (!(is_null($parsed) || is_object($parsed) || is_array($parsed))){
-                throw new RuntimeException('Request body media type parser return value must be an array, an object, or null');
+                throw new RuntimeException(
+                    'Request body media type parser return value must be an array, an object, or null'
+                );
             }
 
-            return $this->bodyParsed = $parsed;
+            return $this->bodyParams = $parsed;
         }
 
         return null;
@@ -345,17 +344,17 @@ class Request extends Message implements RequestInterface
      *
      * @return array
      */
-    public function parseForm()
+    protected function parseForm()
     {
-        if (preg_match('/boundary="?(\S+)"?/', $this->getHeaderLine('content-type'), $match)) {
-            $bodyBoundary = '--' . $match[1];
-        } else {
-            return false;
+        if (!preg_match('/boundary="?(\S+)"?/', $this->getHeaderLine('content-type'), $match)) {
+            return;
         }
 
+        //获取Body分界符
+        $bodyBoundary = '--' . $match[1] . "\r\n";
         //将最后一行分界符剔除
         $body = substr((string)$this->getBody(), 0 ,$this->getBody()->getSize() - (strlen($bodyBoundary) + 4));
-        foreach(explode($bodyBoundary . "\r\n", $body) as $buffer){
+        foreach(explode($bodyBoundary,$body) as $buffer){
             if($buffer == ''){
                 continue;
             }
@@ -364,7 +363,7 @@ class Request extends Message implements RequestInterface
             list($header, $bufferBody) = explode("\r\n\r\n", $buffer, 2);
             $bufferBody = substr($bufferBody, 0, -2);
             foreach (explode("\r\n", $header) as $item) {
-                list($headerName, $headerData) = explode(":", $item);
+                list($headerName, $headerData) = explode(":", $item, 2);
                 $headerName = trim(strtolower($headerName));
                 if($headerName == 'content-disposition'){
                     if (preg_match('/name=".*?"; filename="(.*?)"$/', $headerData, $match)) {
@@ -379,13 +378,11 @@ class Request extends Message implements RequestInterface
                         ]);
                         $uploadedFiles[$match[1]] = $file;
                     }elseif(preg_match('/name="(.*?)"$/', $headerData, $match)) {
-                        $this->bodyParsed[$match[1]] = $bufferBody;
+                        $this->bodyParams[$match[1]] = $bufferBody;
                     }
                 }
             }
         }
-
-        return true;
     }
 
     /**
@@ -473,7 +470,7 @@ class Request extends Message implements RequestInterface
      */
     public function getBodyParam($key = null)
     {
-        if($key === null){
+        if(is_null($key)){
             return $this->getParsedBody();
         }
 
@@ -527,6 +524,7 @@ class Request extends Message implements RequestInterface
      */
     public function __toString()
     {
+        //Todo::将文件写入Body
         $input = sprintf(
             '%s %s HTTP/%s',
             $this->getMethod(),
@@ -534,14 +532,21 @@ class Request extends Message implements RequestInterface
             $this->getProtocolVersion()
         );
         $input .= PHP_EOL;
-        foreach($this->getHeaders() as $name => $value){
-            if (is_array($value)) {
-                $value = implode(',', $value);
-            }
 
-            $name = implode('-',array_map('ucfirst',explode('-',$name)));
-            $input .= sprintf('%s: %s',$name,$value).PHP_EOL;
+        if(!$this->hasHeader('host')){
+            if(!$host = $this->getUri()->getHost()){
+                // 请求的host不能为空
+                throw new RuntimeException('Requested host cannot be empty');
+            }
+            $this->headers['host'] = $host;
         }
+
+        $input .= $this->headerToString();
+
+        foreach($this->getCookieParams() as $cookieName => $cookieValue){
+            $input .= sprintf('%s: %s',$cookieName,$cookieValue).PHP_EOL;
+        }
+
         $input .= PHP_EOL;
         $input .= (string)$this->getBody();
 

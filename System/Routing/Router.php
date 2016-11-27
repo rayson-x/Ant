@@ -13,6 +13,7 @@ use Ant\Routing\Interfaces\RouterInterface;
 use Ant\Http\Exception\NotAcceptableException;
 use Ant\Http\Exception\MethodNotAllowedException;
 use Ant\Container\Interfaces\ContainerInterface;
+use Lysine\datamapper\data;
 
 /**
  * Todo::写一版专门兼容Psr的Router
@@ -280,8 +281,6 @@ class Router implements RouterInterface
         // 获取请求的方法,路由,跟返回类型
         list($method, $pathInfo, $type) = $this->parseIncomingRequest($req);
 
-        $res->selectRenderer($type);
-
         // 匹配路由
         if (isset($this->routes[$method . $pathInfo])) {
             $route = $this->handleFoundRoute(
@@ -307,7 +306,7 @@ class Router implements RouterInterface
             ->then($this->callRoute($route));
 
         // 渲染响应结果
-        $result = $res->getRenderer()
+        $result = $res->selectRenderer($type)
             ->setPackage($result)
             ->decorate($res);
 
@@ -322,71 +321,12 @@ class Router implements RouterInterface
      */
     protected function parseIncomingRequest(Request $request)
     {
-        $requestMethod = $request->getMethod();
-        $requestUri = $request->getUri()->getPath();
-
-        //获取启动脚本路径
-        if($request instanceof ServerRequest){
-            $scriptName = $request->getServerParam('SCRIPT_NAME');
-        }else{
-            //追踪栈
-            $backtrace = debug_backtrace();
-            //取得初始脚本路径
-            $scriptPath = $backtrace[count($backtrace)-1]['file'];
-            //获取脚本在网站根目录下的路径
-            $intersect = array_intersect_assoc(explode("/",$requestUri),explode("/",$scriptPath));
-            $scriptName = implode('/',$intersect) ?: basename($scriptPath);
-        }
-
-        $requestUri = $this->getRequestUri($requestUri,$scriptName);
-
-        //Todo::获取客户端Accept格式
-        $acceptType = $this->parseAcceptType($requestUri);
+        $method = $request->getMethod();
+        $requestUri = $request->getRequestUri();
+        $acceptType = $request->parseAcceptType($requestUri);
 
         // 返回客户端请求的方法,资源,以及资源的返回方式
-        return [$requestMethod,$requestUri,$acceptType];
-    }
-
-    /**
-     * 获取请求的路由
-     *
-     * @param string $requestScriptName
-     * @param string $requestUri
-     * @return array
-     */
-    protected function getRequestUri($requestUri,$requestScriptName)
-    {
-        $requestScriptDir = dirname($requestScriptName);
-
-        //获取基础路径
-        if (stripos($requestUri, $requestScriptName) === 0) {
-            $basePath = $requestScriptName;
-        } elseif ($requestScriptDir !== '/' && stripos($requestUri, $requestScriptDir) === 0) {
-            $basePath = $requestScriptDir;
-        }
-
-        if (isset($basePath)) {
-            //获取请求的路径
-            $requestUri = '/'.trim(substr($requestUri, strlen($basePath)), '/');
-        }
-
-        return $requestUri;
-    }
-
-    /**
-     * 解析客户端请求的数据格式
-     *
-     * @param $requestUri
-     * @return string
-     */
-    protected function parseAcceptType(& $requestUri)
-    {
-        if(false !== ($pos = strrpos($requestUri,'.'))){
-            $type = substr($requestUri, $pos + 1);
-            $requestUri = strstr($requestUri, '.', true);
-        }
-
-        return isset($type) ? $type : 'html';
+        return [$method,$requestUri,$acceptType];
     }
 
     /**

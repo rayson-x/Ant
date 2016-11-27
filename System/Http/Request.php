@@ -505,6 +505,67 @@ class Request extends Message implements RequestInterface
     }
 
     /**
+     * 获取请求的路由
+     *
+     * @return array
+     */
+    public function getRequestUri()
+    {
+        //获取请求资源的路径
+        $requestScriptName = $this->getScriptName();
+        $requestScriptDir = dirname($requestScriptName);
+        $requestUri = $this->getUri()->getPath();
+
+        //获取基础路径
+        if (stripos($requestUri, $requestScriptName) === 0) {
+            $basePath = $requestScriptName;
+        } elseif ($requestScriptDir !== '/' && stripos($requestUri, $requestScriptDir) === 0) {
+            $basePath = $requestScriptDir;
+        }
+
+        if(isset($basePath)) {
+            //获取请求的路径
+            $requestUri = '/'.trim(substr($requestUri, strlen($basePath)), '/');
+        }
+
+        return $requestUri;
+    }
+
+    /**
+     * 解析客户端请求的数据格式
+     *
+     * @param $requestUri
+     * @return string
+     */
+    public function parseAcceptType(& $requestUri)
+    {
+        if(false !== ($pos = strrpos($requestUri,'.'))){
+            $type = substr($requestUri, $pos + 1);
+            $requestUri = strstr($requestUri, '.', true);
+        }
+
+        return isset($type) ? $type : 'html';
+    }
+
+    /**
+     * 获取脚本路径
+     *
+     * @return string
+     */
+    protected function getScriptName()
+    {
+        //追踪栈
+        $backtrace = debug_backtrace();
+        //取得初始脚本路径
+        $scriptPath = $backtrace[count($backtrace)-1]['file'];
+        //获取脚本在网站根目录下的路径
+        $intersect = array_intersect(explode('/',$this->getUri()->getPath()),explode(DIRECTORY_SEPARATOR,$scriptPath));
+        $intersect[] = basename($scriptPath);
+
+        return '/'.implode('/',$intersect);
+    }
+
+    /**
      * 设置body解析器
      *
      * @param $subtype string

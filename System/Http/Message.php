@@ -233,7 +233,7 @@ abstract class Message implements MessageInterface
      * 选择装饰器
      *
      * @param $type
-     * @return $this
+     * @return RendererInterface
      */
     public function selectRenderer($type)
     {
@@ -247,14 +247,6 @@ abstract class Message implements MessageInterface
 
         $this->contentType = $type;
 
-        return $this;
-    }
-
-    /**
-     * @return RendererInterface
-     */
-    public function getRenderer()
-    {
         return new $this->renderer[$this->contentType];
     }
 

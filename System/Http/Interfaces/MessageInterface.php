@@ -14,11 +14,6 @@ interface MessageInterface extends PsrMessageInterface
     public function selectRenderer($type);
 
     /**
-     * @return RendererInterface
-     */
-    public function getRenderer();
-
-    /**
      * 设置Body装饰器
      *
      * @param $type

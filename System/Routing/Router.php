@@ -253,9 +253,11 @@ class Router implements RouterInterface
     {
         $route = $this->newRoute($methods, $uri, $action);
 
-        foreach((array) $methods as $method){
-            $this->routes[$method.$route->getUri()] = $route;
-        }
+        $this->routes[] = $route;
+
+//        foreach((array) $methods as $method){
+//            $this->routes[$method.$route->getUri()] = $route;
+//        }
 
         return $route;
     }
@@ -323,7 +325,7 @@ class Router implements RouterInterface
     {
         $method = $request->getMethod();
         $requestUri = $request->getRequestUri();
-        $acceptType = $request->parseAcceptType($requestUri);
+        $acceptType = $request->getAcceptType();
 
         // 返回客户端请求的方法,资源,以及资源的返回方式
         return [$method,$requestUri,$acceptType];

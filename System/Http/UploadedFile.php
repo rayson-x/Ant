@@ -109,6 +109,7 @@ class UploadedFile implements UploadedFileInterface
         }
 
         if($this->stream !== null){
+            //将流拷贝到目标文件上
             stream_copy_to_stream($this->stream->detach(),fopen($targetPath,'w+'));
         }else{
             $targetIsStream = strpos($targetPath, '://') > 0;

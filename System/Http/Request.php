@@ -71,6 +71,13 @@ class Request extends Message implements RequestInterface
     protected $bodyParsers = [];
 
     /**
+     * 客户端请求的类型
+     *
+     * @var string
+     */
+    protected $acceptType = null;
+
+    /**
      * 通过Tcp输入流解析Http请求
      *
      * @param string $receiveBuffer
@@ -129,11 +136,15 @@ class Request extends Message implements RequestInterface
         $this->uri = $uri;
         $this->body = $body;
 
-        //当请求方式为Post时,
-        if ($this->method == 'POST') {
+        //当请求方式为Post时,检查是否为表单提交,跟请求重写
+        if ($method == 'POST') {
             //判断是否是表单
-            if($this->getContentType() == 'multipart/form-data'){
-                $this->parseForm();
+            if(
+                in_array($this->getContentType(),['multipart/form-data','application/x-www-form-urlencoded']) &&
+                preg_match('/boundary="?(\S+)"?/', $this->getHeaderLine('content-type'), $match)
+            ){
+                //获取Body分界符
+                $this->parseForm( '--' . $match[1] . "\r\n");
             }
 
             $override = $this->getBodyParam('_method') ?: $this->getHeaderLine('x-http-method-override');
@@ -344,14 +355,9 @@ class Request extends Message implements RequestInterface
      *
      * @return array
      */
-    protected function parseForm()
+    protected function parseForm($bodyBoundary)
     {
-        if (!preg_match('/boundary="?(\S+)"?/', $this->getHeaderLine('content-type'), $match)) {
-            return;
-        }
 
-        //获取Body分界符
-        $bodyBoundary = '--' . $match[1] . "\r\n";
         //将最后一行分界符剔除
         $body = substr((string)$this->getBody(), 0 ,$this->getBody()->getSize() - (strlen($bodyBoundary) + 4));
         foreach(explode($bodyBoundary,$body) as $buffer){
@@ -494,14 +500,19 @@ class Request extends Message implements RequestInterface
     {
         $result = $this->getHeader('content-type');
 
-        $contentType = $result ? $result[0] : null;
-        if ($contentType) {
-            $contentTypeParts = preg_split('/\s*[;,]\s*/', $contentType);
+        return $result ? $result[0] : null;
+    }
 
-            return strtolower($contentTypeParts[0]);
-        }
+    /**
+     * 获取内容长度
+     *
+     * @return int|null
+     */
+    public function getContentLength()
+    {
+        $result = $this->getHeader('Content-Length');
 
-        return null;
+        return $result ? (int)$result[0] : null;
     }
 
     /**
@@ -528,23 +539,39 @@ class Request extends Message implements RequestInterface
             $requestUri = '/'.trim(substr($requestUri, strlen($basePath)), '/');
         }
 
+        //获取资源的响应格式
+        if(false !== ($pos = strrpos($requestUri,'.'))){
+            $requestUri = strstr($requestUri, '.', true);
+            $this->acceptType = substr($requestUri, $pos + 1);
+        }
+
         return $requestUri;
     }
 
     /**
      * 解析客户端请求的数据格式
      *
-     * @param $requestUri
      * @return string
      */
-    public function parseAcceptType(& $requestUri)
+    public function getAcceptType()
     {
-        if(false !== ($pos = strrpos($requestUri,'.'))){
-            $type = substr($requestUri, $pos + 1);
-            $requestUri = strstr($requestUri, '.', true);
+        if(is_null($this->acceptType)){
+            $acceptTypes = [
+                'application/json'  =>  'json',
+                'text/xml'          =>  'xml',
+                'application/xml'   =>  'xml',
+                'text/html'         =>  'html',
+            ];
+
+            foreach($this->getHeader('accept') as $type){
+                if(array_key_exists($type,$acceptTypes)){
+                    $this->acceptType = $acceptTypes[$type];
+                    break;
+                }
+            }
         }
 
-        return isset($type) ? $type : 'html';
+        return $this->acceptType ?: 'html';
     }
 
     /**

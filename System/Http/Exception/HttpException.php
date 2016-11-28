@@ -50,4 +50,21 @@ class HttpException extends RuntimeException
     {
         return $this->headers;
     }
+
+    /**
+     * @param $statusCode
+     */
+    public function setStatusCode($statusCode)
+    {
+        $this->statusCode = $statusCode;
+    }
+
+    /**
+     * @param $name
+     * @param $value
+     */
+    public function addHeader($name,$value)
+    {
+        $this->headers[$name] = $value;
+    }
 }

@@ -34,6 +34,10 @@ $router->group(['type' => ['json','xml','html','js']],function(Ant\Routing\Route
     $router->get('/',function(){
         return "Ant-Framework";
     });
+
+    $router->map(['GET','PUT'],'/test',function(){
+        return "Ant-Framework";
+    });
 });
 
 return $app;

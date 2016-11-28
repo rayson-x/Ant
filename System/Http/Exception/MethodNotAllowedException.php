@@ -9,6 +9,8 @@ namespace Ant\Http\Exception;
  */
 class MethodNotAllowedException extends HttpException
 {
+    protected $allowed = [];
+
     /**
      * 抛出405异常
      *
@@ -25,9 +27,20 @@ class MethodNotAllowedException extends HttpException
         array $headers = [],
         $code = 0
     ){
+        $this->allowed = $allowed;
         $allowed = ['allowed' => implode(',',$allowed)];
         $headers = array_merge($headers,$allowed);
 
         parent::__construct(405,$message,$previous,$headers,$code);
+    }
+
+    /**
+     *  获取运行的方法
+     *
+     * @return array
+     */
+    public function getAllowedMethod()
+    {
+        return $this->allowed;
     }
 }

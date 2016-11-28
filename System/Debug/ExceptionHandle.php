@@ -1,9 +1,11 @@
 <?php
 namespace Ant\Debug;
 
+use Ant\Http\Exception\MethodNotAllowedException;
 use Exception;
 use Ant\Http\Exception\HttpException;
 use Psr\Http\Message\ResponseInterface;
+use Ant\Http\Interfaces\RequestInterface;
 use Symfony\Component\Debug\Exception\FlattenException;
 use Symfony\Component\Debug\ExceptionHandler as SymfonyExceptionHandler;
 
@@ -18,7 +20,7 @@ class ExceptionHandle
      * @param ResponseInterface $response
      * @return ResponseInterface
      */
-    public function render(Exception $exception, ResponseInterface $response, $debug = true)
+    public function render(Exception $exception, RequestInterface $request,ResponseInterface $response, $debug = true)
     {
         if($exception instanceof HttpException){
             $fe = FlattenException::create($exception,$exception->getStatusCode(),$exception->getHeaders());
@@ -34,9 +36,15 @@ class ExceptionHandle
 
         $response->withStatus($fe->getStatusCode());
 
-        $response->getBody()->write(
-            $this->decorate($handler->getContent($fe), $handler->getStylesheet($fe))
-        );
+        if($exception instanceof MethodNotAllowedException && $request->getMethod() === 'OPTIONS'){
+            //如果请求方法为Options,并且该方法不存在,响应允许请求的方法
+            $response->withStatus(200);
+            $response->withHeader('Access-Control-Allow-Methods',implode(',',$exception->getAllowedMethod()));
+        }else{
+            $response->getBody()->write(
+                $this->decorate($handler->getContent($fe), $handler->getStylesheet($fe))
+            );
+        }
 
         return $response;
     }

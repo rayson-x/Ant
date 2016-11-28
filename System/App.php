@@ -118,7 +118,7 @@ class App extends Container
         $aliases = [
             \Ant\App::class                                     => 'app',
             \Ant\Container\Container::class                     => 'app',
-            \Ant\Interfaces\Container\ContainerInterface::class => 'app',
+            \Ant\Container\Interfaces\ContainerInterface::class => 'app',
             \Ant\Routing\Router::class                          => 'router',
             \Psr\Http\Message\ServerRequestInterface::class     => 'request',
             \Ant\Http\Request::class                            => 'request',
@@ -161,10 +161,12 @@ class App extends Container
     /**
      * 处理未捕获异常
      *
-     * @param \Exception $exception
+     * @param $exception
+     * @param HttpRequest|null $request
+     * @param HttpResponse|null $response
      * @return HttpResponse
      */
-    protected function handleUncaughtException($exception)
+    protected function handleUncaughtException($exception,HttpRequest $request = null,HttpResponse $response = null)
     {
         // 此处是为了兼容PHP7
         // PHP7中错误可以跟异常都实现了Throwable接口
@@ -174,10 +176,18 @@ class App extends Container
             $exception = new FatalThrowableError($exception);
         }
 
-        $handle = $this->make('debug');
-        $response = $this['response']->withBody(new Body(fopen('php://temp','w+')));
+        if(is_null($request)){
+            $request = $this['request'];
+        }
 
-        return $handle->render($exception,$response,true);
+        if(is_null($response)){
+            $response = $this['response'];
+        }
+
+        $handle = $this->make('debug');
+        $response = $response->withBody(new Body(fopen('php://temp','w+')));
+
+        return $handle->render($exception,$request,$response,true);
     }
 
     /**
@@ -206,8 +216,8 @@ class App extends Container
 
         // 如果开发者没有处理异常
         // 异常将会交由框架进行处理
-        return function($exception){
-            return $this->handleUncaughtException($exception);
+        return function($exception,$request,$response){
+            return $this->handleUncaughtException($exception,$request,$response);
         };
     }
 

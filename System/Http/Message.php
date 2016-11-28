@@ -43,13 +43,6 @@ abstract class Message implements MessageInterface
     protected $body;
 
     /**
-     * 响应格式
-     *
-     * @var mixed
-     */
-    protected $contentType = 'html';
-
-    /**
      * 装饰器列表
      *
      * @var array
@@ -235,7 +228,7 @@ abstract class Message implements MessageInterface
      * @param $type
      * @return RendererInterface
      */
-    public function selectRenderer($type)
+    public function selectRenderer($type = null)
     {
         if(!is_string($type)){
             throw new InvalidArgumentException('type must be a string');
@@ -245,9 +238,7 @@ abstract class Message implements MessageInterface
             throw new NotAcceptableException('Decorative device does not exist');
         }
 
-        $this->contentType = $type;
-
-        return new $this->renderer[$this->contentType];
+        return new $this->renderer[$type];
     }
 
     /**

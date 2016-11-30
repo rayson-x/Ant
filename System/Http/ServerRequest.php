@@ -39,40 +39,51 @@ class ServerRequest extends Request implements ServerRequestInterface
     public static function createFromRequestEnvironment(Environment $env)
     {
         return new static(
-            Uri::createFromEnvironment($env),
-            $env->createHeader(),
-            $env->createCookie(),
-            $env->toArray(),
-            RequestBody::createFromCgi(),
-            UploadedFile::parseUploadedFiles($_FILES)
+            $env->createServerParams(),
+            $env->createHeaderParams(),
+            $env->createCookieParams(),
+            $_GET,
+            $_POST,
+            UploadedFile::parseUploadedFiles($_FILES),
+            RequestBody::createFromCgi()
         );
+//        return new static(
+//            Uri::createFromEnvironment($env),
+//            $env->createHeader(),
+//            $env->createCookie(),
+//            $env->toArray(),
+//            RequestBody::createFromCgi(),
+//            UploadedFile::parseUploadedFiles($_FILES)
+//        );
     }
 
     /**
-     * Request constructor.
-     *
-     * @param UriInterface $uri
-     * @param array $headers
-     * @param array $cookies
-     * @param array $serverParams
-     * @param StreamInterface|null $body
-     * @param array $uploadFiles
+     * ServerRequest constructor.
+     * @param array $serverParams           $_SERVER 参数
+     * @param array $headers                从$_SERVER中解析出来的参数
+     * @param array $cookies                $_COOKIE参数
+     * @param array $queryParams            $_GET参数
+     * @param array $bodyParams             $_POST存在时使用的参数
+     * @param array $uploadFiles            $_FILES参数
+     * @param StreamInterface|null $body    php://input流
      */
     public function __construct(
-        UriInterface $uri,
+        array $serverParams = [],
         array $headers = [],
         array $cookies = [],
-        array $serverParams = [],
-        StreamInterface $body = null,
-        array $uploadFiles = []
+        array $queryParams = [],
+        array $bodyParams = [],
+        array $uploadFiles = [],
+        StreamInterface $body = null
     ){
-        $this->uri = $uri;
-        $this->requestTarget = $uri->getPath();
-        $this->headers = $headers;
         $this->serverParams = $serverParams;
-        $this->uploadFiles = $uploadFiles;
+        $this->headers = $headers;
         $this->cookieParams = $cookies;
-        $this->body = $body ?: new Body(fopen('php://temp','w+'));
+        $this->queryParams = $queryParams;
+        $this->bodyParams = $bodyParams;
+        $this->uploadFiles = $uploadFiles;
+        $this->body = $body ?: new Body();
+        $this->uri = Uri::createFromEnvironment($serverParams);
     }
 
     /**
@@ -147,6 +158,11 @@ class ServerRequest extends Request implements ServerRequestInterface
         }
 
         return $result;
+    }
+
+    protected function getScriptName()
+    {
+        return $this->getServerParam('SCRIPT_NAME') ?: parent::getScriptName();
     }
 
     /**

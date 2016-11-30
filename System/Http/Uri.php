@@ -73,10 +73,9 @@ class Uri implements UriInterface
     protected $fragment = null;
 
     /**
-     * @param Environment $env
      * @return static
      */
-    public static function createFromEnvironment(Environment $env)
+    public static function createFromEnvironment($env)
     {
         $scheme = ($env['HTTPS'] == 'on') ? 'https' : 'http';
         $userInfo = $env['PHP_AUTH_USER'].($env['PHP_AUTH_PW'] ? ':' . $env['PHP_AUTH_PW'] : '');
@@ -341,6 +340,26 @@ class Uri implements UriInterface
     }
 
     /**
+     * 获取请求的目标
+     *
+     * @return string
+     */
+    public function getRequestTarget()
+    {
+        $requestTarget = '/'.ltrim($this->getPath(),'/');
+
+        if ($query = $this->getQuery()) {
+            $requestTarget .= '?'.$query;
+        }
+
+        if ($fragment = $this->getFragment()) {
+            $requestTarget .= '#'.$fragment;
+        }
+
+        return $requestTarget;
+    }
+
+    /**
      * 输出完整链接
      *
      * @return string
@@ -359,16 +378,6 @@ class Uri implements UriInterface
             $uri = '';
         }
 
-        $uri .= '/'.ltrim($this->getPath(),'/');
-
-        if ($query = $this->getQuery()) {
-            $uri .= '?'.$query;
-        }
-
-        if ($fragment = $this->getFragment()) {
-            $uri .= '#'.$fragment;
-        }
-
-        return $uri;
+        return $uri.$this->getRequestTarget();
     }
 }

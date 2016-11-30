@@ -126,7 +126,7 @@ class Response extends Message implements ResponseInterface
     {
         $this->code = $code;
         $this->headers = $header ?: [];
-        $this->body = $body ? : new Body(fopen('php://temp', 'r+'));
+        $this->body = $body ? : new Body();
     }
 
     /**

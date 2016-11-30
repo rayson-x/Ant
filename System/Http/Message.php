@@ -228,7 +228,7 @@ abstract class Message implements MessageInterface
      * @param $type
      * @return RendererInterface
      */
-    public function selectRenderer($type = null)
+    public function selectRenderer($type)
     {
         if(!is_string($type)){
             throw new InvalidArgumentException('type must be a string');
@@ -239,18 +239,6 @@ abstract class Message implements MessageInterface
         }
 
         return new $this->renderer[$type];
-    }
-
-    /**
-     * @param string $type
-     * @param RendererInterface $renderer
-     * @return $this
-     */
-    public function setRenderer($type,RendererInterface $renderer)
-    {
-        $this->renderer[$type] = $renderer;
-
-        return $this;
     }
 
     /**

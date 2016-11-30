@@ -1,5 +1,6 @@
 <?php
 include 'vendor/autoload.php';
+
 $app = new Ant\App(realpath(__DIR__));
 
 /* 注册应用程序中间件 */
@@ -32,10 +33,6 @@ $router = $app['router'];
 /* 注册路由 */
 $router->group(['type' => ['json','xml','html','js']],function(Ant\Routing\Router $router){
     $router->get('/',function(){
-        return "Ant-Framework";
-    });
-
-    $router->map(['GET','PUT'],'/test',function(){
         return "Ant-Framework";
     });
 });

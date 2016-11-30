@@ -4,16 +4,14 @@ namespace Ant\Routing;
 use Ant\Http\Request;
 use Ant\Http\Response;
 use FastRoute\Dispatcher;
-use Ant\Http\ServerRequest;
+use Ant\Middleware\Pipeline;
 use FastRoute\RouteCollector;
 use InvalidArgumentException;
-use Ant\Middleware\Middleware;
 use Ant\Http\Exception\NotFoundException;
 use Ant\Routing\Interfaces\RouterInterface;
 use Ant\Http\Exception\NotAcceptableException;
 use Ant\Http\Exception\MethodNotAllowedException;
 use Ant\Container\Interfaces\ContainerInterface;
-use Lysine\datamapper\data;
 
 /**
  * Todo::写一版专门兼容Psr的Router
@@ -302,7 +300,7 @@ class Router implements RouterInterface
         }
 
         // 调用中间件
-        $result = (new Middleware)
+        $result = (new Pipeline)
             ->send($req,$res)
             ->through($this->routeMiddleware)
             ->then($this->callRoute($route));

@@ -12,7 +12,7 @@ use Exception;
  * Class Middleware
  * @package Ant\Middleware
  */
-class Middleware
+class Pipeline
 {
     /**
      * 默认加载的中间件
@@ -73,13 +73,16 @@ class Middleware
      * 设定中间件运行终点,并执行
      *
      * @param Closure $destination
-     * @return null|mixed
+     * @return mixed
+     * @throws Exception
      */
     public function then(Closure $destination)
     {
+        //初始化参数
+        $stack = [];
+        $arguments = $this->arguments;
+
         try{
-            $stack = [];
-            $arguments = $this->arguments;
             foreach ($this->handlers as $handler) {
                 $generator = call_user_func_array($handler,$arguments);
 
@@ -119,29 +122,25 @@ class Middleware
                 $isSend = ($result !== null);
             }
         }catch(Exception $e){
-            $exceptionHandle = function($e){
+            $tryCatch = $this->exceptionHandle($stack,function($e){
+                //如果无法处理,交给上层应用处理
                 throw $e;
-            };
+            });
 
-            if(isset($stack)){
-                //将异常交给中间件进行处理
-                $exceptionHandle = $this->createExceptionHandle($stack,$exceptionHandle);
-            }
-
-            $result = $exceptionHandle($e);
+            $result = $tryCatch($e);
         }
 
         return $result;
     }
 
     /**
-     * 以递归的方式形成负责处理异常的责任链
+     * 处理异常
      *
      * @param $stack
-     * @param $lastHandle
+     * @param $throw
      * @return Closure
      */
-    protected function createExceptionHandle($stack,$lastHandle)
+    protected function exceptionHandle($stack, $throw)
     {
         //此处的异常处理是以责任链的方式完成
         //出现异常之后开始回调中间件函数栈
@@ -161,9 +160,9 @@ class Middleware
                         : $generator->current();
                 }catch(Exception $e) {
                     //将异常交给外层中间件
-                    $stack($e);
+                    return $stack($e);
                 }
             };
-        },$lastHandle);
+        },$throw);
     }
 }

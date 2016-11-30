@@ -3,8 +3,8 @@ namespace Ant;
 
 use Ant\Http\Body;
 use Ant\Traits\Singleton;
+use Ant\Middleware\Pipeline;
 use Ant\Container\Container;
-use Ant\Middleware\Middleware;
 use Ant\Http\Request as HttpRequest;
 use Ant\Http\Response as HttpResponse;
 use Psr\Http\Message\ResponseInterface;
@@ -185,7 +185,7 @@ class App extends Container
         }
 
         $handle = $this->make('debug');
-        $response = $response->withBody(new Body(fopen('php://temp','w+')));
+        $response = $response->withBody(new Body());
 
         return $handle->render($exception,$request,$response,true);
     }
@@ -294,7 +294,7 @@ class App extends Container
     {
         try{
             $this->filterMethod($request);
-            $result = $this->sendThroughMiddleware([$request,$response],$this->middleware,function(){
+            $result = $this->sendThroughPipeline([$request,$response],$this->middleware,function(){
                 return $this['router']->dispatch(...func_get_args());
             });
         }catch(\Exception $exception){
@@ -331,10 +331,10 @@ class App extends Container
      * @param \Closure $then
      * @return mixed
      */
-    protected function sendThroughMiddleware(array $args,array $handlers,\Closure $then)
+    protected function sendThroughPipeline(array $args,array $handlers,\Closure $then)
     {
         if(count($handlers) > 0){
-            return (new Middleware)
+            return (new Pipeline)
                 ->send(...$args)
                 ->through($handlers)
                 ->then($then);

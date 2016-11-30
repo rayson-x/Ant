@@ -49,11 +49,10 @@ class BaseServiceProvider implements ServiceProviderInterface
         $container->singleton('request',function(){
             return new Request(
                 $_SERVER['REQUEST_METHOD'],
-                $_SERVER['REQUEST_URI'],
-                $_SERVER['SERVER_PROTOCOL'],
-                new Uri((isset($_SERVER['HTTP_HOST']) ? 'http://'.$_SERVER['HTTP_HOST'] : '') .$_SERVER['REQUEST_URI']),
-                $this['environment']->createHeader(),
-                RequestBody::createFromCgi()
+                (isset($_SERVER['HTTP_HOST']) ? 'http://'.$_SERVER['HTTP_HOST'] : '') .$_SERVER['REQUEST_URI'],
+                $this['environment']->createHeaderParams(),
+                RequestBody::createFromCgi(),
+                $_SERVER['SERVER_PROTOCOL']
             );
 //            return ServerRequest::createFromRequestEnvironment($this['environment']);
         });

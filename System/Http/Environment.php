@@ -69,7 +69,7 @@ class Environment implements IteratorAggregate,ArrayAccess
      *
      * @return array
      */
-    public function toArray()
+    public function createServerParams()
     {
         return $this->serverParams;
     }
@@ -79,7 +79,7 @@ class Environment implements IteratorAggregate,ArrayAccess
      *
      * @return array
      */
-    public function createHeader()
+    public function createHeaderParams()
     {
         $headers = [];
         foreach ($this->serverParams as $key => $value) {
@@ -99,12 +99,8 @@ class Environment implements IteratorAggregate,ArrayAccess
      *
      * @return array
      */
-    public function createCookie()
+    public function createCookieParams()
     {
-        if(!$_COOKIE && $this->offsetExists('HTTP_COOKIE')){
-            parse_str(str_replace('; ', '&', $this['HTTP_COOKIE']), $_COOKIE);
-        }
-
         return $_COOKIE;
     }
 

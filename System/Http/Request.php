@@ -73,9 +73,16 @@ class Request extends Message implements RequestInterface
     /**
      * 客户端请求的类型
      *
-     * @var string
+     * @var string|null
      */
     protected $acceptType = null;
+
+    /**
+     * 是否解析过
+     *
+     * @var bool
+     */
+    protected $isParse = false;
 
     /**
      * 通过Tcp输入流解析Http请求
@@ -103,41 +110,46 @@ class Request extends Message implements RequestInterface
             }
         }
 
-        $uri = new Uri((isset($headers['host']) ? 'http://'.$headers['host'][0] : '') .$requestTarget);
+        $uri = (isset($headers['host']) ? 'http://'.$headers['host'][0] : '') .$requestTarget;
 
         $body = in_array($method,['GET','OPTIONS'])
             ? new RequestBody(fopen('php://temp','r+'))
             : RequestBody::createFromTcpStream($bodyBuffer);
 
-        return new static($method, $requestTarget, $protocol, $uri, $headers, $body);
+        return new static($method, $uri, $headers, $body, $protocol);
     }
 
     /**
      * Request constructor.
-     * @param $method
-     * @param $requestTarget
-     * @param $protocol
-     * @param UriInterface $uri
-     * @param array $headers
-     * @param StreamInterface $body
+     * @param string $method                    Http动词
+     * @param string $uri                       请求的Uri
+     * @param array $headers                    Http头
+     * @param StreamInterface|null $body        Body内容
+     * @param string $protocol                  Http协议版本
      */
-    public function __construct(
-        $method,
-        $requestTarget,
-        $protocol,
-        UriInterface $uri,
-        array $headers = [],
-        StreamInterface $body = null
-    ){
+    public function __construct($method, $uri, array $headers = [], StreamInterface $body = null, $protocol = '1.1')
+    {
         $this->method = $method;
-        $this->requestTarget = $requestTarget;
-        $this->protocolVersion = $protocol;
+        $this->uri = new Uri($uri);
         $this->headers = $headers;
-        $this->uri = $uri;
-        $this->body = $body;
+        $this->body = $body ?: new Body();
+        $this->protocolVersion = $protocol;
+        $this->requestTarget = $this->uri->getRequestTarget();
+
+        $this->initParam();
+    }
+
+    /**
+     * 初始化请求参数
+     */
+    protected function initParam()
+    {
+        //解析GET与Cookie参数
+        parse_str($this->uri->getQuery(),$this->queryParams);
+        parse_str(str_replace('; ', '&', $this->getHeaderLine('Cookie')), $this->cookieParams);
 
         //当请求方式为Post时,检查是否为表单提交,跟请求重写
-        if ($method == 'POST') {
+        if ($this->method == 'POST') {
             //判断是否是表单
             if(
                 in_array($this->getContentType(),['multipart/form-data','application/x-www-form-urlencoded']) &&
@@ -257,16 +269,6 @@ class Request extends Message implements RequestInterface
      */
     public function getQueryParams()
     {
-        if(!empty($this->queryParams)){
-            return $this->queryParams;
-        }
-
-        if ($this->uri === null) {
-            return [];
-        }
-
-        parse_str($this->uri->getQuery(),$this->queryParams);
-
         return $this->queryParams;
     }
 
@@ -325,15 +327,19 @@ class Request extends Message implements RequestInterface
             return $this->bodyParams;
         }
 
-        //为空返回null
-        if($this->body->getSize() === 0){
+        //如果解析后的参数为空,不允许进行第二次解析
+        if($this->isParse){
             return null;
         }
 
         //用自定义方法解析Body内容
         list($type,$subtype) = explode('/',$this->getContentType(),2);
 
-        if(in_array(strtolower($type),['application','text']) && isset($this->bodyParsers[$subtype])){
+        if(
+            $this->body->getSize() !== 0
+            && in_array(strtolower($type),['application','text'])
+            && isset($this->bodyParsers[$subtype])
+        ){
             //调用body解析函数
             $body = (string)$this->getBody();
             $parsed = call_user_func($this->bodyParsers[$subtype],$body);
@@ -347,17 +353,17 @@ class Request extends Message implements RequestInterface
             return $this->bodyParams = $parsed;
         }
 
+        $this->isParse = true;
         return null;
     }
 
     /**
      * 解析表单内容
      *
-     * @return array
+     * @param string $bodyBoundary Body分界符
      */
     protected function parseForm($bodyBoundary)
     {
-
         //将最后一行分界符剔除
         $body = substr((string)$this->getBody(), 0 ,$this->getBody()->getSize() - (strlen($bodyBoundary) + 4));
         foreach(explode($bodyBoundary,$body) as $buffer){
@@ -539,7 +545,7 @@ class Request extends Message implements RequestInterface
             $requestUri = '/'.trim(substr($requestUri, strlen($basePath)), '/');
         }
 
-        //获取资源的响应格式
+        //获取客户端需要的资源格式
         if(false !== ($pos = strrpos($requestUri,'.'))){
             $requestUri = strstr($requestUri, '.', true);
             $this->acceptType = substr($requestUri, $pos + 1);
@@ -629,11 +635,17 @@ class Request extends Message implements RequestInterface
             $this->headers['host'] = $host;
         }
 
-        $input .= $this->headerToString();
-
-        foreach($this->getCookieParams() as $cookieName => $cookieValue){
-            $input .= sprintf('%s: %s',$cookieName,$cookieValue).PHP_EOL;
+        if($size = $this->getBody()->getSize()){
+            //设置Body长度
+            $this->headers['content-length'] = [$size];
         }
+
+        if($cookie = $this->getCookieParams()){
+            //设置Cookie
+            $this->headers['cookie'] = http_build_query($this->getCookieParams());
+        }
+
+        $input .= $this->headerToString();
 
         $input .= PHP_EOL;
         $input .= (string)$this->getBody();

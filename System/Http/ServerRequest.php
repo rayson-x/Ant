@@ -67,14 +67,16 @@ class ServerRequest extends Request implements ServerRequestInterface
      * @param StreamInterface|null $body    php://input流
      */
     public function __construct(
-        array $serverParams = [],
-        array $headers = [],
-        array $cookies = [],
-        array $queryParams = [],
-        array $bodyParams = [],
-        array $uploadFiles = [],
+        $serverParams = [],
+        $headers = [],
+        $cookies = [],
+        $queryParams = [],
+        $bodyParams = [],
+        $uploadFiles = [],
         StreamInterface $body = null
     ){
+        //Todo::提取http动词，http协议版本，请求的目标
+        //Todo::从请求环境提取请求参数,GET,POST,COOKIE,FILES,body参数
         $this->serverParams = $serverParams;
         $this->headers = $headers;
         $this->cookieParams = $cookies;

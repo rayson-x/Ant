@@ -1,4 +1,4 @@
 <?php
-$app = require "bootstrap.php";
+//$app = require "bootstrap.php";
 
-$app->run();
+//$app->run();

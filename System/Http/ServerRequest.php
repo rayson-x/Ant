@@ -15,7 +15,6 @@ use Psr\Http\Message\ServerRequestInterface;
  */
 class ServerRequest extends Request implements ServerRequestInterface
 {
-
     /**
      * 服务器和执行环境信息
      *
@@ -44,7 +43,7 @@ class ServerRequest extends Request implements ServerRequestInterface
             $env->createCookieParams(),
             $_GET,
             $_POST,
-            UploadedFile::parseUploadedFiles($_FILES),
+            $_FILES,
             RequestBody::createFromCgi()
         );
 //        return new static(
@@ -81,7 +80,7 @@ class ServerRequest extends Request implements ServerRequestInterface
         $this->cookieParams = $cookies;
         $this->queryParams = $queryParams;
         $this->bodyParams = $bodyParams;
-        $this->uploadFiles = $uploadFiles;
+        $this->uploadFiles = UploadedFile::parseUploadedFiles($uploadFiles);
         $this->body = $body ?: new Body();
         $this->uri = Uri::createFromEnvironment($serverParams);
     }

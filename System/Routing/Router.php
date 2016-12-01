@@ -253,9 +253,9 @@ class Router implements RouterInterface
 
         $this->routes[] = $route;
 
-//        foreach((array) $methods as $method){
-//            $this->routes[$method.$route->getUri()] = $route;
-//        }
+        foreach((array) $methods as $method){
+            $this->fastRoute[$method.$route->getUri()] = $route;
+        }
 
         return $route;
     }

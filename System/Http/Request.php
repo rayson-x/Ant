@@ -82,7 +82,7 @@ class Request extends Message implements RequestInterface
      *
      * @var bool
      */
-    protected $isParse = false;
+    protected $bodyAlreadyParse = false;
 
     /**
      * 通过Tcp输入流解析Http请求
@@ -112,9 +112,9 @@ class Request extends Message implements RequestInterface
 
         $uri = (isset($headers['host']) ? 'http://'.$headers['host'][0] : '') .$requestTarget;
 
-        $body = in_array($method,['GET','OPTIONS'])
+        $body = ($method == 'GET')
             ? new RequestBody(fopen('php://temp','r+'))
-            : RequestBody::createFromTcpStream($bodyBuffer);
+            : RequestBody::createFromString($bodyBuffer);
 
         return new static($method, $uri, $headers, $body, $protocol);
     }
@@ -134,7 +134,6 @@ class Request extends Message implements RequestInterface
         $this->headers = $headers;
         $this->body = $body ?: new Body();
         $this->protocolVersion = $protocol;
-        $this->requestTarget = $this->uri->getRequestTarget();
 
         $this->initParam();
     }
@@ -173,7 +172,7 @@ class Request extends Message implements RequestInterface
      */
     public function getRequestTarget()
     {
-        return $this->requestTarget;
+        return $this->uri->getRequestTarget();
     }
 
     /**
@@ -328,32 +327,34 @@ class Request extends Message implements RequestInterface
         }
 
         //如果解析后的参数为空,不允许进行第二次解析
-        if($this->isParse){
+        if($this->bodyAlreadyParse){
             return null;
         }
 
-        //用自定义方法解析Body内容
-        list($type,$subtype) = explode('/',$this->getContentType(),2);
+        if($contentType = $this->getContentType()){
+            //用自定义方法解析Body内容
+            list($type,$subtype) = explode('/',$contentType,2);
 
-        if(
-            $this->body->getSize() !== 0
-            && in_array(strtolower($type),['application','text'])
-            && isset($this->bodyParsers[$subtype])
-        ){
-            //调用body解析函数
-            $body = (string)$this->getBody();
-            $parsed = call_user_func($this->bodyParsers[$subtype],$body);
+            if(
+                $this->body->getSize() !== 0
+                && in_array(strtolower($type),['application','text'])
+                && isset($this->bodyParsers[$subtype])
+            ){
+                //调用body解析函数
+                $body = (string)$this->getBody();
+                $parsed = call_user_func($this->bodyParsers[$subtype],$body);
 
-            if (!(is_null($parsed) || is_object($parsed) || is_array($parsed))){
-                throw new RuntimeException(
-                    'Request body media type parser return value must be an array, an object, or null'
-                );
+                if (!(is_null($parsed) || is_object($parsed) || is_array($parsed))){
+                    throw new RuntimeException(
+                        'Request body media type parser return value must be an array, an object, or null'
+                    );
+                }
+
+                return $this->bodyParams = $parsed;
             }
-
-            return $this->bodyParams = $parsed;
         }
 
-        $this->isParse = true;
+        $this->bodyAlreadyParse = true;
         return null;
     }
 
@@ -364,8 +365,15 @@ class Request extends Message implements RequestInterface
      */
     protected function parseForm($bodyBoundary)
     {
+        if(!$size = $this->getBody()->getSize()){
+            $this->bodyParams = $_POST;
+            $this->uploadFiles = UploadedFile::parseUploadedFiles($_FILES);
+            return;
+        }
+
         //将最后一行分界符剔除
-        $body = substr((string)$this->getBody(), 0 ,$this->getBody()->getSize() - (strlen($bodyBoundary) + 4));
+        $body = substr((string)$this->getBody(), 0 ,$size - (strlen($bodyBoundary) + 4));
+
         foreach(explode($bodyBoundary,$body) as $buffer){
             if($buffer == ''){
                 continue;
@@ -498,15 +506,22 @@ class Request extends Message implements RequestInterface
     }
 
     /**
-     * 获取content-type
+     * 获取请求的body类型
      *
-     * @return null
+     * @return null|string
      */
     public function getContentType()
     {
-        $result = $this->getHeader('content-type');
+        $result = $this->getHeader('Content-Type');
+        $contentType = $result ? $result[0] : null;
 
-        return $result ? $result[0] : null;
+        if ($contentType) {
+            $contentTypeParts = preg_split('/\s*[;,]\s*/', $contentType);
+
+            $contentType = strtolower($contentTypeParts[0]);
+        }
+
+        return $contentType;
     }
 
     /**
@@ -614,18 +629,14 @@ class Request extends Message implements RequestInterface
     }
 
     /**
+     * Todo::将文件写入Body
+     *
      * @return string
      */
     public function __toString()
     {
-        //Todo::将文件写入Body
-        $input = sprintf(
-            '%s %s HTTP/%s',
-            $this->getMethod(),
-            $this->getRequestTarget(),
-            $this->getProtocolVersion()
-        );
-        $input .= PHP_EOL;
+        //修改查询参数
+        $this->uri = $this->uri->withQuery(http_build_query($this->getQueryParams()));
 
         if(!$this->hasHeader('host')){
             if(!$host = $this->getUri()->getHost()){
@@ -635,16 +646,24 @@ class Request extends Message implements RequestInterface
             $this->headers['host'] = $host;
         }
 
-        if($size = $this->getBody()->getSize()){
-            //设置Body长度
-            $this->headers['content-length'] = [$size];
-        }
-
         if($cookie = $this->getCookieParams()){
             //设置Cookie
             $this->headers['cookie'] = http_build_query($this->getCookieParams());
         }
 
+        if($size = $this->getBody()->getSize()){
+            //设置Body长度
+            $this->headers['content-length'] = [$size];
+        }
+
+        $input = sprintf(
+            '%s %s HTTP/%s',
+            $this->getMethod(),
+            $this->getRequestTarget(),
+            $this->getProtocolVersion()
+        );
+
+        $input .= PHP_EOL;
         $input .= $this->headerToString();
 
         $input .= PHP_EOL;

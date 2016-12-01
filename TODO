@@ -19,3 +19,5 @@ TODO::Console
 Todo::让部分框架初始化操作常驻进程
 Todo::用PHP替代nginx等web service,提高性能
 Todo::兼容swoole使用s
+
+框架初始化加载时间为12ms~15ms不等,运行应用时间为2ms~5ms,其中每次请求不可避免的Request初始化需要4ms~5ms左右

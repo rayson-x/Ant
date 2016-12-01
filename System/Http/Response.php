@@ -6,8 +6,6 @@ use Psr\Http\Message\StreamInterface;
 use Ant\Http\Interfaces\ResponseInterface;
 
 /**
- * Todo::添加静态方法,通过http响应内容获取Response类
- *
  * Class Response
  * @package Ant\Http
  */
@@ -107,25 +105,74 @@ class Response extends Message implements ResponseInterface
      */
     protected $cookies = [];
 
-    public static function createFromRequestResult(array $header, $bodyBuffer)
+    /**
+     * @param array $headerData
+     * @param $bodyBuffer
+     * @return static
+     *
+     * @see http://php.net/manual/zh/reserved.variables.httpresponseheader.php
+     */
+    public static function createFromRequestResult(array $headerData, $bodyBuffer)
     {
-        // TODO: Implement createFromRequestResult() method.
-    }
+        list($protocol ,$statusCode, $responsePhrase) = explode(' ', array_shift($headerData), 3);
+        $protocol = explode('/',$protocol,2)[1];
 
-    public static function createFromResponseStr($receiveBuffer)
-    {
-        // TODO: Implement createFromResponseStr() method.
+        $headers = [];
+        foreach ($headerData as $content) {
+            list($name, $value) = explode(':', $content, 2);
+            if('set-cookie' != $name = strtolower($name)){
+                $headers[$name] = explode(',',trim($value));
+            }else{
+                //Todo::解析响应Cookie
+//                $tmp = explode(';',$value);
+//                list($name,$value) = explode('=',array_shift($tmp));
+//                $cookie['name'] = $name;
+//                $cookie['value'] = $value;
+//
+//                foreach($tmp as $item){
+//                    list($key,$value) = explode('=',$item);
+//                    $cookie[trim($key)] = trim($value);
+//                }
+            }
+        }
+
+        return new static($statusCode, $headers, Body::createFromString($bodyBuffer), $responsePhrase, $protocol);
     }
 
     /**
-     * @param int                   $code
-     * @param null|array            $header
-     * @param StreamInterface|null  $body
+     * @param $receiveBuffer
+     * @return Response
      */
-    public function __construct($code = 200, $header = [], StreamInterface $body = null)
+    public static function createFromResponseStr($receiveBuffer)
     {
+        if (!is_string($receiveBuffer)) {
+            throw new \InvalidArgumentException('Request must be string');
+        }
+
+        list($headerBuffer, $bodyBuffer) = explode("\r\n\r\n", $receiveBuffer, 2);
+        $headerData = explode("\r\n",$headerBuffer);
+
+        return static::createFromRequestResult($headerData,$bodyBuffer);
+    }
+
+    /**
+     * @param int $code
+     * @param array $header
+     * @param StreamInterface|null $body
+     * @param null $phrase
+     * @param string $protocol
+     */
+    public function __construct(
+        $code = 200,
+        $header = [],
+        StreamInterface $body = null,
+        $phrase = null,
+        $protocol = '1.1'
+    ){
         $this->code = $code;
-        $this->headers = $header ?: [];
+        $this->headers = $header;
+        $this->responsePhrase = $phrase;
+        $this->protocolVersion = $protocol;
         $this->body = $body ? : new Body();
     }
 
@@ -330,7 +377,6 @@ class Response extends Message implements ResponseInterface
         $output .= PHP_EOL;
         $output .= $this->headerToString();
         $output .= $this->getCookieHeader();
-        $output .= PHP_EOL;
         $output .= (string)$this->getBody();
 
         return $output;
@@ -344,14 +390,14 @@ class Response extends Message implements ResponseInterface
         $result = [];
 
         foreach($this->getCookies() as list($name, $value, $expire, $path, $domain , $secure, $httponly)){
-            $value .= urlencode($name) . '=' . urlencode($value);
+            $cookie[] = urlencode($name) . '=' . urlencode($value);
 
             if (isset($domain)) {
-                $value .= '; domain=' . $domain;
+                $cookie[] = 'domain=' . $domain;
             }
 
             if (isset($path)) {
-                $value .= '; path=' . $path;
+                $cookie[] = 'path=' . $path;
             }
 
             if (isset($expire)) {
@@ -361,21 +407,21 @@ class Response extends Message implements ResponseInterface
                     $timestamp = (int)$expire;
                 }
                 if ($timestamp !== 0) {
-                    $value .= '; expires=' . gmdate('D, d-M-Y H:i:s e', $timestamp);
+                    $cookie[] = 'expires=' . gmdate('D, d-M-Y H:i:s e', $timestamp);
                 }
             }
 
             if (isset($secure) && $secure) {
-                $value .= '; secure';
+                $cookie[] = 'secure';
             }
 
             if (isset($httponly) && $httponly) {
-                $value .= '; HostOnly';
+                $cookie[] = 'hostonly';
             }
 
-            $result[] = 'Set-Cookie: %s'.$value;
+            $result[] = 'Set-Cookie: '.implode('; ',$cookie);
         }
 
-        return implode(PHP_EOL,$result);
+        return $result ? implode(PHP_EOL,$result).PHP_EOL : '';
     }
 }

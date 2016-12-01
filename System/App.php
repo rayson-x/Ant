@@ -396,7 +396,7 @@ class App extends Container
                 }
 
                 $name = implode('-',array_map('ucfirst',explode('-',$name)));
-                header(sprintf('%s: %s',$name,$value));
+                header("{$name} :{$value}");
             }
 
             foreach($response->getCookies() as list($name, $value, $expire, $path, $domain , $secure, $httponly)){

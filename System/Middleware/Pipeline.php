@@ -41,7 +41,6 @@ class Pipeline
     public function __construct()
     {
         $this->getReturnValue = version_compare(PHP_VERSION, '7.0.0', '>=');
-
     }
 
     /**

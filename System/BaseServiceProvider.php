@@ -47,14 +47,14 @@ class BaseServiceProvider implements ServiceProviderInterface
          * 注册 Http Request 处理类
          */
         $container->singleton('request',function(){
-            return new Request(
-                $_SERVER['REQUEST_METHOD'],
-                (isset($_SERVER['HTTP_HOST']) ? 'http://'.$_SERVER['HTTP_HOST'] : '') .$_SERVER['REQUEST_URI'],
-                $this['environment']->createHeaderParams(),
-                RequestBody::createFromCgi(),
-                $_SERVER['SERVER_PROTOCOL']
-            );
-//            return ServerRequest::createFromRequestEnvironment($this['environment']);
+//            return new Request(
+//                $_SERVER['REQUEST_METHOD'],
+//                (isset($_SERVER['HTTP_HOST']) ? 'http://'.$_SERVER['HTTP_HOST'] : '') .$_SERVER['REQUEST_URI'],
+//                $this['environment']->createHeaderParams(),
+//                RequestBody::createFromCgi(),
+//                $_SERVER['SERVER_PROTOCOL']
+//            );
+            return new ServerRequest;
         });
 
         /**

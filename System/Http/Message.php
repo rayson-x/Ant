@@ -33,14 +33,14 @@ abstract class Message implements MessageInterface
      *
      * @var array
      */
-    protected $headers;
+    protected $headers = [];
 
     /**
      * body信息
      *
      * @var StreamInterface
      */
-    protected $body;
+    protected $body = null;
 
     /**
      * 装饰器列表

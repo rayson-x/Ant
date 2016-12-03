@@ -26,7 +26,7 @@ class Request extends Message implements RequestInterface
      *
      * @var string
      */
-    protected $method;
+    protected $method = null;
 
     /**
      * Uri 实例
@@ -100,7 +100,7 @@ class Request extends Message implements RequestInterface
         $headerData = explode("\r\n",$headerBuffer);
 
         list($method, $requestTarget, $protocol) = explode(' ', array_shift($headerData), 3);
-        $protocol = explode('/',$protocol,2)[1];
+        $protocol = str_replace('HTTP/', '', $protocol);
 
         $headers = [];
         foreach ($headerData as $content) {
@@ -135,17 +135,16 @@ class Request extends Message implements RequestInterface
         $this->body = $body ?: new Body();
         $this->protocolVersion = $protocol;
 
-        $this->initParam();
-    }
+        /* 初始化请求参数 */
 
-    /**
-     * 初始化请求参数
-     */
-    protected function initParam()
-    {
         //解析GET与Cookie参数
         parse_str($this->uri->getQuery(),$this->queryParams);
         parse_str(str_replace('; ', '&', $this->getHeaderLine('Cookie')), $this->cookieParams);
+
+        //检查是否在报头中重载了http动词
+        if ($customMethod = $this->getHeaderLine('x-http-method-override')) {
+            $this->method = $customMethod;
+        }
 
         //当请求方式为Post时,检查是否为表单提交,跟请求重写
         if ($this->method == 'POST') {
@@ -158,9 +157,8 @@ class Request extends Message implements RequestInterface
                 $this->parseForm( '--' . $match[1] . "\r\n");
             }
 
-            $override = $this->getBodyParam('_method') ?: $this->getHeaderLine('x-http-method-override');
-            if($override){
-                $this->method = strtoupper($override);
+            if($override = $this->getBodyParam('_method')){
+                $this->method = $override;
             }
         }
     }
@@ -187,7 +185,7 @@ class Request extends Message implements RequestInterface
     }
 
     /**
-     * 获取http请求方式,支持重写请求方式
+     * 获取http请求方式
      *
      * @return string
      */

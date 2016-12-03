@@ -77,21 +77,27 @@ class Uri implements UriInterface
      */
     public static function createFromEnvironment($env)
     {
-        $scheme = ($env['HTTPS'] == 'on') ? 'https' : 'http';
-        $userInfo = $env['PHP_AUTH_USER'].($env['PHP_AUTH_PW'] ? ':' . $env['PHP_AUTH_PW'] : '');
+        $scheme = (isset($env['HTTPS']) && $env['HTTPS'] == 'on') ? 'https' : 'http';
 
-        //HTTP_HOST在http1.0下可以返回空
-        if($httpHost = $env['HTTP_HOST'] ?: false){
-            if(strpos($httpHost,':')){
-                list($host,$port) = explode(':',$httpHost,2);
+        $username = isset($env['PHP_AUTH_USER']) ? $env['PHP_AUTH_USER'] : '';
+        $password = isset($env['PHP_AUTH_PW']) ? $env['PHP_AUTH_PW'] : '';
+        $userInfo = $username . ($password ? ':' . $password : '');
+
+        //获取主机地址
+        if(isset($env['HTTP_HOST'])){
+            if(strpos($env['HTTP_HOST'],':')){
+                list($host,$port) = explode(':',$env['HTTP_HOST'],2);
                 $port = (int)$port;
             }else{
-                $host = $httpHost;
+                $host = $env['HTTP_HOST'];
                 $port = null;
             }
         }else{
-            $host = $env['SERVER_NAME'] ?: $env['SERVER_ADDR'];
-            $port = $env['SERVER_PORT'];
+            $host = isset($env['SERVER_NAME'])
+                ? $env['SERVER_NAME']
+                : (isset($env['SERVER_ADDR']) ? $env['SERVER_ADDR'] : null);
+
+            $port = isset($env['SERVER_PORT']) ? $env['SERVER_PORT'] : null;
         }
 
         $uri = $scheme.':';

@@ -65,13 +65,6 @@ class Router implements RouterInterface
     protected $middleware = [];
 
     /**
-     * 路由器中间件
-     *
-     * @var array
-     */
-    protected $routeMiddleware = [];
-
-    /**
      * Router constructor.
      *
      * @param ContainerInterface $container
@@ -284,7 +277,7 @@ class Router implements RouterInterface
         // 匹配路由
         if (isset($this->routes[$method . $pathInfo])) {
             $route = $this->handleFoundRoute(
-                $this->routes[$method . $pathInfo]
+                $this->fastRoute[$method . $pathInfo]
             );
         } else {
             $route = $this->handleDispatcher(
@@ -302,7 +295,7 @@ class Router implements RouterInterface
         // 调用中间件
         $result = (new Pipeline)
             ->send($req,$res)
-            ->through($this->routeMiddleware)
+            ->through($this->getMiddleware($route))
             ->then($this->callRoute($route));
 
         // 渲染响应结果
@@ -321,12 +314,12 @@ class Router implements RouterInterface
      */
     protected function parseIncomingRequest(Request $request)
     {
-        $method = $request->getMethod();
-        $requestUri = $request->getRequestUri();
-        $acceptType = $request->getAcceptType();
-
         // 返回客户端请求的方法,资源,以及资源的返回方式
-        return [$method,$requestUri,$acceptType];
+        return [
+            $request->getMethod(),
+            $request->getRequestUri(),
+            $request->getAcceptType()
+        ];
     }
 
     /**
@@ -381,10 +374,6 @@ class Router implements RouterInterface
      */
     protected function handleFoundRoute(Route $action,$args = [])
     {
-        if($handle = $action->getMiddleware()){
-            $this->routeMiddleware = $this->createMiddleware($action->getMiddleware());
-        }
-
         $action->setArguments($args);
 
         return $action;
@@ -407,17 +396,18 @@ class Router implements RouterInterface
     /**
      * 加载路由使用的中间件
      *
-     * @param $middleware
-     * @return array
+     * @param Route $route
+     * @return mixed
      */
-    protected function createMiddleware($middleware)
+    protected function getMiddleware(Route $route)
     {
+        $middleware = $route->getMiddleware();
         $middleware = is_string($middleware) ? explode('|', $middleware) : (array) $middleware;
 
         //获取可以回调的路由
         return array_map(function($middleware){
-            $middleware = $this->getMiddleware($middleware);
             if(is_string($middleware)){
+                $middleware = isset($this->middleware[$middleware]) ? $this->middleware[$middleware] : $middleware;
                 return $this->container->make($middleware);
             }elseif($middleware instanceof \Closure){
                 return $middleware;
@@ -425,21 +415,6 @@ class Router implements RouterInterface
 
             throw new InvalidArgumentException("Middleware [$middleware] does not exist");
         },$middleware);
-    }
-
-    /**
-     * 获取中间件
-     *
-     * @param $middleware
-     * @return string
-     */
-    protected function getMiddleware($middleware)
-    {
-        if(is_string($middleware)){
-            $middleware = isset($this->middleware[$middleware]) ? $this->middleware[$middleware] : $middleware;
-        }
-
-        return $middleware;
     }
 
     /**

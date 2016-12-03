@@ -10,7 +10,7 @@ use Ant\Http\Response as HttpResponse;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Ant\Http\Exception\MethodNotAllowedException;
-use Ant\Interfaces\Container\ServiceProviderInterface;
+use Ant\Container\Interfaces\ServiceProviderInterface;
 use Symfony\Component\Debug\Exception\FatalThrowableError;
 use Symfony\Component\Debug\Exception\FatalErrorException;
 

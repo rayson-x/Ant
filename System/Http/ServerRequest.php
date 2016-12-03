@@ -30,61 +30,87 @@ class ServerRequest extends Request implements ServerRequestInterface
     protected $attributes = [];
 
     /**
-     * 通过请求上下文环境创建
+     * 在“$_SERVER”中不是以“HTTP_”开头的Http头
      *
-     * @param Environment $env
-     * @return static
+     * @var array
      */
-    public static function createFromRequestEnvironment(Environment $env)
-    {
-        return new static(
-            $env->createServerParams(),
-            $env->createHeaderParams(),
-            $env->createCookieParams(),
-            $_GET,
-            $_POST,
-            $_FILES,
-            RequestBody::createFromCgi()
-        );
-//        return new static(
-//            Uri::createFromEnvironment($env),
-//            $env->createHeader(),
-//            $env->createCookie(),
-//            $env->toArray(),
-//            RequestBody::createFromCgi(),
-//            UploadedFile::parseUploadedFiles($_FILES)
-//        );
-    }
+    protected $special = [
+        'CONTENT_TYPE' => 1,
+        'CONTENT_LENGTH' => 1,
+        'PHP_AUTH_USER' => 1,
+        'PHP_AUTH_PW' => 1,
+        'PHP_AUTH_DIGEST' => 1,
+        'AUTH_TYPE' => 1,
+    ];
 
     /**
      * ServerRequest constructor.
-     * @param array $serverParams           $_SERVER 参数
-     * @param array $headers                从$_SERVER中解析出来的参数
-     * @param array $cookies                $_COOKIE参数
-     * @param array $queryParams            $_GET参数
-     * @param array $bodyParams             $_POST存在时使用的参数
-     * @param array $uploadFiles            $_FILES参数
-     * @param StreamInterface|null $body    php://input流
+     * @param array $serverParams
+     * @param array $cookieParams
+     * @param array $queryParams
+     * @param array $bodyParams
+     * @param array $uploadFiles
+     * @param StreamInterface|null $body
      */
     public function __construct(
-        array $serverParams = [],
-        array $headers = [],
-        array $cookies = [],
-        array $queryParams = [],
-        array $bodyParams = [],
-        array $uploadFiles = [],
+        array $serverParams = null,
+        array $cookieParams = null,
+        array $queryParams = null,
+        array $bodyParams = null,
+        array $uploadFiles = null,
         StreamInterface $body = null
     ){
-        $this->serverParams = $serverParams;
-        $this->headers = $headers;
-        $this->cookieParams = $cookies;
-        $this->queryParams = $queryParams;
-        $this->bodyParams = $bodyParams;
-        $this->uploadFiles = UploadedFile::parseUploadedFiles($uploadFiles);
-        $this->body = $body ?: new Body();
-        $this->uri = Uri::createFromEnvironment($serverParams);
+        $this->serverParams = $serverParams ?: $_SERVER;
+        $this->cookieParams = $cookieParams ?: $_COOKIE;
+        $this->queryParams = $queryParams ?: $_GET;
+        $this->bodyParams = $bodyParams ?: $_POST;
+        $this->uploadFiles = UploadedFile::parseUploadedFiles($uploadFiles ?: $_FILES);
+        $this->body = $body ?: RequestBody::createFromCgi();
+
+        $this->initialize();
     }
 
+    /**
+     * 初始化参数
+     */
+    protected function initialize()
+    {
+        foreach ($this->serverParams as $key => $value) {
+            //提取HTTP头
+            if (isset($this->special[$key]) || strpos($key, 'HTTP_') === 0) {
+                $key = strtolower(str_replace('_', '-', $key));
+                $key = (strpos($key, 'http-') === 0) ? substr($key, 5) : $key;
+                $this->headers[$key] = explode(',', $value);
+            }
+        }
+
+        $this->requestTarget = isset($this->serverParams['REQUEST_URI'])
+            ? $this->serverParams['REQUEST_URI']
+            : '/';
+
+        $this->uri = Uri::createFromEnvironment($this->serverParams);
+    }
+
+    /**
+     * 获取Http动词
+     *
+     * @return string
+     */
+    public function getMethod()
+    {
+        if ($this->method === null) {
+            $this->method = isset($this->serverParams['REQUEST_METHOD']) ? $this->serverParams['REQUEST_METHOD'] : 'GET';
+
+            if ($customMethod = $this->getHeaderLine('X-Http-Method-Override')) {
+                $this->method = $customMethod;
+            } elseif ($this->method === 'POST') {
+                $this->method = $this->getBodyParam('_method');
+            }
+        }
+
+        return $this->method;
+    }
+    
     /**
      * 获取server参数
      *

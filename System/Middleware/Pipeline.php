@@ -6,9 +6,6 @@ use Generator;
 use Exception;
 
 /**
- * 管道模式,并非责任链模式
- * 此模式中除非打断调用链,不然每个回调都必将执行
- *
  * Class Middleware
  * @package Ant\Middleware
  */

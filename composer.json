@@ -10,8 +10,8 @@
     },
     "autoload": {
         "psr-4": {
-            "Ant\\": "system"
+            "Ant\\": "System"
         },
-        "files": ["system/Support/Helper.php"]
+        "files": ["System/Support/Helper.php"]
     }
 }

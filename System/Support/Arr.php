@@ -129,4 +129,34 @@ class Arr
 
         return $array;
     }
+
+    /**
+     * 分离key跟value
+     *
+     * @param array $array
+     * @return array
+     */
+    public static function detach(array $array)
+    {
+        return [array_keys($array),array_values($array)];
+    }
+
+    /**
+     * 处理数组中指定元素
+     *
+     * @param array $array
+     * @param array $elements
+     * @param callable $func
+     * @return array
+     */
+    public static function handleElement(array $array,array $elements,callable $func = 'rawurlencode')
+    {
+        foreach($elements as $item){
+            if(array_key_exists($item,$array)){
+                $array[$item] = $func($array[$item]);
+            }
+        }
+
+        return $array;
+    }
 }

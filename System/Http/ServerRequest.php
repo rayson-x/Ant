@@ -1,14 +1,10 @@
 <?php
 namespace Ant\Http;
 
-use RuntimeException;
-use InvalidArgumentException;
-use Psr\Http\Message\UriInterface;
 use Psr\Http\Message\StreamInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
 /**
- * Todo::重构ServerRequest
  * Class ServerRequest
  * @package Ant\Http
  * @see http://www.php-fig.org/psr/psr-7/
@@ -185,6 +181,9 @@ class ServerRequest extends Request implements ServerRequestInterface
         return $result;
     }
 
+    /**
+     * @return string
+     */
     protected function getScriptName()
     {
         return $this->getServerParam('SCRIPT_NAME') ?: parent::getScriptName();

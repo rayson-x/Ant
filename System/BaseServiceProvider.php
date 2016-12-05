@@ -37,23 +37,9 @@ class BaseServiceProvider implements ServiceProviderInterface
         $container->instance('app',$container);
 
         /**
-         * 注册环境
-         */
-        $container->bind('environment',function(){
-            return new Environment($_SERVER);
-        });
-
-        /**
          * 注册 Http Request 处理类
          */
         $container->singleton('request',function(){
-//            return new Request(
-//                $_SERVER['REQUEST_METHOD'],
-//                (isset($_SERVER['HTTP_HOST']) ? 'http://'.$_SERVER['HTTP_HOST'] : '') .$_SERVER['REQUEST_URI'],
-//                $this['environment']->createHeaderParams(),
-//                RequestBody::createFromCgi(),
-//                $_SERVER['SERVER_PROTOCOL']
-//            );
             return new ServerRequest;
         });
 

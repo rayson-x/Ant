@@ -11,12 +11,69 @@ use Ant\Http\Interfaces\ResponseInterface;
  */
 class Response extends Message implements ResponseInterface
 {
+    const SWITCHING_PROTOCOLS = 101;
+    const PROCESSING = 102;
+    const OK = 200;
+    const CREATED = 201;
+    const ACCEPTED = 202;
+    const NON_AUTHORITATIVE_INFORMATION = 203;
+    const NO_CONTENT = 204;
+    const RESET_CONTENT = 205;
+    const PARTIAL_CONTENT = 206;
+    const MULTI_STATUS = 207;
+    const ALREADY_REPORTED = 208;
+    const MULTIPLE_CHOICES = 300;
+    const MOVED_PERMANENTLY = 301;
+    const FOUND = 302;
+    const SEE_OTHER = 303;
+    const NOT_MODIFIED = 304;
+    const USE_PROXY = 305;
+    const SWITCH_PROXY = 306;
+    const TEMPORARY_REDIRECT = 307;
+    const BAD_REQUEST = 400;
+    const UNAUTHORIZED = 401;
+    const PAYMENT_REQUIRED = 402;
+    const FORBIDDEN = 403;
+    const NOT_FOUND = 404;
+    const METHOD_NOT_ALLOWED = 405;
+    const NOT_ACCEPTABLE = 406;
+    const PROXY_AUTHENTICATION_REQUIRED = 407;
+    const REQUEST_TIMEOUT = 408;
+    const CONFLICT = 409;
+    const GONE = 410;
+    const LENGTH_REQUIRED = 411;
+    const PRECONDITION_FAILED = 412;
+    const REQUEST_ENTITY_TOO_LARGE = 413;
+    const REQUEST_URI_TOO_LONG = 414;
+    const UNSUPPORTED_MEDIA_TYPE = 415;
+    const REQUESTED_RANGE_NOT_SATISFIABLE = 416;
+    const EXPECTATION_FAILED = 417;
+    const IM_A_TEAPOT = 418;
+    const UNPROCESSABLE_ENTITY = 422;
+    const LOCKED = 423;
+    const FAILED_DEPENDENCY = 424;
+    const UNORDERED_COLLECTION = 425;
+    const UPGRADE_REQUIRED = 426;
+    const PRECONDITION_REQUIRED = 428;
+    const TOO_MANY_REQUESTS = 429;
+    const REQUEST_HEADER_FIELDS_TOO_LARGE = 431;
+    const INTERNAL_SERVER_ERROR = 500;
+    const NOT_IMPLEMENTED = 501;
+    const BAD_GATEWAY = 502;
+    const SERVICE_UNAVAILABLE = 503;
+    const GATEWAY_TIMEOUT = 504;
+    const HTTP_VERSION_NOT_SUPPORTED = 505;
+    const VARIANT_ALSO_NEGOTIATES = 506;
+    const INSUFFICIENT_STORAGE = 507;
+    const LOOP_DETECTED = 508;
+    const NETWORK_AUTHENTICATION_REQUIRED = 511;
+
     /**
      * http状态码与对应短语
      *
      * @var array
      */
-    public $httpReasonPhrase = [
+    protected $httpReasonPhrase = [
         //1xx Informational 请求过程
         100 => 'Continue',
         101 => 'Switching Protocols',
@@ -106,37 +163,56 @@ class Response extends Message implements ResponseInterface
     protected $cookies = [];
 
     /**
+     * cookie默认值
+     *
+     * @var array
+     */
+    protected static $cookieDefaults = [
+        'value' => '',          //cookie值
+        'expires' => 0,         //超时时间
+        'path' => '/',          //cookie作用目录
+        'domain' => '',         //cookie作用域名
+        'hostonly' => null,     //是否是host专属
+        'secure' => false,      //是否https专属
+        'httponly' => false,    //是否只有http可以使用cookie(启用后,JS将无法访问该cookie)
+    ];
+
+    /**
      * @param array $headerData
      * @param $bodyBuffer
      * @return static
      *
      * @see http://php.net/manual/zh/reserved.variables.httpresponseheader.php
      */
-    public static function createFromRequestResult(array $headerData, $bodyBuffer)
+    public static function createFromRequestResult(array $headerData, $bodyBuffer = '')
     {
         list($protocol ,$statusCode, $responsePhrase) = explode(' ', array_shift($headerData), 3);
         $protocol = explode('/',$protocol,2)[1];
 
         $headers = [];
+        $cookies = [];
         foreach ($headerData as $content) {
             list($name, $value) = explode(':', $content, 2);
             if('set-cookie' != $name = strtolower($name)){
                 $headers[$name] = explode(',',trim($value));
             }else{
-                //Todo::解析响应Cookie
-//                $tmp = explode(';',$value);
-//                list($name,$value) = explode('=',array_shift($tmp));
-//                $cookie['name'] = $name;
-//                $cookie['value'] = $value;
-//
-//                foreach($tmp as $item){
-//                    list($key,$value) = explode('=',$item);
-//                    $cookie[trim($key)] = trim($value);
-//                }
+                $tmp = explode(';',$value);
+                list($name,$value) = explode('=',array_shift($tmp));
+                $cookie['value'] = $value;
+
+                foreach($tmp as $item){
+                    list($key,$value) = explode('=',$item);
+                    $cookie[trim($key)] = trim($value);
+                }
+
+                $cookie = array_intersect_key ($cookie,static::$cookieDefaults);
+                $cookies[$name] = array_replace(static::$cookieDefaults,$cookie);
             }
         }
 
-        return new static($statusCode, $headers, Body::createFromString($bodyBuffer), $responsePhrase, $protocol);
+        $response = new static($statusCode, $headers, Body::createFromString($bodyBuffer), $responsePhrase, $protocol);
+
+        return $response->replaceCookie($cookies);
     }
 
     /**
@@ -171,9 +247,9 @@ class Response extends Message implements ResponseInterface
     ){
         $this->code = $code;
         $this->headers = $header;
+        $this->body = $body ? : new Body();
         $this->responsePhrase = $phrase;
         $this->protocolVersion = $protocol;
-        $this->body = $body ? : new Body();
     }
 
     /**
@@ -221,20 +297,30 @@ class Response extends Message implements ResponseInterface
     }
 
     /**
-     * 设置Cookie
-     *
-     * @param string $name          cookie名称
-     * @param string $value         cookie值
-     * @param int $expire           超时时间
-     * @param string $path          cookie作用目录
-     * @param string $domain        cookie作用域名
-     * @param bool $secure          是否https专属
-     * @param bool|true $httponly   是否只有http可以使用cookie(启用后,JS将无法访问该cookie)
+     * @param array $cookies
      * @return $this
      */
-    public function setCookie($name, $value, $expire = 0, $path = '/', $domain = '', $secure = false, $httponly = false)
+    public function replaceCookie(array $cookies)
     {
-        $this->cookies[] = [$name, $value, $expire, $path, $domain , $secure, $httponly];
+        foreach($cookies as $name => $args){
+            $this->setCookie($name,$args);
+        }
+
+        return $this;
+    }
+
+    /**
+     * 设置Cookie
+     *
+     * @return $this
+     */
+    public function setCookie($name, $value)
+    {
+        if (!is_array($value)) {
+            $value = ['value' => (string)$value];
+        }
+
+        $this->cookies[$name] = array_replace(static::$cookieDefaults, $value);
 
         return $this;
     }
@@ -388,40 +474,45 @@ class Response extends Message implements ResponseInterface
     protected function getCookieHeader()
     {
         $result = [];
+        foreach($this->getCookies() as $name => $properties){
+            $cookie = [];
 
-        foreach($this->getCookies() as list($name, $value, $expire, $path, $domain , $secure, $httponly)){
-            $cookie[] = urlencode($name) . '=' . urlencode($value);
+            $cookie[] = urlencode($name) . '=' . urlencode($properties['value']);
 
-            if (isset($domain)) {
-                $cookie[] = 'domain=' . $domain;
+            if (isset($properties['domain'])) {
+                $cookie[] = 'domain=' . $properties['domain'];
             }
 
-            if (isset($path)) {
-                $cookie[] = 'path=' . $path;
+            if (isset($properties['path'])) {
+                $cookie[] = 'path=' . $properties['path'];
             }
 
-            if (isset($expire)) {
-                if (is_string($expire)) {
-                    $timestamp = strtotime($expire);
+            if (isset($properties['expires'])) {
+                if (is_string($properties['expires'])) {
+                    $timestamp = strtotime($properties['expires']);
                 } else {
-                    $timestamp = (int)$expire;
+                    $timestamp = (int)$properties['expires'];
                 }
                 if ($timestamp !== 0) {
                     $cookie[] = 'expires=' . gmdate('D, d-M-Y H:i:s e', $timestamp);
                 }
             }
 
-            if (isset($secure) && $secure) {
+            if (isset($properties['secure']) && $properties['secure']) {
                 $cookie[] = 'secure';
             }
 
-            if (isset($httponly) && $httponly) {
-                $cookie[] = 'hostonly';
+            if (isset($properties['hostonly']) && $properties['hostonly']) {
+                $cookie[] = 'HostOnly';
+            }
+
+            if (isset($properties['httponly']) && $properties['httponly']) {
+                $cookie[] = 'HttpOnly';
             }
 
             $result[] = 'Set-Cookie: '.implode('; ',$cookie);
         }
 
-        return $result ? implode(PHP_EOL,$result).PHP_EOL : '';
+        return implode(PHP_EOL,$result).PHP_EOL;
     }
 }

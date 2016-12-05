@@ -135,8 +135,35 @@ class Request extends Message implements RequestInterface
         $this->body = $body ?: new Body();
         $this->protocolVersion = $protocol;
 
-        /* 初始化请求参数 */
+        $this->registerBodyParsers();
+        $this->initialize();
+    }
 
+    protected function registerBodyParsers()
+    {
+        $this->setBodyParsers('json',function($input){
+            return safe_json_decode($input,true);
+        });
+
+        $this->setBodyParsers('xml',function($input){
+            $backup = libxml_disable_entity_loader(true);
+            $result = simplexml_load_string($input);
+            libxml_disable_entity_loader($backup);
+            return $result;
+        });
+
+        $this->setBodyParsers('x-www-form-urlencoded',function($input){
+            parse_str($input,$data);
+            return $data;
+        });
+
+    }
+
+    /**
+     * 初始化请求参数
+     */
+    protected function initialize()
+    {
         //解析GET与Cookie参数
         parse_str($this->uri->getQuery(),$this->queryParams);
         parse_str(str_replace('; ', '&', $this->getHeaderLine('Cookie')), $this->cookieParams);

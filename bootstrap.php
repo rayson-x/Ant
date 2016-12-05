@@ -4,7 +4,7 @@ include 'vendor/autoload.php';
 $app = new Ant\App(realpath(__DIR__));
 
 /* 注册应用程序中间件 */
-$app->addMiddleware(function (Ant\Http\Request $request,Ant\Http\Response $response){
+$app->addMiddleware(function (Ant\Http\ServerRequest $request,Ant\Http\Response $response){
     // code...
     yield;
 
@@ -23,7 +23,7 @@ $app->addMiddleware(function (Ant\Http\Request $request,Ant\Http\Response $respo
         // 缓存控制
         'Cache-Control' => 'no-cache',
         // 脚本运行时间
-        'X-Run-Time' => (int)((microtime(true) - $_SERVER['REQUEST_TIME_FLOAT']) * 1000).'ms'
+        'X-Run-Time' => (int)((microtime(true) - $request->getServerParam('REQUEST_TIME_FLOAT')) * 1000).'ms'
     ]);
 });
 

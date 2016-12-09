@@ -298,10 +298,12 @@ class Router implements RouterInterface
             ->through($this->getMiddleware($route))
             ->then($this->callRoute($route));
 
-        // 渲染响应结果
-        $result = $res->selectRenderer($type)
-            ->setPackage($result)
-            ->decorate($res);
+        if(!empty($result) && !$result instanceof Response){
+            // 渲染响应结果
+            $result = $res->selectRenderer($type)
+                ->setPackage($result)
+                ->decorate($res);
+        }
 
         return $result;
     }

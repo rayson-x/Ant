@@ -63,6 +63,7 @@ class ServerRequest extends Request implements ServerRequestInterface
         $this->uploadFiles = UploadedFile::parseUploadedFiles($uploadFiles ?: $_FILES);
         $this->body = $body ?: RequestBody::createFromCgi();
 
+        $this->registerBodyParsers();
         $this->initialize();
     }
 

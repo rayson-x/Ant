@@ -14,6 +14,11 @@ function debug()
     die;
 }
 
+function safe_md5($data,$salt = 'Ant')
+{
+    return md5($data.$salt);
+}
+
 function ArraySetIn(&$array,$path,$value)
 {
     if(is_string($path)){

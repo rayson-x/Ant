@@ -410,24 +410,24 @@ class Container implements ContainerInterface,ArrayAccess
         //获取服务实现方式
         $concrete = $this->getConcrete($serviceName);
 
-        $serviceObject = $this->build($concrete,$parameters);
+        $result = $this->build($concrete,$parameters);
 
         //扩展服务
         foreach ($this->getExtenders($serviceName) as $extender) {
-            $returnValue = $extender($serviceObject, $this);
+            $returnValue = $extender($result, $this);
             if(!is_null($returnValue)){
-                $serviceObject = $extender($serviceObject, $this);
+                $result = $extender($result, $this);
             }
         }
 
         //是否保存为全局唯一实例
         if ($this->isShared($serviceName)) {
-            $this->instances[$serviceName] = $serviceObject;
+            $this->instances[$serviceName] = $result;
         }
 
         $this->resolved[$serviceName] = true;
 
-        return $serviceObject;
+        return $result;
     }
 
     /**

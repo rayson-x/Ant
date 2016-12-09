@@ -139,24 +139,26 @@ class Request extends Message implements RequestInterface
         $this->initialize();
     }
 
+    /**
+     * 注册body解析器
+     */
     protected function registerBodyParsers()
     {
-        $this->setBodyParsers('json',function($input){
-            return safe_json_decode($input,true);
-        });
+        $this->bodyParsers['json'] = function($input){
+            return json_decode($input,true);
+        };
 
-        $this->setBodyParsers('xml',function($input){
+        $this->bodyParsers['xml'] = function($input){
             $backup = libxml_disable_entity_loader(true);
             $result = simplexml_load_string($input);
             libxml_disable_entity_loader($backup);
             return $result;
-        });
+        };
 
-        $this->setBodyParsers('x-www-form-urlencoded',function($input){
+        $this->bodyParsers['x-www-form-urlencoded'] = function($input){
             parse_str($input,$data);
             return $data;
-        });
-
+        };
     }
 
     /**
@@ -571,7 +573,7 @@ class Request extends Message implements RequestInterface
         //获取请求资源的路径
         $requestScriptName = $this->getScriptName();
         $requestScriptDir = dirname($requestScriptName);
-        $requestUri = $this->getUri()->getPath();
+        $requestUri = $this->uri->getPath();
 
         //获取基础路径
         if (stripos($requestUri, $requestScriptName) === 0) {

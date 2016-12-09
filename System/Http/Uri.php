@@ -49,7 +49,7 @@ class Uri implements UriInterface
      *
      * @var string
      */
-    protected $password = null;
+    protected $pass = null;
 
     /**
      * 请求资源路径
@@ -165,7 +165,7 @@ class Uri implements UriInterface
      */
     public function getUserInfo()
     {
-        return $this->user . ($this->password ? ':' . $this->password : '');
+        return $this->user . ($this->pass ? ':' . $this->pass : '');
     }
 
     /**
@@ -179,7 +179,7 @@ class Uri implements UriInterface
     {
         $clone = clone $this;
         $clone->user = $user;
-        $clone->password = $password;
+        $clone->pass = $password;
 
         return $clone;
     }

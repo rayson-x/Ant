@@ -317,7 +317,7 @@ class Router implements RouterInterface
         // 返回客户端请求的方法,资源,以及资源的返回方式
         return [
             $request->getMethod(),
-            $request->getRequestUri(),
+            $request->getRequestRouteUri(),
             $request->getAcceptType()
         ];
     }

@@ -1,11 +1,11 @@
 <?php
 namespace Ant\Debug;
 
-use Ant\Http\Exception\MethodNotAllowedException;
 use Exception;
 use Ant\Http\Exception\HttpException;
 use Psr\Http\Message\ResponseInterface;
 use Ant\Http\Interfaces\RequestInterface;
+use Ant\Http\Exception\MethodNotAllowedException;
 use Symfony\Component\Debug\Exception\FlattenException;
 use Symfony\Component\Debug\ExceptionHandler as SymfonyExceptionHandler;
 

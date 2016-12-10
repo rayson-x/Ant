@@ -28,7 +28,7 @@ $app->addMiddleware(function (Ant\Http\ServerRequest $request,Ant\Http\Response 
 });
 
 /* 获取路由器 */
-$router = $app['router'];
+$router = $app->router;
 
 /* 注册路由 */
 $router->group(['type' => ['json','xml','html','js']],function(Ant\Routing\Router $router){

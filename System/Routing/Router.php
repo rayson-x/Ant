@@ -275,9 +275,9 @@ class Router implements RouterInterface
         list($method, $pathInfo, $type) = $this->parseIncomingRequest($req);
 
         // 匹配路由
-        if (isset($this->routes[$method . $pathInfo])) {
+        if (isset($this->fastRoute[$method.$pathInfo])) {
             $route = $this->handleFoundRoute(
-                $this->fastRoute[$method . $pathInfo]
+                $this->fastRoute[$method.$pathInfo]
             );
         } else {
             $route = $this->handleDispatcher(

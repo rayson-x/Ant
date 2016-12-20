@@ -1,7 +1,7 @@
 <?php
 include 'vendor/autoload.php';
 
-$app = new Ant\App(realpath(__DIR__));
+$app = new Ant\App(__DIR__);
 
 /* 注册应用程序中间件 */
 $app->addMiddleware(function (Ant\Http\ServerRequest $request,Ant\Http\Response $response){

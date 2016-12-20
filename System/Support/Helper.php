@@ -14,6 +14,17 @@ function debug()
     die;
 }
 
+function runtime()
+{
+    static $time = null;
+    if($time == null){
+        $time = microtime(true);
+        return;
+    }
+
+    var_dump((((int)((microtime(true) - $time) * 10000))/10).'ms');
+}
+
 function safe_md5($data,$salt = '')
 {
     return md5($data.$salt);

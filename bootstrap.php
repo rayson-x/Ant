@@ -35,6 +35,9 @@ $router->group(['type' => ['json','xml','html','js']],function(Ant\Routing\Route
     $router->get('/',function(){
         return "Ant-Framework";
     });
+    $router->get('/test',function(){
+        return ['foo' => 'bar'];
+    });
 });
 
 return $app;

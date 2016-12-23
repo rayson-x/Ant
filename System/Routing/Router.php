@@ -293,19 +293,10 @@ class Router implements RouterInterface
         }
 
         // 调用中间件
-        $result = (new Pipeline)
+        return (new Pipeline)
             ->send($req,$res)
             ->through($this->getMiddleware($route))
             ->then($this->callRoute($route));
-
-        if(!empty($result) && !$result instanceof Response){
-            // 渲染响应结果
-            $result = $res->selectRenderer($type)
-                ->setPackage($result)
-                ->decorate($res);
-        }
-
-        return $result;
     }
 
     /**

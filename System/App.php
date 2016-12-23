@@ -368,7 +368,12 @@ class App extends Container
      */
     protected function handleResult($result)
     {
-        if(!$result instanceof HttpResponse){
+        if(!empty($result) && !$result instanceof HttpResponse){
+            // 渲染响应结果
+            $result = $this['response']->selectRenderer($this['request']->getAcceptType())
+                ->setPackage($result)
+                ->decorate();
+        }elseif(empty($result)){
             $result = $this['response'];
         }
 

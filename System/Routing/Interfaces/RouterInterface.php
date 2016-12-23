@@ -1,8 +1,8 @@
 <?php
 namespace Ant\Routing\Interfaces;
 
-use Ant\Http\Request;
-use Ant\Http\Response;
+use Ant\Http\Interfaces\RequestInterface;
+use Ant\Http\Interfaces\ResponseInterface;
 
 /**
  * 路由器接口类
@@ -32,9 +32,9 @@ Interface RouterInterface
     /**
      * 路由分发
      *
-     * @param Request $request
-     * @param Response $response
-     * @return Response
+     * @param RequestInterface $request
+     * @param ResponseInterface $response
+     * @return ResponseInterface
      */
-    public function dispatch(Request $request, Response $response);
+    public function dispatch(RequestInterface $request, ResponseInterface $response);
 }

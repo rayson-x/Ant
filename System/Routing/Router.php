@@ -1,17 +1,17 @@
 <?php
 namespace Ant\Routing;
 
-use Ant\Http\Request;
-use Ant\Http\Response;
 use FastRoute\Dispatcher;
 use Ant\Middleware\Pipeline;
 use FastRoute\RouteCollector;
 use InvalidArgumentException;
 use Ant\Http\Exception\NotFoundException;
+use Ant\Http\Interfaces\RequestInterface;
+use Ant\Http\Interfaces\ResponseInterface;
 use Ant\Routing\Interfaces\RouterInterface;
 use Ant\Http\Exception\NotAcceptableException;
-use Ant\Http\Exception\MethodNotAllowedException;
 use Ant\Container\Interfaces\ContainerInterface;
+use Ant\Http\Exception\MethodNotAllowedException;
 
 /**
  * Todo::写一版专门兼容Psr的Router
@@ -265,11 +265,11 @@ class Router implements RouterInterface
     }
 
     /**
-     * @param Request $req
-     * @param Response $res
-     * @return mixed|null|\Psr\Http\Message\MessageInterface
+     * @param RequestInterface $req
+     * @param ResponseInterface $res
+     * @return mixed|null|\Psr\Http\Message\ResponseInterface
      */
-    public function dispatch(Request $req, Response $res)
+    public function dispatch(RequestInterface $req, ResponseInterface $res)
     {
         // 获取请求的方法,路由,跟返回类型
         list($method, $pathInfo, $type) = $this->parseIncomingRequest($req);
@@ -302,10 +302,10 @@ class Router implements RouterInterface
     /**
      * 解析请求
      *
-     * @param Request $request
+     * @param RequestInterface $request
      * @return array
      */
-    protected function parseIncomingRequest(Request $request)
+    protected function parseIncomingRequest(RequestInterface $request)
     {
         // 返回客户端请求的方法,资源,以及资源的返回方式
         return [
@@ -411,6 +411,7 @@ class Router implements RouterInterface
     }
 
     /**
+     * Todo::依赖注入
      * 调用基于数组的路由
      *
      * @param $action Route

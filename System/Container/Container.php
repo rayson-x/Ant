@@ -621,9 +621,48 @@ class Container implements ContainerInterface,ArrayAccess
             $func = new ReflectionFunction($callback);
         }
 
-        $parameters = $this->getDependencies($func,array_values($parameters));
+        $parameters = $this->getCallbackDependencies($func,$parameters);
 
         return call_user_func_array($callback,$parameters);
+    }
+
+    /**
+     * @param \ReflectionFunctionAbstract $callback
+     * @param array $primitives
+     * @return array
+     */
+    protected function getCallbackDependencies(\ReflectionFunctionAbstract $callback, array $primitives)
+    {
+        $dependencies = [];
+        foreach($callback->getParameters() as $parameter){
+            if(array_key_exists($parameter->name,$primitives)){
+                // 使用给定的值
+                $dependencies[] = $primitives[$parameter->name];
+                unset($primitives[$parameter->name]);
+            }elseif($class = $parameter->getClass()){
+                // 从参数中查找依赖的对象
+                $dependentClass = '';
+                foreach($primitives as $key => $item){
+                    if($item instanceof $class->name){
+                        $dependentClass = $item;
+                        unset($primitives[$key]);
+                        break;
+                    }
+                }
+
+                if(!$dependentClass){
+                    // 获取依赖的服务实例
+                    $dependentClass = $this->resolveClass($parameter);
+                }
+
+                $dependencies[] = $dependentClass;
+            }else{
+                // 获取参数
+                $dependencies[] = $this->resolveNotClass($parameter);
+            }
+        }
+
+        return $dependencies;
     }
 
     /**

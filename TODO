@@ -10,7 +10,7 @@ TODO::储存 Service ,如mysql,redis,memcache等服务
 TODO::ORM
 
 依赖前两者功能
-TODO::上下文处理,如cookie,session,
+TODO::上下文处理,如cookie,session
 TODO::模板引擎,缓存视图
 TODO::单元测试
 TODO::Console
@@ -18,6 +18,7 @@ TODO::Console
 性能优化
 Todo::让部分框架初始化操作常驻进程
 Todo::用PHP替代nginx等web service,提高性能
-Todo::兼容swoole使用s
+Todo::兼容swoole使用
 
 框架初始化加载时间为12ms~15ms不等,运行应用时间为2ms~5ms,其中每次请求不可避免的Request初始化需要4ms~5ms左右
+ab进行压力测试时,输出hello world为4~5ms一个请求,框架为16~18ms,启动流程为12ms到15ms

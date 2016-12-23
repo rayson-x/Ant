@@ -31,11 +31,11 @@ $app->addMiddleware(function (Ant\Http\ServerRequest $request,Ant\Http\Response 
 $router = $app->router;
 
 /* 注册路由 */
-$router->group(['type' => ['json','xml','html','js']],function(Ant\Routing\Router $router){
+$router->group(['type' => ['json','xml','html','jsonp']],function(Ant\Routing\Router $router){
     $router->get('/',function(){
         return "Ant-Framework";
     });
-    $router->get('/test',function(){
+    $router->get('/test',function(Ant\Http\Request $request, Ant\Http\Response $response){
         return ['foo' => 'bar'];
     });
 });

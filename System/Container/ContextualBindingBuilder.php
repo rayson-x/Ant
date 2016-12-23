@@ -1,7 +1,8 @@
 <?php
 namespace Ant\Container;
 
-class ContextualBindingBuilder{
+class ContextualBindingBuilder
+{
     /**
      * @var Container
      */

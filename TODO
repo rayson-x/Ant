@@ -1,19 +1,21 @@
 基础功能
 Todo::更灵活的路由,对RESTful支持更完善
-TODO::Config类
-TODO::日志功能 , psr-3 引入或自己开发
-TODO::验证类
-TODO::字符处理,数组处理类
+Todo::Config类
+Todo::日志功能 , psr-3 引入或自己开发
+Todo::验证类
+Todo::字符处理,数组处理类
 
 重要功能
-TODO::储存 Service ,如mysql,redis,memcache等服务
-TODO::ORM
+Todo::储存 Service ,如mysql,redis,memcache等服务
+Todo::ORM
+Todo::console支持
+Todo::通过反射自动生成Api测试文档
+Todo::提供请求模拟,方便进行单元测试
+Todo::框架核心文件提高单元测试覆盖率
 
 依赖前两者功能
-TODO::上下文处理,如cookie,session
-TODO::模板引擎,缓存视图
-TODO::单元测试
-TODO::Console
+Todo::上下文处理,如cookie,session
+Todo::模板引擎,缓存视图
 
 性能优化
 Todo::让部分框架初始化操作常驻进程

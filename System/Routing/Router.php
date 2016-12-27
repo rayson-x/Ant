@@ -12,6 +12,8 @@ use Ant\Routing\Interfaces\RouterInterface;
 use Ant\Http\Exception\NotAcceptableException;
 use Ant\Container\Interfaces\ContainerInterface;
 use Ant\Http\Exception\MethodNotAllowedException;
+use Psr\Http\Message\RequestInterface as PsrRequest;
+use Psr\Http\Message\ResponseInterface as PsrResponse;
 
 /**
  * Todo::写一版专门兼容Psr的Router
@@ -411,7 +413,6 @@ class Router implements RouterInterface
     }
 
     /**
-     * Todo::依赖注入
      * 调用基于数组的路由
      *
      * @param $action Route

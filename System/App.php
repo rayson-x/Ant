@@ -7,8 +7,6 @@ use Ant\Middleware\Pipeline;
 use Ant\Container\Container;
 use Ant\Http\Request as HttpRequest;
 use Ant\Http\Response as HttpResponse;
-use Psr\Http\Message\ResponseInterface;
-use Psr\Http\Message\ServerRequestInterface;
 use Ant\Http\Exception\MethodNotAllowedException;
 use Ant\Container\Interfaces\ServiceProviderInterface;
 use Symfony\Component\Debug\Exception\FatalThrowableError;

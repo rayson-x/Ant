@@ -14,6 +14,33 @@ function debug()
     die;
 }
 
+/**
+ * URL安全的字符串base64编码
+ *
+ * @param $string
+ * @return mixed|string
+ */
+function base64UrlEncode($string) {
+    $data = base64_encode($string);
+    $data = str_replace(array('+','/','='),array('-','_',''),$data);
+    return $data;
+}
+
+/**
+ * URL安全的字符串base64解码
+ *
+ * @param $string
+ * @return string
+ */
+function base64UrlDecode($string) {
+    $data = str_replace(array('-','_'),array('+','/'),$string);
+    $mod4 = strlen($data) % 4;
+    if ($mod4) {
+        $data .= substr('====', $mod4);
+    }
+    return base64_decode($data);
+}
+
 function runtime()
 {
     static $time = null;

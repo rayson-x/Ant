@@ -50,7 +50,11 @@ class Arr
      */
     public static function setIn(array &$target,$path,$value,$push = false)
     {
-        $last_key = array_pop($path);
+        if(is_string($path)){
+            $path = explode('.',$path);
+        }
+
+        $lastKey = array_pop($path);
 
         foreach ($path as $key) {
             if (!array_key_exists($key, $target)) {
@@ -65,15 +69,15 @@ class Arr
         }
 
         if ($push) {
-            if (!array_key_exists($last_key, $target)) {
-                $target[$last_key] = [];
-            } elseif (!is_array($target[$last_key])) {
+            if (!array_key_exists($lastKey, $target)) {
+                $target[$lastKey] = [];
+            } elseif (!is_array($target[$lastKey])) {
                 throw new \RuntimeException('Cannot use a scalar value as an array');
             }
 
-            array_push($target[$last_key], $value);
+            array_push($target[$lastKey], $value);
         } else {
-            $target[$last_key] = $value;
+            $target[$lastKey] = $value;
         }
     }
 
@@ -154,6 +158,31 @@ class Arr
         foreach($elements as $item){
             if(array_key_exists($item,$array)){
                 $array[$item] = $func($array[$item]);
+            }
+        }
+
+        return $array;
+    }
+
+    /**
+     * 将数组中的每一个元素通过递归回调一次
+     *
+     * @param array $array      要被回调的数组
+     * @param callable $call    回调函数
+     * @param int $depth        递归深度
+     * @return array
+     */
+    public static function recursiveCall(array $array, callable $call, $depth = 512)
+    {
+        if($depth-- <= 0){
+            return $array;
+        }
+
+        foreach($array as $key => $value){
+            if(is_array($value)){
+                $array[$key] = static::recursiveCall($value, $call, $depth);
+            }else{
+                $array[$key] = call_user_func($call,$value);
             }
         }
 

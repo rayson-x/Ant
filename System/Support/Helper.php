@@ -1,5 +1,4 @@
 <?php
-
 use Ant\App;
 use Ant\Support\Arr;
 
@@ -52,17 +51,13 @@ function runtime()
     var_dump((((int)((microtime(true) - $time) * 10000))/10).'ms');
 }
 
-function safe_md5($data,$salt = '')
+function safeMd5($data,$salt = '')
 {
     return md5($data.$salt);
 }
 
-function ArraySetIn(&$array,$path,$value)
+function setIn(&$array,$path,$value)
 {
-    if(is_string($path)){
-        $path = explode('.',$path);
-    }
-
     Arr::setIn($array,$path,$value);
 }
 
@@ -90,11 +85,6 @@ function body($key = null)
     return container('request')->getBodyParam($key);
 }
 
-function cookie($key = null)
-{
-    return container('request')->cookie($key);
-}
-
 /**
  * 保证json编码不会出错
  * @param $value
@@ -102,7 +92,7 @@ function cookie($key = null)
  * @param int $depth
  * @return string
  */
-function safe_json_encode($value, $options = 0, $depth = 512)
+function safeJsonEncode($value, $options = 0, $depth = 512)
 {
     $value = json_encode($value, $options, $depth);
 
@@ -121,7 +111,7 @@ function safe_json_encode($value, $options = 0, $depth = 512)
  * @param int $options
  * @return mixed
  */
-function safe_json_decode($json, $assoc = false, $depth = 512, $options = 0)
+function safeJsonDecode($json, $assoc = false, $depth = 512, $options = 0)
 {
     $value = json_decode($json, $assoc, $depth, $options);
 

@@ -12,7 +12,7 @@ class Collection implements ArrayAccess, Countable, IteratorAggregate
 
     public function __construct($items = [])
     {
-        $items = is_array($items)? $items :func_get_args();
+        $items = is_array($items) ? $items : func_get_args();
         $this->replace($items);
     }
 

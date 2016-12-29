@@ -1,8 +1,8 @@
 <?php
 namespace Ant\Debug;
 
-use Ant\Http\Interfaces\MessageInterface;
 use Exception;
+use Ant\Http\Response;
 use Ant\Http\Exception\HttpException;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
@@ -69,15 +69,15 @@ class ExceptionHandle
     {
         if(
             !method_exists($req,'getAcceptType')
-            || !$res instanceof MessageInterface
+            || !$res instanceof Response
             || 'html' == $type = $req->getAcceptType()
         ) {
             return false;
         }
 
         try{
-            return $res->selectRenderer($type)
-                ->setPackage([
+            return $res->setType($type)
+                ->setContent([
                     'code'      =>  $e->getCode(),
                     'message'   =>  $debug ? $e->getMessage() : 'error'
                 ])

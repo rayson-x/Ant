@@ -6,8 +6,6 @@ use Ant\Middleware\Pipeline;
 use FastRoute\RouteCollector;
 use InvalidArgumentException;
 use Ant\Http\Exception\NotFoundException;
-use Ant\Http\Interfaces\RequestInterface;
-use Ant\Http\Interfaces\ResponseInterface;
 use Ant\Routing\Interfaces\RouterInterface;
 use Ant\Http\Exception\NotAcceptableException;
 use Ant\Container\Interfaces\ContainerInterface;
@@ -17,6 +15,8 @@ use Psr\Http\Message\ResponseInterface as PsrResponse;
 
 /**
  * Todo::写一版专门兼容Psr的Router
+ * Todo::创建资源
+ * Todo::绑定控制器?
  *
  * Class Routing
  * @package Ant\Routing
@@ -267,12 +267,14 @@ class Router implements RouterInterface
     }
 
     /**
-     * @param RequestInterface $req
-     * @param ResponseInterface $res
-     * @return mixed|null|\Psr\Http\Message\ResponseInterface
+     * @param PsrRequest $req
+     * @param PsrResponse $res
+     * @return mixed|PsrResponse
      */
-    public function dispatch(RequestInterface $req, ResponseInterface $res)
+    public function dispatch(PsrRequest $req, PsrResponse $res)
     {
+        // Todo::选择性加载
+
         // 获取请求的方法,路由,跟返回类型
         list($method, $pathInfo, $type) = $this->parseIncomingRequest($req);
 
@@ -302,19 +304,54 @@ class Router implements RouterInterface
     }
 
     /**
-     * 解析请求
+     * 解析请求,返回客户端请求的方法,资源,以及资源的返回方式
      *
-     * @param RequestInterface $request
+     * @param PsrRequest $request
      * @return array
      */
-    protected function parseIncomingRequest(RequestInterface $request)
+    protected function parseIncomingRequest(PsrRequest $request)
     {
-        // 返回客户端请求的方法,资源,以及资源的返回方式
+        if($request instanceof \Ant\Http\Interfaces\RequestInterface) {
+            return [
+                $request->getMethod(),
+                $request->getRequestRouteUri(),
+                $request->getAcceptType()
+            ];
+        }
+
         return [
             $request->getMethod(),
-            $request->getRequestRouteUri(),
-            $request->getAcceptType()
+            $request->getUri()->getPath(),
+            $this->getAccept($request)
         ];
+    }
+
+    /**
+     * 获取客户端接收类型,默认为text
+     *
+     * @param PsrRequest $request
+     * @return string
+     */
+    protected function getAccept(PsrRequest $request)
+    {
+        $acceptTypes = [
+            'text/javascript'       =>  'jsonp',
+            'application/javascript'=>  'jsonp',
+            'application/json'      =>  'json',
+            'text/json'             =>  'json',
+            'text/xml'              =>  'xml',
+            'application/xml'       =>  'xml',
+            'text/html'             =>  'text',
+        ];
+
+        foreach($request->getHeader('accept') as $type){
+            if(array_key_exists($type,$acceptTypes)){
+                return $acceptTypes[$type];
+                break;
+            }
+        }
+
+        return 'text';
     }
 
     /**

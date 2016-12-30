@@ -8,36 +8,11 @@ use Ant\Support\Arr;
 function debug()
 {
     echo "<pre>";
-    var_dump(...func_get_args());
+    if($args = func_get_args()){
+        call_user_func_array('var_dump',$args);
+    }
     echo "</pre>";
     die;
-}
-
-/**
- * URL安全的字符串base64编码
- *
- * @param $string
- * @return mixed|string
- */
-function base64UrlEncode($string) {
-    $data = base64_encode($string);
-    $data = str_replace(array('+','/','='),array('-','_',''),$data);
-    return $data;
-}
-
-/**
- * URL安全的字符串base64解码
- *
- * @param $string
- * @return string
- */
-function base64UrlDecode($string) {
-    $data = str_replace(array('-','_'),array('+','/'),$string);
-    $mod4 = strlen($data) % 4;
-    if ($mod4) {
-        $data .= substr('====', $mod4);
-    }
-    return base64_decode($data);
 }
 
 function runtime()
@@ -106,12 +81,12 @@ function safeJsonEncode($value, $options = 0, $depth = 512)
 /**
  * 保证json解码不会出错
  * @param $json
- * @param bool|false $assoc
+ * @param bool|true $assoc
  * @param int $depth
  * @param int $options
  * @return mixed
  */
-function safeJsonDecode($json, $assoc = false, $depth = 512, $options = 0)
+function safeJsonDecode($json, $assoc = true, $depth = 512, $options = 0)
 {
     $value = json_decode($json, $assoc, $depth, $options);
 
@@ -123,18 +98,24 @@ function safeJsonDecode($json, $assoc = false, $depth = 512, $options = 0)
 }
 
 /**
- * 检查指定字符串是否包含另一个字符串
- * @param $haystack
- * @param $needles
- * @return bool
+ * 将输入的数字转换成Excel对应的字母
+ *
+ * @param $num
+ * @return string
  */
-function contains($haystack, $needles)
+function numToLetter($num)
 {
-    foreach ((array) $needles as $needle) {
-        if ($needle != '' && mb_strpos($haystack, $needle) !== false) {
-            return true;
-        }
-    }
+    static $map = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z'];
 
-    return false;
+    if($num <= 26){
+        //26个字母以内
+        return $map[$num - 1];
+    }else{
+        //之前的
+        $a = ceil($num / 26) - 1;
+        //最后一位
+        $b = ($num % 26 == 0) ? 25 : $num % 26 - 1;
+
+        return numToLetter($a).$map[$b];
+    }
 }

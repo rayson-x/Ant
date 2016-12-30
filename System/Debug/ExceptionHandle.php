@@ -32,8 +32,6 @@ class ExceptionHandle
         // 处理异常
         $handler = new SymfonyExceptionHandler($debug);
 
-        $headers = $fe->getHeaders();
-
         // 设置响应码
         $response->withStatus($fe->getStatusCode());
 
@@ -92,7 +90,7 @@ class ExceptionHandle
     }
 
     /**
-     * 获取响应内容.
+     * 装饰错误信息.
      *
      * @param  string  $content
      * @param  string  $css

@@ -171,7 +171,7 @@ class App extends Container
         $handle = $this->make('debug');
         $response = $response->withBody(new Body());
 
-        return $handle->render($exception,$request,$response,false);
+        return $handle->render($exception,$request,$response,true);
     }
 
     /**
@@ -365,11 +365,23 @@ class App extends Container
                 }
 
                 $name = implode('-',array_map('ucfirst',explode('-',$name)));
-                header("{$name} :{$value}");
+                header("{$name}: {$value}");
             }
 
-            foreach($response->getCookies() as list($name, $value, $expire, $path, $domain , $secure, $httponly)){
-                setcookie($name, $value, $expire, $path, $domain , $secure, $httponly);
+            foreach($response->getCookies() as $cookie){
+                if(!is_int($cookie['expires'])){
+                    $cookie['expires'] = (new \DateTime($cookie['expires']))->getTimestamp();
+                }
+
+                setcookie(
+                    $cookie['name'],
+                    $cookie['value'],
+                    $cookie['expires'],
+                    $cookie['path'],
+                    $cookie['domain'],
+                    $cookie['secure'],
+                    $cookie['httponly']
+                );
             }
         }
 

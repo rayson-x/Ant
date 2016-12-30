@@ -29,19 +29,20 @@ class ExceptionHandle
             $fe = FlattenException::create($exception);
         }
 
+        // 处理异常
         $handler = new SymfonyExceptionHandler($debug);
 
         $headers = $fe->getHeaders();
 
-        if($debug){
-            $headers = array_merge($headers,$this->getExceptionInfo($exception));
-        }
+        // 设置响应码
+        $response->withStatus($fe->getStatusCode());
 
+        // 添加响应头
+        $headers = $fe->getHeaders();
+        $debug && $headers += $this->getExceptionInfo($exception);
         foreach($headers as $name => $value){
             $response->withAddedHeader($name,$value);
         }
-
-        $response->withStatus($fe->getStatusCode());
 
         if(!$result = $this->tryResponseClientAcceptType($exception,$request,$response,$debug)){
             // 无法返回客户端想要的类型时,默认返回html格式

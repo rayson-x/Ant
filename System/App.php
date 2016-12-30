@@ -49,21 +49,6 @@ class App extends Container
     protected $basePath = '';
 
     /**
-     * 支持的http请求方式,如果不在下列方法内会抛出异常
-     *
-     * @var array
-     */
-    protected $methods = [
-        'GET',             // 请求资源
-        'PUT',             // 创建资源
-        'POST',            // 创建或者完整的更新了资源
-        'DELETE',          // 删除资源
-        'HEAD',            // 只获取某个资源的头部信息
-        'PATCH',           // 局部更新资源
-        'OPTIONS'          // 获取资源支持的HTTP方法
-    ];
-
-    /**
      * App constructor.
      *
      * @param string $path 项目路径
@@ -142,8 +127,9 @@ class App extends Container
         });
 
         register_shutdown_function(function () {
-            if (!is_null($error = error_get_last()) &&
-                in_array($error['type'],[E_ERROR, E_CORE_ERROR, E_COMPILE_ERROR, E_PARSE])
+            if (
+                !is_null($error = error_get_last())
+                && in_array($error['type'],[E_ERROR, E_CORE_ERROR, E_COMPILE_ERROR, E_PARSE])
             ){
                 throw new FatalErrorException(
                     $error['message'], $error['type'], 0, $error['file'], $error['line']
@@ -185,7 +171,7 @@ class App extends Container
         $handle = $this->make('debug');
         $response = $response->withBody(new Body());
 
-        return $handle->render($exception,$request,$response,true);
+        return $handle->render($exception,$request,$response,false);
     }
 
     /**
@@ -291,7 +277,6 @@ class App extends Container
     protected function process($request,$response)
     {
         try{
-            $this->filterMethod($request);
             $result = $this->sendThroughPipeline([$request,$response],$this->middleware,function(){
                 return $this->router->dispatch(...func_get_args());
             });
@@ -302,23 +287,6 @@ class App extends Container
         }
 
         return $result;
-    }
-
-    /**
-     * 过滤非法请求方式
-     *
-     * @param HttpRequest $request
-     */
-    protected function filterMethod(HttpRequest $request)
-    {
-        $method = strtoupper($request->getMethod());
-
-        if(!in_array($method,$this->methods)){
-            throw new MethodNotAllowedException($this->methods,sprintf(
-                'Unsupported HTTP method "%s" provided',
-                $method
-            ));
-        }
     }
 
     /**
@@ -368,9 +336,7 @@ class App extends Container
     {
         if(!empty($result) && !$result instanceof HttpResponse){
             // 渲染响应结果
-            $result = $this['response']->selectRenderer($this['request']->getAcceptType())
-                ->setPackage($result)
-                ->decorate();
+            $result = $this['response']->setContent($result)->decorate();
         }elseif(empty($result)){
             $result = $this['response'];
         }

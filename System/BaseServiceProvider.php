@@ -28,21 +28,21 @@ class BaseServiceProvider implements ServiceProviderInterface
         /**
          * 注册 Http Request 处理类
          */
-        $container->singleton('request',function(){
+        $container->singleton('request',function() {
             return new ServerRequest;
         });
 
         /**
          * 注册 Http Response 类
          */
-        $container->singleton('response',function(){
-            return (new Response())->keepImmutability(false);
+        $container->singleton('response',function() {
+            return Response::prepare($this['request']);
         });
 
         /**
          * 注册 Ant Router 类
          */
-        $container->singleton('router',function(){
+        $container->singleton('router',function() {
             return new Router($this);
         });
 

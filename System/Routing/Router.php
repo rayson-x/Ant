@@ -67,6 +67,21 @@ class Router implements RouterInterface
     protected $middleware = [];
 
     /**
+     * 支持的http请求方式,如果不在下列方法内会抛出异常
+     *
+     * @var array
+     */
+    protected $methods = [
+        'GET',             // 请求资源
+        'PUT',             // 创建资源
+        'POST',            // 创建或者完整的更新了资源
+        'DELETE',          // 删除资源
+        'HEAD',            // 只获取某个资源的头部信息
+        'PATCH',           // 局部更新资源
+        'OPTIONS'          // 获取资源支持的HTTP方法
+    ];
+
+    /**
      * Router constructor.
      *
      * @param ContainerInterface $container
@@ -278,6 +293,9 @@ class Router implements RouterInterface
         // 获取请求的方法,路由,跟返回类型
         list($method, $pathInfo, $type) = $this->parseIncomingRequest($req);
 
+        // 过滤非法Http动词
+        $this->filterMethod($method);
+
         // 匹配路由
         if (isset($this->fastRoute[$method.$pathInfo])) {
             $route = $this->handleFoundRoute(
@@ -352,6 +370,21 @@ class Router implements RouterInterface
         }
 
         return 'text';
+    }
+
+    /**
+     * 过滤非法请求方式
+     *
+     * @param $method
+     */
+    protected function filterMethod($method)
+    {
+        if(!in_array($method,$this->methods)){
+            throw new MethodNotAllowedException($this->methods,sprintf(
+                'Unsupported HTTP method "%s" provided',
+                $method
+            ));
+        }
     }
 
     /**

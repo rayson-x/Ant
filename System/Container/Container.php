@@ -12,6 +12,7 @@ use Ant\Container\Interfaces\ServiceProviderInterface;
 
 /**
  * 这个是参考Laravel的服务容器进行的开发,相当于laravel的服务容器删减版
+ * Todo::服务获取一次后立刻销毁
  *
  * Class Container
  * @package Ant

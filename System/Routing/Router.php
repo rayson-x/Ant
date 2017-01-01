@@ -288,7 +288,8 @@ class Router implements RouterInterface
      */
     public function dispatch(PsrRequest $req, PsrResponse $res)
     {
-        // Todo::选择性加载
+        // Todo::选择性加载,针对Cgi模式,Cli模式下默认全部加载
+        // Todo::处理Options请求
 
         // 获取请求的方法,路由,跟返回类型
         list($method, $pathInfo, $type) = $this->parseIncomingRequest($req);

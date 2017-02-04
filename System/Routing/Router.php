@@ -14,7 +14,6 @@ use Psr\Http\Message\RequestInterface as PsrRequest;
 use Psr\Http\Message\ResponseInterface as PsrResponse;
 
 /**
- * Todo::写一版专门兼容Psr的Router
  * Todo::创建资源
  * Todo::绑定控制器?
  *
@@ -292,21 +291,12 @@ class Router implements RouterInterface
         // Todo::处理Options请求
 
         // 获取请求的方法,路由,跟返回类型
-        list($method, $pathInfo, $type) = $this->parseIncomingRequest($req);
+        list($method, $uri, $type) = $this->parseIncomingRequest($req);
 
         // 过滤非法Http动词
         $this->filterMethod($method);
 
-        // 匹配路由
-        if (isset($this->fastRoute[$method.$pathInfo])) {
-            $route = $this->handleFoundRoute(
-                $this->fastRoute[$method.$pathInfo]
-            );
-        } else {
-            $route = $this->handleDispatcher(
-                $this->createDispatcher()->dispatch($method, $pathInfo)
-            );
-        }
+        $route = $this->matching($method, $uri);
 
         // 请求的类型是否能够响应
         if(!in_array($type,$route->getResponseType())){
@@ -386,6 +376,26 @@ class Router implements RouterInterface
                 $method
             ));
         }
+    }
+
+    /**
+     * 匹配路由
+     *
+     * @param string $method
+     * @param string $uri
+     * @return Route
+     */
+    protected function matching($method,$uri)
+    {
+        if (isset($this->fastRoute[$method.$uri])) {
+            return $this->handleFoundRoute(
+                $this->fastRoute[$method.$uri]
+            );
+        }
+
+        return $this->handleDispatcher(
+            $this->createDispatcher()->dispatch($method, $uri)
+        );
     }
 
     /**

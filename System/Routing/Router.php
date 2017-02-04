@@ -420,11 +420,9 @@ class Router implements RouterInterface
             case Dispatcher::NOT_FOUND:
                 // 抛出404异常
                 throw new NotFoundException;
-
             case Dispatcher::METHOD_NOT_ALLOWED:
                 // 抛出405异常,同时响应客户端资源支持的所有 HTTP 方法
                 throw new MethodNotAllowedException($routeInfo[1]);
-
             case Dispatcher::FOUND:
                 // 匹配成功
                 return $this->handleFoundRoute($routeInfo[1],$routeInfo[2]);

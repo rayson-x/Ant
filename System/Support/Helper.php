@@ -110,12 +110,12 @@ function numToLetter($num)
     if($num <= 26){
         //26个字母以内
         return $map[$num - 1];
-    }else{
-        //之前的
-        $a = ceil($num / 26) - 1;
-        //最后一位
-        $b = ($num % 26 == 0) ? 25 : $num % 26 - 1;
-
-        return numToLetter($a).$map[$b];
     }
+
+    //之前的
+    $a = ceil($num / 26) - 1;
+    //最后一位
+    $b = ($num % 26 == 0) ? 25 : $num % 26 - 1;
+
+    return numToLetter($a).$map[$b];
 }

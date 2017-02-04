@@ -296,7 +296,7 @@ class App extends Container
      */
     protected function sendThroughPipeline(array $args,\Closure $then)
     {
-        if(count($this->middleware) > 0){
+        if(count($this->middleware) > 0) {
             return (new Pipeline)
                 ->send(...$args)
                 ->through($this->middleware)

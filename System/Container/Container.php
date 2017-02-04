@@ -635,23 +635,23 @@ class Container implements ContainerInterface,ArrayAccess
     protected function getCallbackDependencies(\ReflectionFunctionAbstract $callback, array $primitives)
     {
         $dependencies = [];
-        foreach($callback->getParameters() as $parameter){
-            if(array_key_exists($parameter->name,$primitives)){
+        foreach($callback->getParameters() as $parameter) {
+            if(array_key_exists($parameter->name,$primitives)) {
                 // 使用给定的值
                 $dependencies[] = $primitives[$parameter->name];
                 unset($primitives[$parameter->name]);
-            }elseif($class = $parameter->getClass()){
+            }elseif($class = $parameter->getClass()) {
                 // 从参数中查找依赖的对象
                 $dependentClass = null;
-                foreach($primitives as $key => $item){
-                    if($item instanceof $class->name){
+                foreach($primitives as $key => $item) {
+                    if($item instanceof $class->name) {
                         $dependentClass = $item;
                         unset($primitives[$key]);
                         break;
                     }
                 }
 
-                if(!$dependentClass){
+                if(!$dependentClass) {
                     // 获取依赖的服务实例
                     $dependentClass = $this->resolveClass($parameter);
                 }

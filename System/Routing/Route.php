@@ -249,7 +249,7 @@ class Route implements RouteInterface
      */
     public function setArguments(array $arguments)
     {
-        foreach($arguments as $name => $value){
+        foreach($arguments as $name => $value) {
             $this->arguments[$name] = $value;
         }
 

@@ -60,7 +60,7 @@ class Route implements RouteInterface
      * @param $action
      * @param array $groupAttributes
      */
-    public function __construct($method,$uri,$action,array $groupAttributes = [])
+    public function __construct($method, $uri, $action, array $groupAttributes = [])
     {
         $action = $this->parseAction($action);
         $this->groupAttributes = $groupAttributes;
@@ -249,7 +249,7 @@ class Route implements RouteInterface
      */
     public function setArguments(array $arguments)
     {
-        foreach($arguments as $name => $value){
+        foreach($arguments as $name => $value) {
             $this->arguments[$name] = $value;
         }
 

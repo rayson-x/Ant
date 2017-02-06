@@ -20,14 +20,15 @@ class ExceptionHandle
      * @param ResponseInterface $response
      * @return ResponseInterface
      */
-    public function render(Exception $exception, RequestInterface $request,ResponseInterface $response, $debug = true)
-    {
-        if($exception instanceof HttpException){
-            // http异常始终返回错误信息
-            $fe = FlattenException::create($exception,$exception->getStatusCode(),$exception->getHeaders());
-        }else{
-            $fe = FlattenException::create($exception);
-        }
+    public function render(
+        Exception $exception,
+        RequestInterface $request,
+        ResponseInterface $response,
+        $debug = false
+    ) {
+        $fe = (!$exception instanceof HttpException)
+            ? FlattenException::create($exception)
+            : FlattenException::create($exception,$exception->getStatusCode(),$exception->getHeaders());
 
         // 处理异常
         $handler = new SymfonyExceptionHandler($debug);

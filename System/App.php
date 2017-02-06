@@ -2,12 +2,11 @@
 namespace Ant;
 
 use Ant\Http\Body;
+use Ant\Http\Request;
+use Ant\Http\Response;
 use Ant\Traits\Singleton;
 use Ant\Middleware\Pipeline;
 use Ant\Container\Container;
-use Ant\Http\Request as HttpRequest;
-use Ant\Http\Response as HttpResponse;
-use Ant\Http\Exception\MethodNotAllowedException;
 use Ant\Container\Interfaces\ServiceProviderInterface;
 use Symfony\Component\Debug\Exception\FatalThrowableError;
 use Symfony\Component\Debug\Exception\FatalErrorException;
@@ -19,7 +18,6 @@ use Symfony\Component\Debug\Exception\FatalErrorException;
 class App extends Container
 {
     use Singleton;
-
     /**
      * 加载的中间件
      *
@@ -146,11 +144,11 @@ class App extends Container
      * 处理未捕获异常
      *
      * @param $exception
-     * @param HttpRequest|null $request
-     * @param HttpResponse|null $response
-     * @return HttpResponse
+     * @param Request|null $request
+     * @param Response|null $response
+     * @return Response
      */
-    protected function handleUncaughtException($exception,HttpRequest $request = null,HttpResponse $response = null)
+    protected function handleUncaughtException($exception,Request $request = null,Response $response = null)
     {
         // 此处是为了兼容PHP7
         // PHP7中错误可以跟异常都实现了Throwable接口
@@ -160,11 +158,11 @@ class App extends Container
             $exception = new FatalThrowableError($exception);
         }
 
-        if(is_null($request)){
+        if(!$request instanceof Request){
             $request = $this['request'];
         }
 
-        if(is_null($response)){
+        if(!$response instanceof Response){
             $response = $this['response'];
         }
 
@@ -277,7 +275,7 @@ class App extends Container
     protected function process($request,$response)
     {
         try{
-            $result = $this->sendThroughPipeline([$request,$response],$this->middleware,function(){
+            $result = $this->sendThroughPipeline([$request,$response],function(){
                 return $this->router->dispatch(...func_get_args());
             });
         }catch(\Exception $exception){
@@ -293,16 +291,15 @@ class App extends Container
      * 发送请求与响应通过中间件到达回调函数
      *
      * @param array $args
-     * @param array $handlers
      * @param \Closure $then
      * @return mixed
      */
-    protected function sendThroughPipeline(array $args,array $handlers,\Closure $then)
+    protected function sendThroughPipeline(array $args,\Closure $then)
     {
-        if(count($handlers) > 0){
+        if(count($this->middleware) > 0) {
             return (new Pipeline)
                 ->send(...$args)
-                ->through($handlers)
+                ->through($this->middleware)
                 ->then($then);
         }
 
@@ -330,11 +327,11 @@ class App extends Container
      * 解析响应结果
      *
      * @param $result
-     * @return HttpResponse
+     * @return Response
      */
     protected function handleResult($result)
     {
-        if(!empty($result) && !$result instanceof HttpResponse){
+        if(!empty($result) && !$result instanceof Response){
             // 渲染响应结果
             $result = $this['response']->setContent($result)->decorate();
         }elseif(empty($result)){
@@ -349,7 +346,7 @@ class App extends Container
      *
      * @return $this
      */
-    public function sendHeader(HttpResponse $response)
+    public function sendHeader(Response $response)
     {
         if(!headers_sent()){
             header(sprintf(
@@ -393,7 +390,7 @@ class App extends Container
      *
      * @return $this
      */
-    public function sendContent(HttpResponse $response)
+    public function sendContent(Response $response)
     {
         if(!$response->isEmpty()){
             echo (string) $response->getBody();
@@ -416,7 +413,8 @@ class App extends Container
         $level = count($status);
         $flags = PHP_OUTPUT_HANDLER_REMOVABLE | ($flush ? PHP_OUTPUT_HANDLER_FLUSHABLE : PHP_OUTPUT_HANDLER_CLEANABLE);
 
-        while ($level-- > $targetLevel
+        while (
+            $level-- > $targetLevel
             && ($s = $status[$level])
             && (!isset($s['del']) ? !isset($s['flags']) || $flags === ($s['flags'] & $flags) : $s['del'])
         ){

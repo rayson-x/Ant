@@ -1,12 +1,9 @@
 <?php
 namespace Ant;
 
-use Ant\Http\Request;
-use Ant\Http\RequestBody;
-use Ant\Http\Response;
 use Ant\Http\Uri;
+use Ant\Http\Response;
 use Ant\Routing\Router;
-use Ant\Http\Environment;
 use Ant\Http\ServerRequest;
 use Ant\Container\Interfaces\ContainerInterface;
 use Ant\Container\Interfaces\ServiceProviderInterface;

@@ -4,7 +4,7 @@ namespace Ant\Support;
 class Str
 {
     /**
-     * URL°²È«µÄ×Ö·û´®base64±àÂë
+     * Urlå®‰å…¨çš„Base64ç¼–ç 
      *
      * @param $string
      * @return mixed|string
@@ -17,7 +17,7 @@ class Str
     }
 
     /**
-     * URL°²È«µÄ×Ö·û´®base64½âÂë
+     * Urlå®‰å…¨çš„Base64è§£ç 
      *
      * @param $string
      * @return string
@@ -34,7 +34,8 @@ class Str
 
 
     /**
-     * ¼ì²éÖ¸¶¨×Ö·û´®ÊÇ·ñ°üº¬ÁíÒ»¸ö×Ö·û´®
+     * æ£€æŸ¥å­—ç¬¦ä¸²ä¸­æ˜¯å¦åŒ…å«æŒ‡å®šå­—ç¬¦
+     *
      * @param $haystack
      * @param $needles
      * @return bool

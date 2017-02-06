@@ -14,7 +14,6 @@ use Psr\Http\Message\RequestInterface as PsrRequest;
 use Psr\Http\Message\ResponseInterface as PsrResponse;
 
 /**
- * Todo::写一版专门兼容Psr的Router
  * Todo::创建资源
  * Todo::绑定控制器?
  *
@@ -288,24 +287,16 @@ class Router implements RouterInterface
      */
     public function dispatch(PsrRequest $req, PsrResponse $res)
     {
-        // Todo::选择性加载
+        // Todo::选择性加载,针对Cgi模式,Cli模式下默认全部加载
+        // Todo::处理Options请求
 
         // 获取请求的方法,路由,跟返回类型
-        list($method, $pathInfo, $type) = $this->parseIncomingRequest($req);
+        list($method, $uri, $type) = $this->parseIncomingRequest($req);
 
         // 过滤非法Http动词
         $this->filterMethod($method);
 
-        // 匹配路由
-        if (isset($this->fastRoute[$method.$pathInfo])) {
-            $route = $this->handleFoundRoute(
-                $this->fastRoute[$method.$pathInfo]
-            );
-        } else {
-            $route = $this->handleDispatcher(
-                $this->createDispatcher()->dispatch($method, $pathInfo)
-            );
-        }
+        $route = $this->matching($method, $uri);
 
         // 请求的类型是否能够响应
         if(!in_array($type,$route->getResponseType())){
@@ -388,6 +379,26 @@ class Router implements RouterInterface
     }
 
     /**
+     * 匹配路由
+     *
+     * @param string $method
+     * @param string $uri
+     * @return Route
+     */
+    protected function matching($method,$uri)
+    {
+        if (isset($this->fastRoute[$method.$uri])) {
+            return $this->handleFoundRoute(
+                $this->fastRoute[$method.$uri]
+            );
+        }
+
+        return $this->handleDispatcher(
+            $this->createDispatcher()->dispatch($method, $uri)
+        );
+    }
+
+    /**
      * @param Dispatcher $dispatcher
      */
     public function setDispatcher(Dispatcher $dispatcher)
@@ -419,11 +430,9 @@ class Router implements RouterInterface
             case Dispatcher::NOT_FOUND:
                 // 抛出404异常
                 throw new NotFoundException;
-
             case Dispatcher::METHOD_NOT_ALLOWED:
                 // 抛出405异常,同时响应客户端资源支持的所有 HTTP 方法
                 throw new MethodNotAllowedException($routeInfo[1]);
-
             case Dispatcher::FOUND:
                 // 匹配成功
                 return $this->handleFoundRoute($routeInfo[1],$routeInfo[2]);

@@ -628,6 +628,8 @@ class Container implements ContainerInterface,ArrayAccess
     }
 
     /**
+     * 获取回调函数依赖的参数
+     *
      * @param \ReflectionFunctionAbstract $callback
      * @param array $primitives
      * @return array

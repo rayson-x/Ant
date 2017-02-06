@@ -32,7 +32,7 @@ $router = $app->router;
 
 /* 注册路由 */
 $router->group(['type' => ['json','xml','text','jsonp']],function(Ant\Routing\Router $router) {
-    $router->get('/',function(){
+    $router->get('/',function() {
         return "Ant-Framework";
     });
 

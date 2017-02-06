@@ -499,7 +499,7 @@ class Router implements RouterInterface
      */
     protected function callRoute(Route $action)
     {
-        return function()use($action){
+        return function()use($action) {
             $callback = $action->getAction();
             $action->setArguments(func_get_args());
 

@@ -6,6 +6,7 @@
         "nikic/fast-route": "^1.0",
         "monolog/monolog" : "1.21.*",
         "symfony/debug": "~2.8|~3.0",
+        "illuminate/database": "^5.4.*",
         "ant-framework/http":"dev-master",
         "ant-framework/middleware":"^0.1.0"
     },

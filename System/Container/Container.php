@@ -643,8 +643,8 @@ class Container implements ContainerInterface,ArrayAccess
             }elseif($class = $parameter->getClass()){
                 // 从参数中查找依赖的对象
                 $dependentClass = null;
-                foreach($primitives as $key => $item){
-                    if($item instanceof $class->name){
+                foreach($primitives as $key => $item) {
+                    if($item instanceof $class->name) {
                         $dependentClass = $item;
                         unset($primitives[$key]);
                         break;

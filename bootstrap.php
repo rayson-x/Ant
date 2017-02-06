@@ -31,7 +31,7 @@ $app->addMiddleware(function (Ant\Http\ServerRequest $request,Ant\Http\Response 
 $router = $app->router;
 
 /* 注册路由 */
-$router->group(['type' => ['json','xml','text','jsonp']],function(Ant\Routing\Router $router){
+$router->group(['type' => ['json','xml','text','jsonp']],function(Ant\Routing\Router $router) {
     $router->get('/',function(){
         return "Ant-Framework";
     });

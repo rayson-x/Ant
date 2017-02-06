@@ -404,7 +404,7 @@ class Container implements ContainerInterface,ArrayAccess
         //获取服务名称
         $serviceName = $this->getServiceNameFromAlias($serviceName);
 
-        if(isset($this->instances[$serviceName])){
+        if(isset($this->instances[$serviceName])) {
             return $this->instances[$serviceName];
         }
 
@@ -416,8 +416,8 @@ class Container implements ContainerInterface,ArrayAccess
         //扩展服务
         foreach ($this->getExtenders($serviceName) as $extender) {
             $returnValue = $extender($result, $this);
-            if(!is_null($returnValue)){
-                $result = $extender($result, $this);
+            if(!is_null($returnValue)) {
+                $result = $returnValue;
             }
         }
 
@@ -467,13 +467,10 @@ class Container implements ContainerInterface,ArrayAccess
 
         //将生成中的实例入栈
         $this->buildStack[] = $concrete;
-
         //获取构造函数需要参数
         $instanceArgs = $this->getDependencies($construct,$parameters);
-
         //完成,将生成中的实例出栈
         array_pop($this->buildStack);
-
         //返回实例
         return $reflection->newInstanceArgs($instanceArgs);
     }
@@ -568,11 +565,11 @@ class Container implements ContainerInterface,ArrayAccess
             $dependencyClass = $parameter->getClass()->getName();
             if(!is_null($object = $this->getContextualConcrete($dependencyClass))){
                 //优先使用用户提供实例
-                if(is_string($object)){
+                if(is_string($object)) {
                     $object = $this->makeAndSuppressExceptions($object);
                 }
 
-                if($object instanceof $dependencyClass){
+                if($object instanceof $dependencyClass) {
                     return $object;
                 }
             }

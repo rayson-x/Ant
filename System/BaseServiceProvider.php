@@ -1,10 +1,10 @@
 <?php
 namespace Ant;
 
-use Ant\Http\Uri;
 use Ant\Http\Response;
 use Ant\Routing\Router;
 use Ant\Http\ServerRequest;
+use Ant\Support\Collection;
 use Ant\Container\Interfaces\ContainerInterface;
 use Ant\Container\Interfaces\ServiceProviderInterface;
 
@@ -21,6 +21,11 @@ class BaseServiceProvider implements ServiceProviderInterface
          * 注册服务容器
          */
         $container->instance('app',$container);
+
+        /**
+         * 注册 配置信息信息集
+         */
+        $container->instance('config',new Collection());
 
         /**
          * 注册 Http Request 处理类

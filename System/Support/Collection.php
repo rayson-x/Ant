@@ -4,16 +4,18 @@ namespace Ant\Support;
 use Countable;
 use ArrayAccess;
 use ArrayIterator;
+use JsonSerializable;
 use IteratorAggregate;
 
-class Collection implements ArrayAccess, Countable, IteratorAggregate
+class Collection implements ArrayAccess, Countable, IteratorAggregate, JsonSerializable
 {
     protected $items = [];
 
     public function __construct($items = [])
     {
-        $items = is_array($items) ? $items : func_get_args();
-        $this->replace($items);
+        $this->replace(
+            is_array($items) ? $items : func_get_args()
+        );
     }
 
     /**
@@ -52,16 +54,6 @@ class Collection implements ArrayAccess, Countable, IteratorAggregate
     }
 
     /**
-     * 获取集合中的所有数据
-     *
-     * @return array
-     */
-    public function all()
-    {
-        return $this->items;
-    }
-
-    /**
      * 通过key检查数据是否存在于数据集之中
      *
      * @param $key
@@ -91,54 +83,73 @@ class Collection implements ArrayAccess, Countable, IteratorAggregate
     {
         $this->items = [];
     }
-    
+
     /**
-     * ArrayAccess预定义接口,可以将对象以数组的方式使用
+     * 获取集合中的所有数据
      *
-     * @param mixed $offset
-     * @param mixed $value
+     * @return array
      */
-    public function offsetSet($offset, $value)
+    public function toArray()
     {
-        $this->set($offset,$value);
+        return $this->items;
     }
 
     /**
-     * ArrayAccess预定义接口
+     * 转换为JSON数据
      *
-     * @param mixed $offset
+     * @param int $options
+     * @return string
+     */
+    public function toJson($options = 0)
+    {
+        return json_encode($this->jsonSerialize(), $options);
+    }
+
+    /**
+     * @param $name
+     * @param $value
+     */
+    public function __set($name,$value)
+    {
+        $this->set($name,$value);
+    }
+
+    /**
+     * @param $name
      * @return null
      */
-    public function offsetGet($offset)
+    public function __get($name)
     {
-        return $this->get($offset);
+        return $this->get($name);
     }
 
     /**
-     * ArrayAccess预定义接口
-     *
-     * @param mixed $offset
+     * @param $name
      * @return bool
      */
-    public function offsetExists($offset)
+    public function __isset($name)
     {
-        return $this->has($offset);
+        return $this->has($name);
     }
 
     /**
-     * ArrayAccess预定义接口
-     *
-     * @param mixed $offset
+     * @param $name
      */
-    public function offsetUnset($offset)
+    public function __unset($name)
     {
-        $this->remove($offset);
+        $this->remove($name);
     }
 
     /**
-     * Countable预定义接口,获取数据集总数
-     *
-     * @return int
+     * {@inheritDoc}
+     */
+    public function jsonSerialize()
+    {
+        return $this->toArray();
+    }
+
+    /**
+     * {@inheritDoc}
      */
     public function count()
     {
@@ -146,12 +157,42 @@ class Collection implements ArrayAccess, Countable, IteratorAggregate
     }
 
     /**
-     * IteratorAggregate预定义接口,返回外部迭代器
-     *
-     * @return ArrayIterator
+     * {@inheritDoc}
      */
     public function getIterator()
     {
         return new ArrayIterator($this->items);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function offsetSet($offset, $value)
+    {
+        $this->set($offset,$value);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function offsetGet($offset)
+    {
+        return $this->get($offset);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function offsetExists($offset)
+    {
+        return $this->has($offset);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function offsetUnset($offset)
+    {
+        $this->remove($offset);
     }
 }

@@ -148,7 +148,7 @@ class App extends Container
      * @param Response|null $response
      * @return Response
      */
-    protected function handleUncaughtException($exception,Request $request = null,Response $response = null)
+    protected function handleUncaughtException($exception, Request $request = null, Response $response = null)
     {
         // 此处是为了兼容PHP7
         // PHP7中错误可以跟异常都实现了Throwable接口
@@ -158,18 +158,16 @@ class App extends Container
             $exception = new FatalThrowableError($exception);
         }
 
-        if(!$request instanceof Request){
-            $request = $this['request'];
-        }
+        $request = $request ?: $this['request'];
+        $response = $response ?: $this['response'];
 
-        if(!$response instanceof Response){
-            $response = $this['response'];
-        }
-
-        $handle = $this->make('debug');
-        $response = $response->withBody(new Body());
-
-        return $handle->render($exception,$request,$response,true);
+        // 返回异常处理结果
+        return $this['debug']->render(
+            $exception,
+            $request,
+            $response->withBody(new Body()),
+            $this['config']->get('debug',true)
+        );
     }
 
     /**

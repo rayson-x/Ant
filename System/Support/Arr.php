@@ -1,94 +1,255 @@
 <?php
 namespace Ant\Support;
 
+use ArrayAccess;
+
 class Arr
 {
     /**
-     * 从多维数组中获取值
+     * 检查是否为数组
      *
-     * @param array $target
-     * @param $path
-     * @return array|bool
+     * @param $value
+     * @return bool
      */
-    public static function getIn(array $target,$path)
+    public static function accessible($value)
     {
-        foreach((array) $path as $key){
-            if (!array_key_exists($key,$target)) {
-                return false;
-            }
-
-            $target = &$target[$key];
-        }
-
-        return $target;
+        return is_array($value) || $value instanceof ArrayAccess;
     }
 
     /**
-     * 从数组中取出指定的值
+     * 将多维数组进行降维
      *
      * @param $array
-     * @param $keys
      * @return array
      */
-    public static function take($array, $keys)
+    public static function collapse($array)
     {
-        $result = [];
-        foreach($keys as $key){
-            if(array_key_exists($key,$array)){
-                $result[] = $array[$key];
+        $results = [];
+
+        foreach ($array as $values) {
+            if ($values instanceof Collection) {
+                $values = $values->toArray();
+            } elseif (! is_array($values)) {
+                continue;
             }
+
+            $results = array_merge($results, $values);
         }
 
-        return $result;
+        return $results;
     }
 
     /**
-     * @param array $target
+     * @param $array
+     * @param $depth
+     * @return mixed
+     */
+    public static function flatten($array, $depth = INF)
+    {
+        $array = $array instanceof Collection ? $array->toArray() : $array;
+
+        return array_reduce($array, function ($result, $item) use ($depth) {
+            $item = $item instanceof Collection ? $item->toArray() : $item;
+
+            if (! is_array($item)) {
+                return array_merge($result, [$item]);
+            } elseif ($depth === 1) {
+                return array_merge($result, array_values($item));
+            } else {
+                return array_merge($result, static::flatten($item, $depth - 1));
+            }
+        }, []);
+    }
+
+    /**
+     * 检查key是否存在在数组中
+     *
+     * @param array|ArrayAccess $array
+     * @param mixed $key
+     * @return bool
+     */
+    public static function exists($array, $key)
+    {
+        if($array instanceof ArrayAccess) {
+            return $array->offsetExists($key);
+        }
+
+        return array_key_exists($key,$array);
+    }
+
+    /**
+     * 从多维数组中获取值
+     *
+     * @param $array
+     * @param $path
+     * @param null $default
+     * @return mixed
+     */
+    public static function get($array, $path, $default = null)
+    {
+        if (is_null($path)) {
+            return $array;
+        }
+
+        foreach (explode('.',$path) as $segment) {
+            if (static::accessible($array) && static::exists($array, $segment)) {
+                $array = $array[$segment];
+            } else {
+                return $default;
+            }
+        }
+
+        return $array;
+    }
+
+    /**
+     * @param array $array
      * @param $path
      * @param $value
-     * @param bool|false $push
      */
-    public static function setIn(array &$target,$path,$value,$push = false)
+    public static function set(&$array, $path, $value)
     {
-        if(is_string($path)){
+        if (is_string($path)) {
             $path = explode('.',$path);
         }
 
         $lastKey = array_pop($path);
 
         foreach ($path as $key) {
-            if (!array_key_exists($key, $target)) {
-                $target[$key] = [];
+            if (! isset($array[$key]) || ! is_array($array[$key])) {
+                $array[$key] = [];
             }
 
-            $target = &$target[$key];
+            $array = &$array[$key];
+        }
 
-            if (!is_array($target)) {
-                throw new \RuntimeException('Cannot use a scalar value as an array');
+        $array[$lastKey] = $value;
+    }
+
+    /**
+     * @param array $array
+     * @param $path
+     * @param $value
+     */
+    public static function push(&$array, $path, $value)
+    {
+        if (is_string($path)) {
+            $path = explode('.',$path);
+        }
+
+        foreach ($path as $key) {
+            if (! isset($array[$key]) || ! is_array($array[$key])) {
+                $array[$key] = [];
+            }
+
+            $array = &$array[$key];
+        }
+
+        $array[] = $value;
+    }
+
+    /**
+     * 检查key是否存在
+     *
+     * @param $array
+     * @param $keys
+     * @return bool
+     */
+    public static function has($array, $keys)
+    {
+        if (is_null($keys)) {
+            return false;
+        }
+
+        $keys = (array) $keys;
+
+        if (! $array) {
+            return false;
+        }
+
+        if ($keys === []) {
+            return false;
+        }
+
+        foreach ($keys as $key) {
+            $subKeyArray = $array;
+
+            if (static::exists($array, $key)) {
+                continue;
+            }
+
+            foreach (explode('.', $key) as $segment) {
+                if (static::accessible($subKeyArray) && static::exists($subKeyArray, $segment)) {
+                    $subKeyArray = $subKeyArray[$segment];
+                } else {
+                    return false;
+                }
             }
         }
 
-        if ($push) {
-            if (!array_key_exists($lastKey, $target)) {
-                $target[$lastKey] = [];
-            } elseif (!is_array($target[$lastKey])) {
-                throw new \RuntimeException('Cannot use a scalar value as an array');
+        return true;
+    }
+
+    /**
+     * 删除数组中的一个元素
+     *
+     * @param $array
+     * @param $keys
+     */
+    public static function forget(&$array, $keys)
+    {
+        $original = &$array;
+
+        $keys = (array) $keys;
+
+        if (count($keys) === 0) {
+            return;
+        }
+
+        foreach ($keys as $key) {
+            // if the exact key exists in the top-level, remove it
+            if (static::exists($array, $key)) {
+                unset($array[$key]);
+
+                continue;
             }
 
-            array_push($target[$lastKey], $value);
-        } else {
-            $target[$lastKey] = $value;
+            $parts = explode('.', $key);
+
+            // clean up before each pass
+            $array = &$original;
+
+            while (count($parts) > 1) {
+                $part = array_shift($parts);
+
+                if (isset($array[$part]) && is_array($array[$part])) {
+                    $array = &$array[$part];
+                } else {
+                    continue 2;
+                }
+            }
+
+            unset($array[array_shift($parts)]);
         }
     }
 
     /**
-     * @param array $target
-     * @param $path
-     * @param $value
+     * 从数组中取出指定的值
+     *
+     * @param array|ArrayAccess $array
+     * @param array $keys
+     * @return array
      */
-    public static function pushIn(array &$target,$path,$value)
+    public static function take($array, array $keys)
     {
-        static::setIn($target,$path,$value,true);
+        $result = [];
+        foreach($keys as $key) {
+            if(static::exists($array, $key)){
+                $result[] = $array[$key];
+            }
+        }
+
+        return $result;
     }
 
     /**
@@ -123,15 +284,18 @@ class Arr
      */
     public static function checkIllegalKeywords($array,array $keys)
     {
-        $array = is_array($array) ? $array : [];
+        if(!static::accessible($array)){
+            return false;
+        }
+
         foreach($keys as $key){
             if(array_key_exists($key,$array)){
                 // 非法参数
-                throw new \InvalidArgumentException("[$key] is illegal fields");
+                return false;
             }
         }
 
-        return $array;
+        return true;
     }
 
     /**
@@ -150,14 +314,20 @@ class Arr
      *
      * @param array $array
      * @param array $elements
-     * @param callable $func
+     * @param string $func
      * @return array
      */
-    public static function handleElement(array $array,array $elements,callable $func = 'rawurlencode')
+    public static function handleElement(array $array, array $elements, $func = 'rawurlencode')
     {
-        foreach($elements as $item){
-            if(array_key_exists($item,$array)){
-                $array[$item] = $func($array[$item]);
+        if(!is_callable($func)) {
+            throw new \InvalidArgumentException(
+                "\\Ant\\Support\\Arr::handleElement() expects parameter 3 to be a valid callback"
+            );
+        }
+
+        foreach($elements as $key) {
+            if(static::exists($array, $key)) {
+                $array[$key] = $func($array[$key]);
             }
         }
 

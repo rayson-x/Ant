@@ -138,22 +138,24 @@ class Str
      * 转换为大写字母
      *
      * @param $value
+     * @param $encoding
      * @return mixed|string
      */
-    public static function upper($value)
+    public static function upper($value, $encoding = "UTF-8")
     {
-        return mb_strtoupper($value, 'UTF-8');
+        return mb_strtoupper($value, $encoding);
     }
 
     /**
      * 转换为小写字母
      *
      * @param $value
+     * @param $encoding
      * @return mixed|string
      */
-    public static function lower($value)
+    public static function lower($value, $encoding = "UTF-8")
     {
-        return mb_strtolower($value, 'UTF-8');
+        return mb_strtolower($value, $encoding);
     }
 
     /**

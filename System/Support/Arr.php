@@ -2,7 +2,15 @@
 namespace Ant\Support;
 
 use ArrayAccess;
+use RuntimeException;
+use InvalidArgumentException;
 
+/**
+ * Todo 将部分函数移植到验证类中
+ *
+ * Class Arr
+ * @package Ant\Support
+ */
 class Arr
 {
     /**
@@ -17,7 +25,7 @@ class Arr
     }
 
     /**
-     * 将多维数组进行降维
+     * 将数组中的数组依次合并
      *
      * @param $array
      * @return array
@@ -40,6 +48,8 @@ class Arr
     }
 
     /**
+     * 将多维数组进行降维
+     *
      * @param $array
      * @param $depth
      * @return mixed
@@ -103,6 +113,8 @@ class Arr
     }
 
     /**
+     * 设置一个值到指定的位置
+     *
      * @param array $array
      * @param $path
      * @param $value
@@ -127,6 +139,8 @@ class Arr
     }
 
     /**
+     * 将一个指定的值push到设定好的位置
+     *
      * @param array $array
      * @param $path
      * @param $value
@@ -152,26 +166,26 @@ class Arr
      * 检查key是否存在
      *
      * @param $array
-     * @param $keys
+     * @param $path
      * @return bool
      */
-    public static function has($array, $keys)
+    public static function has($array, $path)
     {
-        if (is_null($keys)) {
+        if (is_null($path)) {
             return false;
         }
 
-        $keys = (array) $keys;
+        $path = (array) $path;
 
         if (! $array) {
             return false;
         }
 
-        if ($keys === []) {
+        if ($path === []) {
             return false;
         }
 
-        foreach ($keys as $key) {
+        foreach ($path as $key) {
             $subKeyArray = $array;
 
             if (static::exists($array, $key)) {
@@ -194,20 +208,19 @@ class Arr
      * 删除数组中的一个元素
      *
      * @param $array
-     * @param $keys
+     * @param $path
      */
-    public static function forget(&$array, $keys)
+    public static function forget(&$array, $path)
     {
         $original = &$array;
 
-        $keys = (array) $keys;
+        $path = (array) $path;
 
-        if (count($keys) === 0) {
+        if (count($path) === 0) {
             return;
         }
 
-        foreach ($keys as $key) {
-            // if the exact key exists in the top-level, remove it
+        foreach ($path as $key) {
             if (static::exists($array, $key)) {
                 unset($array[$key]);
 
@@ -216,7 +229,6 @@ class Arr
 
             $parts = explode('.', $key);
 
-            // clean up before each pass
             $array = &$original;
 
             while (count($parts) > 1) {
@@ -234,6 +246,17 @@ class Arr
     }
 
     /**
+     * 分离key跟value
+     *
+     * @param array $array
+     * @return array
+     */
+    public static function detach(array $array)
+    {
+        return [array_keys($array),array_values($array)];
+    }
+
+    /**
      * 从数组中取出指定的值
      *
      * @param array|ArrayAccess $array
@@ -244,7 +267,7 @@ class Arr
     {
         $result = [];
         foreach($keys as $key) {
-            if(static::exists($array, $key)){
+            if(static::exists($array, $key)) {
                 $result[] = $array[$key];
             }
         }
@@ -255,18 +278,21 @@ class Arr
     /**
      * 从数组获取指定数据
      *
-     * @param array $array
+     * @param $array
      * @param $keys
      * @return array
      */
-    public static function getKeywordsFromArray($array,array $keys)
+    public static function getKeywords($array, array $keys)
     {
+        if(!static::accessible($array)) {
+            throw new RuntimeException("parameter 1 must be array");
+        }
+
         $result = [];
-        $array = is_array($array) ? $array : [];
         foreach($keys as $key){
-            if(!array_key_exists($key,$array)){
+            if(!static::exists($array, $key)) {
                 // 缺少必要参数
-                throw new \InvalidArgumentException("{$key} does not exist");
+                throw new RuntimeException("\"{$key}\" does not exist");
             }
 
             $result[$key] = $array[$key];
@@ -285,28 +311,17 @@ class Arr
     public static function checkIllegalKeywords($array,array $keys)
     {
         if(!static::accessible($array)){
-            return false;
+            throw new RuntimeException("parameter 1 must be array");
         }
 
         foreach($keys as $key){
             if(array_key_exists($key,$array)){
                 // 非法参数
-                return false;
+                throw new RuntimeException("\"{$key}\" is an illegal argument");
             }
         }
 
         return true;
-    }
-
-    /**
-     * 分离key跟value
-     *
-     * @param array $array
-     * @return array
-     */
-    public static function detach(array $array)
-    {
-        return [array_keys($array),array_values($array)];
     }
 
     /**
@@ -320,8 +335,8 @@ class Arr
     public static function handleElement(array $array, array $elements, $func = 'rawurlencode')
     {
         if(!is_callable($func)) {
-            throw new \InvalidArgumentException(
-                "\\Ant\\Support\\Arr::handleElement() expects parameter 3 to be a valid callback"
+            throw new InvalidArgumentException(
+                "parameter 3 must be a callable"
             );
         }
 

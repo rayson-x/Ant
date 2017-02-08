@@ -1,5 +1,5 @@
 <?php
-namespace Ant\Traits;
+namespace Ant\Support\Traits;
 
 use Exception;
 

@@ -15,7 +15,7 @@ use Ant\Container\Interfaces\ServiceProviderInterface;
  * Todo::服务获取一次后立刻销毁
  *
  * Class Container
- * @package Ant
+ * @package Ant\Container
  */
 class Container implements ContainerInterface,ArrayAccess
 {

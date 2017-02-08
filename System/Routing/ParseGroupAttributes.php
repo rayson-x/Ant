@@ -1,7 +1,6 @@
 <?php
 namespace Ant\Routing;
 
-
 trait ParseGroupAttributes
 {
     /**

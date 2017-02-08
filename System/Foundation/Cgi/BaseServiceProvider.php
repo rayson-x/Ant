@@ -8,6 +8,12 @@ use Ant\Support\Collection;
 use Ant\Container\Interfaces\ContainerInterface;
 use Ant\Container\Interfaces\ServiceProviderInterface;
 
+/**
+ * 基础服务提供者
+ *
+ * Class BaseServiceProvider
+ * @package Ant\Foundation\Cgi
+ */
 class BaseServiceProvider implements ServiceProviderInterface
 {
     /**
@@ -51,6 +57,6 @@ class BaseServiceProvider implements ServiceProviderInterface
         /**
          * 注册 Debug 对象
          */
-        $container->bindIf('debug',\Ant\Debug\ExceptionHandle::class);
+        $container->bindIf('debug',\Ant\Foundation\Debug\ExceptionHandle::class);
     }
 }

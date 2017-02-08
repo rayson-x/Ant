@@ -4,16 +4,18 @@ namespace Ant\Foundation\Cgi;
 use Ant\Http\Body;
 use Ant\Http\Request;
 use Ant\Http\Response;
-use Ant\Traits\Singleton;
 use Ant\Middleware\Pipeline;
 use Ant\Container\Container;
+use Ant\Support\Traits\Singleton;
 use Ant\Container\Interfaces\ServiceProviderInterface;
 use Symfony\Component\Debug\Exception\FatalThrowableError;
 use Symfony\Component\Debug\Exception\FatalErrorException;
 
 /**
- * Class App
- * @package Ant
+ * Fast-Cgi模式下框架初始化程序
+ *
+ * Class Application
+ * @package Ant\Foundation\Cgi
  */
 class Application extends Container
 {

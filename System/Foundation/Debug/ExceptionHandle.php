@@ -1,5 +1,5 @@
 <?php
-namespace Ant\Debug;
+namespace Ant\Foundation\Debug;
 
 use Exception;
 use Ant\Http\Response;
@@ -10,21 +10,25 @@ use Symfony\Component\Debug\Exception\FlattenException;
 use Symfony\Component\Debug\ExceptionHandler as SymfonyExceptionHandler;
 
 /**
+ * 异常处理
+ *
  * Class ExceptionHandle
- * @package Ant\Debug
+ * @package Ant\Foundation\Debug
  */
 class ExceptionHandle
 {
     /**
      * @param Exception $exception
+     * @param RequestInterface $request
      * @param ResponseInterface $response
+     * @param bool|true $debug
      * @return ResponseInterface
      */
-    public function render(
+    public function render (
         Exception $exception,
         RequestInterface $request,
         ResponseInterface $response,
-        $debug = false
+        $debug = true
     ) {
         $fe = (!$exception instanceof HttpException)
             ? FlattenException::create($exception)
@@ -43,7 +47,7 @@ class ExceptionHandle
             $response->withAddedHeader($name,$value);
         }
 
-        if(!$result = $this->tryResponseClientAcceptType($exception,$request,$response,$debug)){
+        if(false === $result = $this->tryResponseClientAcceptType($exception, $request, $response, $debug)) {
             // 无法返回客户端想要的类型时,默认返回html格式
             $response->getBody()->write(
                 $this->decorate($handler->getContent($fe), $handler->getStylesheet($fe))
@@ -61,10 +65,14 @@ class ExceptionHandle
      * @param RequestInterface $req
      * @param ResponseInterface $res
      * @param $debug
-     * @return false|\Psr\Http\Message\MessageInterface
+     * @return false|ResponseInterface
      */
-    protected function tryResponseClientAcceptType(Exception $e, RequestInterface $req, ResponseInterface $res, $debug)
-    {
+    protected function tryResponseClientAcceptType (
+        Exception $e,
+        RequestInterface $req,
+        ResponseInterface $res,
+        $debug
+    ) {
         if(
             !method_exists($req,'getAcceptType')
             || !$res instanceof Response
@@ -83,8 +91,7 @@ class ExceptionHandle
             return $res->setContent([
                     'code'      =>  $e->getCode(),
                     'message'   =>  $message
-                ])
-                ->decorate();
+                ])->decorate();
         }catch(\Exception $e){
             return false;
         }

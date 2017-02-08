@@ -1,5 +1,5 @@
 <?php
-namespace Ant;
+namespace Ant\Foundation\Cgi;
 
 use Ant\Http\Body;
 use Ant\Http\Request;
@@ -15,7 +15,7 @@ use Symfony\Component\Debug\Exception\FatalErrorException;
  * Class App
  * @package Ant
  */
-class App extends Container
+class Application extends Container
 {
     use Singleton;
     /**

@@ -6,8 +6,6 @@ use RuntimeException;
 use InvalidArgumentException;
 
 /**
- * Todo 将部分函数移植到验证类中
- *
  * Class Arr
  * @package Ant\Support
  */
@@ -257,6 +255,31 @@ class Arr
     }
 
     /**
+     * 将数组中的每一个元素通过递归回调一次
+     *
+     * @param array $array      要被回调的数组
+     * @param callable $call    回调函数
+     * @param int $depth        递归深度
+     * @return array
+     */
+    public static function recursiveCall(array $array, callable $call, $depth = 512)
+    {
+        if($depth-- <= 0){
+            return $array;
+        }
+
+        foreach($array as $key => $value){
+            if(is_array($value)){
+                $array[$key] = static::recursiveCall($value, $call, $depth);
+            }else{
+                $array[$key] = call_user_func($call,$value);
+            }
+        }
+
+        return $array;
+    }
+
+    /**
      * 从数组中取出指定的值
      *
      * @param array|ArrayAccess $array
@@ -275,6 +298,30 @@ class Arr
         return $result;
     }
 
+    /**
+     * 将回调函数作用到给定数组的指定的单元上
+     *
+     * @param array $array
+     * @param array $elements
+     * @param string $func
+     * @return array
+     */
+    public static function handleElement(array $array, array $elements, $func = 'rawurlencode')
+    {
+        if(!is_callable($func)) {
+            throw new InvalidArgumentException("parameter 3 must be a callable");
+        }
+
+        foreach($elements as $key) {
+            if(static::exists($array, $key)) {
+                $array[$key] = $func($array[$key]);
+            }
+        }
+
+        return $array;
+    }
+
+    // Todo 将后续函数移植到验证类中
     /**
      * 从数组获取指定数据
      *
@@ -315,62 +362,12 @@ class Arr
         }
 
         foreach($keys as $key){
-            if(array_key_exists($key,$array)){
+            if(static::exists($array, $key)) {
                 // 非法参数
                 throw new RuntimeException("\"{$key}\" is an illegal argument");
             }
         }
 
         return true;
-    }
-
-    /**
-     * 处理数组中指定元素
-     *
-     * @param array $array
-     * @param array $elements
-     * @param string $func
-     * @return array
-     */
-    public static function handleElement(array $array, array $elements, $func = 'rawurlencode')
-    {
-        if(!is_callable($func)) {
-            throw new InvalidArgumentException(
-                "parameter 3 must be a callable"
-            );
-        }
-
-        foreach($elements as $key) {
-            if(static::exists($array, $key)) {
-                $array[$key] = $func($array[$key]);
-            }
-        }
-
-        return $array;
-    }
-
-    /**
-     * 将数组中的每一个元素通过递归回调一次
-     *
-     * @param array $array      要被回调的数组
-     * @param callable $call    回调函数
-     * @param int $depth        递归深度
-     * @return array
-     */
-    public static function recursiveCall(array $array, callable $call, $depth = 512)
-    {
-        if($depth-- <= 0){
-            return $array;
-        }
-
-        foreach($array as $key => $value){
-            if(is_array($value)){
-                $array[$key] = static::recursiveCall($value, $call, $depth);
-            }else{
-                $array[$key] = call_user_func($call,$value);
-            }
-        }
-
-        return $array;
     }
 }

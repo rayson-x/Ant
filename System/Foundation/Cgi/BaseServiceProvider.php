@@ -1,5 +1,5 @@
 <?php
-namespace Ant;
+namespace Ant\Foundation\Cgi;
 
 use Ant\Http\Response;
 use Ant\Routing\Router;

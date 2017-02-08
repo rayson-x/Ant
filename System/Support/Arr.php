@@ -46,6 +46,19 @@ class Arr
     }
 
     /**
+     * 打乱数组
+     *
+     * @param array $array
+     * @return array
+     */
+    public static function shuffle(array $array)
+    {
+        shuffle($array);
+
+        return $array;
+    }
+
+    /**
      * 将多维数组进行降维
      *
      * @param $array

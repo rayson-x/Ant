@@ -56,8 +56,8 @@ class Application extends Container
     public function __construct($path = null)
     {
         $this->basePath = rtrim($path,DIRECTORY_SEPARATOR);
-        $this->registerError();
         $this->bootstrapContainer();
+        $this->registerError();
         $this->registerNamespace('App',$this->basePath.DIRECTORY_SEPARATOR.'App');
     }
 
@@ -99,7 +99,7 @@ class Application extends Container
     protected function registerContainerAliases()
     {
         $aliases = [
-            \Ant\App::class                                     => 'app',
+            \Ant\Foundation\Cgi\Application::class              => 'app',
             \Ant\Container\Container::class                     => 'app',
             \Ant\Container\Interfaces\ContainerInterface::class => 'app',
             \Ant\Routing\Router::class                          => 'router',
@@ -107,7 +107,7 @@ class Application extends Container
             \Ant\Http\Request::class                            => 'request',
             \Psr\Http\Message\ResponseInterface::class          => 'response',
             \Ant\Http\Response::class                           => 'response',
-            \Ant\Debug\ExceptionHandle::class                   => 'debug',
+            \Ant\Foundation\Debug\ExceptionHandle::class        => 'debug',
         ];
 
         foreach($aliases as $alias => $serviceName){
@@ -118,7 +118,7 @@ class Application extends Container
     /**
      * 注册错误信息
      */
-    public function registerError()
+    protected function registerError()
     {
         error_reporting(E_ALL);
 
@@ -137,7 +137,7 @@ class Application extends Container
             }
         });
 
-        set_exception_handler(function($e){
+        set_exception_handler(function($e) {
             $this->send($this->handleUncaughtException($e));
         });
     }
@@ -192,13 +192,13 @@ class Application extends Container
      */
     protected function getExceptionHandler()
     {
-        if(is_callable($this->exceptionHandler)){
+        if(is_callable($this->exceptionHandler)) {
             return $this->exceptionHandler;
         }
 
         // 如果开发者没有处理异常
         // 异常将会交由框架进行处理
-        return function($exception,$request,$response){
+        return function($exception,$request,$response) {
             return $this->handleUncaughtException($exception,$request,$response);
         };
     }
@@ -272,15 +272,15 @@ class Application extends Container
      * @param $response
      * @return \Ant\Http\Response
      */
-    protected function process($request,$response)
+    protected function process($request, $response)
     {
-        try{
+        try {
             $result = $this->sendThroughPipeline([$request,$response],function(){
                 return $this->router->dispatch(...func_get_args());
             });
-        }catch(\Exception $exception){
+        }catch(\Exception $exception) {
             $result = call_user_func($this->getExceptionHandler(),$exception,$request,$response);
-        }catch(\Throwable $error){
+        }catch(\Throwable $error) {
             $result = call_user_func($this->getExceptionHandler(),$error,$request,$response);
         }
 
@@ -346,7 +346,7 @@ class Application extends Container
      *
      * @return $this
      */
-    public function sendHeader(Response $response)
+    protected function sendHeader(Response $response)
     {
         if(!headers_sent()){
             header(sprintf(
@@ -390,7 +390,7 @@ class Application extends Container
      *
      * @return $this
      */
-    public function sendContent(Response $response)
+    protected function sendContent(Response $response)
     {
         if(!$response->isEmpty()){
             echo (string) $response->getBody();
@@ -407,7 +407,7 @@ class Application extends Container
      * @param $targetLevel
      * @param $flush
      */
-    public function closeOutputBuffers($targetLevel, $flush)
+    protected function closeOutputBuffers($targetLevel, $flush)
     {
         $status = ob_get_status(true);
         $level = count($status);

@@ -65,7 +65,7 @@ class Route implements RouteInterface
         $action = $this->parseAction($action);
         $this->groupAttributes = $groupAttributes;
 
-        if(isset($groupAttributes)){
+        if(isset($groupAttributes)) {
             //继承路由组信息
             $uri = $this->mergeGroupPrefixAndSuffix($uri);
 
@@ -81,8 +81,8 @@ class Route implements RouteInterface
         $this->method = $method;
         $this->uri = '/'.trim($uri,'/');
         $this->callback = $action['uses'];
-        $this->middleware = isset($action['middleware']) ? $action['middleware'] : [];
-        $this->responseType = isset($action['type']) ? $action['type'] : ['html'];
+        $this->setMiddleware(isset($action['middleware']) ? $action['middleware'] : []);
+        $this->setResponseType(isset($action['type']) ? $action['type'] : ['html']);
     }
 
     /**
@@ -116,10 +116,6 @@ class Route implements RouteInterface
             return ['uses' => $action];
         }elseif(!is_array($action)){
             return [$action];
-        }
-
-        if(isset($action['middleware']) && is_string($action['middleware'])){
-            $action['middleware'] = explode('|',$action['middleware']);
         }
 
         return $action;
@@ -171,9 +167,9 @@ class Route implements RouteInterface
      * @param $middleware
      * @return self $this
      */
-    public function replaceMiddleware($middleware)
+    public function setMiddleware($middleware)
     {
-        $this->middleware = $middleware;
+        $this->middleware = is_string($middleware) ? explode('|', $middleware) : (array) $middleware;
 
         return $this;
     }

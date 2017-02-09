@@ -289,7 +289,6 @@ class Router implements RouterInterface
     {
         // Todo::选择性加载,针对Cgi模式,Cli模式下默认全部加载
         // Todo::处理Options请求
-
         // 获取请求的方法,路由,跟返回类型
         list($method, $uri, $type) = $this->parseIncomingRequest($req);
 
@@ -299,16 +298,15 @@ class Router implements RouterInterface
         $route = $this->matching($method, $uri);
 
         // 请求的类型是否能够响应
-        if(!in_array($type,$route->getResponseType())){
+        if(!in_array($type,$route->getResponseType())) {
             throw new NotAcceptableException(
                 sprintf('Response type must be [%s]',implode(',',$route->getResponseType()))
             );
         }
 
         // 调用中间件
-        return (new Pipeline)
-            ->send($req,$res)
-            ->through($this->getMiddleware($route))
+        return (new Pipeline)->send($req,$res)
+            ->through($this->createMiddleware($route))
             ->then($this->callRoute($route));
     }
 
@@ -446,7 +444,7 @@ class Router implements RouterInterface
      * @param array $args
      * @return Route
      */
-    protected function handleFoundRoute(Route $action,$args = [])
+    protected function handleFoundRoute(Route $action, $args = [])
     {
         $action->setArguments($args);
 
@@ -473,15 +471,17 @@ class Router implements RouterInterface
      * @param Route $route
      * @return mixed
      */
-    protected function getMiddleware(Route $route)
+    protected function createMiddleware(Route $route)
     {
         $middleware = $route->getMiddleware();
-        $middleware = is_string($middleware) ? explode('|', $middleware) : (array) $middleware;
 
         //获取可以回调的路由
-        return array_map(function($middleware){
-            if(is_string($middleware)){
-                $middleware = isset($this->middleware[$middleware]) ? $this->middleware[$middleware] : $middleware;
+        return array_map(function($middleware) {
+            if(is_string($middleware)) {
+                $middleware = isset($this->middleware[$middleware])
+                    ? $this->middleware[$middleware]
+                    : $middleware;
+
                 return $this->container->make($middleware);
             }elseif($middleware instanceof \Closure){
                 return $middleware;
@@ -501,7 +501,6 @@ class Router implements RouterInterface
     {
         return function()use($action) {
             $callback = $action->getAction();
-            $action->setArguments(func_get_args());
 
             if (is_string($callback) && strpos($callback, '@') === false) {
                 $callback .= '@__invoke';

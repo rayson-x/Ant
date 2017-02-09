@@ -107,7 +107,7 @@ class Container implements ContainerInterface,ArrayAccess
      * @param $serviceName
      * @return bool
      */
-    protected function isShared($serviceName)
+    public function isShared($serviceName)
     {
         $serviceName = $this->normalize($serviceName);
 
@@ -139,7 +139,7 @@ class Container implements ContainerInterface,ArrayAccess
      * @param $name
      * @return bool
      */
-    protected function isAlias($name)
+    public function isAlias($name)
     {
         return isset($this->aliases[$this->normalize($name)]);
     }
@@ -484,7 +484,7 @@ class Container implements ContainerInterface,ArrayAccess
      */
     protected function getDependencies(\ReflectionFunctionAbstract $callback, array $primitives)
     {
-        if(!$parameters = $callback->getParameters()){
+        if(!$parameters = $callback->getParameters()) {
             return $primitives;
         }
 
@@ -493,14 +493,14 @@ class Container implements ContainerInterface,ArrayAccess
         );
 
         $dependencies = [];
-        foreach($parameters as $parameter){
-            if(array_key_exists($parameter->name,$primitives)){
+        foreach ($parameters as $parameter) {
+            if (array_key_exists($parameter->name,$primitives)) {
                 // 使用给定的值
                 $dependencies[] = $primitives[$parameter->name];
-            }elseif(is_null($parameter->getClass())){
+            } elseif (is_null($parameter->getClass())) {
                 // 获取参数
                 $dependencies[] = $this->resolveNotClass($parameter);
-            }else{
+            } else {
                 // 获取依赖的服务实例
                 $dependencies[] = $this->resolveClass($parameter);
             }
@@ -543,7 +543,7 @@ class Container implements ContainerInterface,ArrayAccess
             return $concrete;
         }
 
-        if($parameter->isDefaultValueAvailable()){
+        if($parameter->isDefaultValueAvailable()) {
             return $parameter->getDefaultValue();
         }
 
@@ -563,7 +563,7 @@ class Container implements ContainerInterface,ArrayAccess
     {
         try{
             $dependencyClass = $parameter->getClass()->getName();
-            if(!is_null($object = $this->getContextualConcrete($dependencyClass))){
+            if(!is_null($object = $this->getContextualConcrete($dependencyClass))) {
                 //优先使用用户提供实例
                 if(is_string($object)) {
                     $object = $this->makeAndSuppressExceptions($object);
@@ -575,7 +575,7 @@ class Container implements ContainerInterface,ArrayAccess
             }
             return $this->make($dependencyClass);
         }catch(ContainerValueNotFoundException $e){
-            if($parameter->isOptional()){
+            if($parameter->isOptional()) {
                 return $parameter->getDefaultValue();
             }
 
@@ -593,7 +593,7 @@ class Container implements ContainerInterface,ArrayAccess
     {
         try{
             return $this->make($serviceName);
-        }catch(ContainerValueNotFoundException $e){
+        } catch(ContainerValueNotFoundException $e) {
             return $serviceName;
         }
     }
@@ -606,63 +606,22 @@ class Container implements ContainerInterface,ArrayAccess
      * @param null $defaultMethod
      * @return mixed
      */
-    public function call($callback,$parameters = [],$defaultMethod = null)
+    public function call($callback, $parameters = [], $defaultMethod = null)
     {
-        if($this->isCallableWithAtSign($callback)){
+        if ($this->isCallableWithAtSign($callback)) {
             return $this->callClass($callback,$parameters,$defaultMethod );
         }
 
         // 通过反射获取依赖
-        if(is_array($callback)){
+        if (is_array($callback)) {
             $func = new ReflectionMethod($callback[0],$callback[1]);
         }else{
             $func = new ReflectionFunction($callback);
         }
 
-        $parameters = $this->getCallbackDependencies($func,$parameters);
+        $parameters = $this->getDependencies($func,$parameters);
 
         return call_user_func_array($callback,$parameters);
-    }
-
-    /**
-     * 获取回调函数依赖的参数
-     *
-     * @param \ReflectionFunctionAbstract $callback
-     * @param array $primitives
-     * @return array
-     */
-    protected function getCallbackDependencies(\ReflectionFunctionAbstract $callback, array $primitives)
-    {
-        $dependencies = [];
-        foreach($callback->getParameters() as $parameter) {
-            if(array_key_exists($parameter->name,$primitives)) {
-                // 使用给定的值
-                $dependencies[] = $primitives[$parameter->name];
-                unset($primitives[$parameter->name]);
-            }elseif($class = $parameter->getClass()) {
-                // 从参数中查找依赖的对象
-                $dependentClass = null;
-                foreach($primitives as $key => $item) {
-                    if($item instanceof $class->name) {
-                        $dependentClass = $item;
-                        unset($primitives[$key]);
-                        break;
-                    }
-                }
-
-                if(!$dependentClass) {
-                    // 获取依赖的服务实例
-                    $dependentClass = $this->resolveClass($parameter);
-                }
-
-                $dependencies[] = $dependentClass;
-            }else{
-                // 获取参数
-                $dependencies[] = $this->resolveNotClass($parameter);
-            }
-        }
-
-        return $dependencies;
     }
 
     /**

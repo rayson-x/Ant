@@ -46,7 +46,7 @@ trait Singleton
     /**
      * 获取实例
      *
-     * @return self
+     * @return object
      */
     public static function getInstance()
     {

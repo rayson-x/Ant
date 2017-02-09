@@ -4,7 +4,6 @@ namespace Ant\Foundation\Cgi;
 use Ant\Http\Response;
 use Ant\Routing\Router;
 use Ant\Http\ServerRequest;
-use Ant\Support\Collection;
 use Ant\Container\Interfaces\ContainerInterface;
 use Ant\Container\Interfaces\ServiceProviderInterface;
 
@@ -31,13 +30,13 @@ class BaseServiceProvider implements ServiceProviderInterface
         /**
          * 注册 配置信息信息集
          */
-        $container->instance('config',new Collection());
+        $container->instance('config',\Ant\Support\Collection::class);
 
         /**
          * 注册 Http Request 处理类
          */
         $container->singleton('request',function() {
-            return new ServerRequest;
+            return (new ServerRequest)->keepImmutability(false);
         });
 
         /**

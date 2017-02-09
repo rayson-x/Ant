@@ -138,7 +138,7 @@ EOF;
         $exceptionInfo = [];
         $exceptionInfo['X-Exception-Message'] = $exception->getMessage();
 
-        foreach(explode("\n",$exception->getTraceAsString()) as $index => $line){
+        foreach(explode("\n",$exception->getTraceAsString()) as $index => $line) {
             $key = sprintf('X-Exception-Trace-%02d', $index);
             $exceptionInfo[$key] = $line;
         }

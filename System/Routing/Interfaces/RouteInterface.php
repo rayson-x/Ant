@@ -36,7 +36,7 @@ interface RouteInterface
      *
      * @param $middleware
      */
-    public function replaceMiddleware($middleware);
+    public function setMiddleware($middleware);
     
     /**
      * 添加一个中间件

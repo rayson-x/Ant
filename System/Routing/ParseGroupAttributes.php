@@ -30,25 +30,6 @@ trait ParseGroupAttributes
     }
 
     /**
-     * 合并响应类型
-     *
-     * @param $action
-     * @return array
-     */
-    protected function mergeResponseType($action)
-    {
-        if(isset($this->groupAttributes['type'])){
-            if(isset($action['type'])){
-                $action['type'] = array_merge($action['type'],$this->groupAttributes['type']);
-            }else{
-                $action['type'] = $this->groupAttributes['type'];
-            }
-        }
-
-        return $action;
-    }
-
-    /**
      * 合并分组命名空间
      *
      * @param $action
@@ -76,6 +57,25 @@ trait ParseGroupAttributes
                 $action['middleware'] = array_merge($this->groupAttributes['middleware'], (array)$action['middleware']);
             } else {
                 $action['middleware'] = $this->groupAttributes['middleware'];
+            }
+        }
+
+        return $action;
+    }
+
+    /**
+     * 合并响应类型
+     *
+     * @param $action
+     * @return array
+     */
+    protected function mergeResponseType($action)
+    {
+        if(isset($this->groupAttributes['type'])) {
+            if(isset($action['type'])) {
+                $action['type'] = array_merge($action['type'],$this->groupAttributes['type']);
+            }else{
+                $action['type'] = $this->groupAttributes['type'];
             }
         }
 

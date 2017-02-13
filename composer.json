@@ -9,7 +9,8 @@
         "illuminate/database": "5.4.*",
         "predis/predis" : "^1.1.1",
         "ant-framework/http":"dev-master",
-        "ant-framework/middleware":"^0.1.0"
+        "ant-framework/middleware":"^0.1.0",
+        "sssxxzzz/lib":"dev-master"
     },
     "autoload": {
         "psr-4": {

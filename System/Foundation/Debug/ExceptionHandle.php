@@ -47,11 +47,12 @@ class ExceptionHandle
             $response->withAddedHeader($name,$value);
         }
 
-        if(false === $result = $this->tryResponseClientAcceptType($exception, $request, $response, $debug)) {
+        if(false === $result = $this->tryResponseClientAcceptType($exception, $response, $debug)) {
             // 无法返回客户端想要的类型时,默认返回html格式
             $response->getBody()->write(
                 $this->decorate($handler->getContent($fe), $handler->getStylesheet($fe))
             );
+
             $result = $response;
         }
 
@@ -62,22 +63,16 @@ class ExceptionHandle
      * 尝试响应客户端请求的类型
      *
      * @param Exception $e
-     * @param RequestInterface $req
      * @param ResponseInterface $res
      * @param $debug
      * @return false|ResponseInterface
      */
     protected function tryResponseClientAcceptType (
         Exception $e,
-        RequestInterface $req,
         ResponseInterface $res,
         $debug
     ) {
-        if(
-            !method_exists($req,'getAcceptType')
-            || !$res instanceof Response
-            || 'text' == $type = $req->getAcceptType()
-        ) {
+        if(!$res instanceof Response) {
             return false;
         }
 
@@ -88,10 +83,12 @@ class ExceptionHandle
         }
 
         try{
-            return $res->setContent([
-                    'code'      =>  $e->getCode(),
-                    'message'   =>  $message
-                ])->decorate();
+            $errorInfo = [
+                'code'      =>  $e->getCode(),
+                'message'   =>  $message
+            ];
+
+            return $res->setContent($errorInfo)->decorate();
         }catch(\Exception $e){
             return false;
         }

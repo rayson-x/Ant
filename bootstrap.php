@@ -5,9 +5,8 @@ $app = new Ant\Foundation\Cgi\Application(__DIR__);
 
 /* 注册通用中间件 */
 $app->addMiddleware(function (Ant\Http\ServerRequest $request,Ant\Http\Response $response) {
-    // code...
+    // before
     yield;
-
     // 设置响应头
     $response->addHeaderFromIterator([
         // 超时时间
@@ -28,15 +27,15 @@ $app->addMiddleware(function (Ant\Http\ServerRequest $request,Ant\Http\Response 
 });
 
 /* 获取路由器 */
-$router = $app->router;
+$router = $app['router'];
 
 /* 注册路由 */
 $router->group(['type' => ['json','xml','text','jsonp']],function(Ant\Routing\Router $router) {
-    $router->get('/',function() {
+    $router->get('/',function () {
         return "Ant-Framework";
     });
 
-    $router->get('/test',function(){
+    $router->get('/test',function () {
         return ['foo' => 'bar'];
     });
 });

@@ -30,7 +30,7 @@ class BaseServiceProvider implements ServiceProviderInterface
         /**
          * 注册 配置信息信息集
          */
-        $container->instance('config',\Ant\Support\Collection::class);
+        $container->singleton('config',\Ant\Support\Collection::class);
 
         /**
          * 注册 Http Request 处理类

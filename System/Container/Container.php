@@ -447,7 +447,7 @@ class Container implements ContainerInterface,ArrayAccess
         $reflection = new ReflectionClass($concrete);
 
         //检查是否可以实例化
-        if(!$reflection->isInstantiable()){
+        if (!$reflection->isInstantiable()) {
             if (! empty($this->buildStack)) {
                 $previous = implode(', ', $this->buildStack);
 
@@ -460,7 +460,7 @@ class Container implements ContainerInterface,ArrayAccess
         }
 
         $construct = $reflection->getConstructor();
-        if(is_null($construct)){
+        if (is_null($construct)) {
             //没有构造函数,直接返回实例
             return $reflection->newInstance();
         }

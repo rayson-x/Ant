@@ -104,9 +104,9 @@ class Router implements RouterInterface
         }
 
         //是否继承父级分组属性
-        if(isset($attributes['extend']) && $attributes['extend'] === false){
+        if (isset($attributes['extend']) && $attributes['extend'] === false) {
             $this->groupAttributes = $attributes;
-        }else{
+        } else {
             $this->groupAttributes = $this->extendParentGroupAttributes($attributes);
         }
 
@@ -123,7 +123,7 @@ class Router implements RouterInterface
      */
     protected function extendParentGroupAttributes(array $attributes)
     {
-        if($this->groupAttributes === null){
+        if ($this->groupAttributes === null) {
             return $attributes;
         }
 
@@ -145,7 +145,7 @@ class Router implements RouterInterface
         );
 
         //获取父级分组命名空间
-        if(isset($this->groupAttributes['namespace'])){
+        if (isset($this->groupAttributes['namespace'])) {
             $attributes['namespace'] = rtrim($this->groupAttributes['namespace'],'\\').'\\'.trim($attributes['namespace'],'\\');
         }
 
@@ -262,7 +262,7 @@ class Router implements RouterInterface
 
         $this->routes[] = $route;
 
-        foreach((array) $methods as $method){
+        foreach ((array) $methods as $method) {
             $this->fastRoute[$method.$route->getUri()] = $route;
         }
 
@@ -298,7 +298,7 @@ class Router implements RouterInterface
         $route = $this->matching($method, $uri);
 
         // 请求的类型是否能够响应
-        if(!in_array($type,$route->getResponseType())) {
+        if (!in_array($type,$route->getResponseType())) {
             throw new NotAcceptableException(
                 sprintf('Response type must be [%s]',implode(',',$route->getResponseType()))
             );
@@ -477,13 +477,13 @@ class Router implements RouterInterface
 
         //获取可以回调的路由
         return array_map(function($middleware) {
-            if(is_string($middleware)) {
+            if (is_string($middleware)) {
                 $middleware = isset($this->middleware[$middleware])
                     ? $this->middleware[$middleware]
                     : $middleware;
 
                 return $this->container->make($middleware);
-            }elseif($middleware instanceof \Closure){
+            } elseif ($middleware instanceof \Closure) {
                 return $middleware;
             }
 
@@ -499,16 +499,16 @@ class Router implements RouterInterface
      */
     protected function callRoute(Route $action)
     {
-        return function()use($action) {
+        return function () use ($action) {
             $callback = $action->getAction();
 
             if (is_string($callback) && strpos($callback, '@') === false) {
                 $callback .= '@__invoke';
             }
 
-            try{
+            try {
                 return $this->container->call($callback,$action->getArguments());
-            }catch (\BadMethodCallException $e){
+            } catch (\BadMethodCallException $e) {
                 throw new NotFoundException;
             }
         };

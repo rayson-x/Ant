@@ -68,7 +68,7 @@ class Application extends Container
      */
     public function register($provider)
     {
-        if(is_string($provider)){
+        if (is_string($provider)) {
             $provider = new $provider;
         }
 
@@ -78,7 +78,7 @@ class Application extends Container
 
         $this->loadedProviders[$providerName] = true;
 
-        if($provider instanceof ServiceProviderInterface){
+        if ($provider instanceof ServiceProviderInterface) {
             $this->registerService($provider);
         }
     }
@@ -110,7 +110,7 @@ class Application extends Container
             \Ant\Foundation\Debug\ExceptionHandle::class        => 'debug',
         ];
 
-        foreach($aliases as $alias => $serviceName){
+        foreach ($aliases as $alias => $serviceName) {
             $this->alias($serviceName,$alias);
         }
     }
@@ -122,7 +122,7 @@ class Application extends Container
     {
         error_reporting(E_ALL);
 
-        set_error_handler(function($level, $message, $file = '', $line = 0){
+        set_error_handler(function ($level, $message, $file = '', $line = 0) {
             throw new \ErrorException($message, 0, $level, $file, $line);
         });
 
@@ -130,14 +130,14 @@ class Application extends Container
             if (
                 !is_null($error = error_get_last())
                 && in_array($error['type'],[E_ERROR, E_CORE_ERROR, E_COMPILE_ERROR, E_PARSE])
-            ){
+            ) {
                 throw new FatalErrorException(
                     $error['message'], $error['type'], 0, $error['file'], $error['line']
                 );
             }
         });
 
-        set_exception_handler(function($e) {
+        set_exception_handler(function ($e) {
             $this->send($this->handleUncaughtException($e));
         });
     }
@@ -192,13 +192,13 @@ class Application extends Container
      */
     protected function getExceptionHandler()
     {
-        if(is_callable($this->exceptionHandler)) {
+        if (is_callable($this->exceptionHandler)) {
             return $this->exceptionHandler;
         }
 
         // 如果开发者没有处理异常
         // 异常将会交由框架进行处理
-        return function($exception,$request,$response) {
+        return function ($exception,$request,$response) {
             return $this->handleUncaughtException($exception,$request,$response);
         };
     }
@@ -275,7 +275,7 @@ class Application extends Container
     protected function process($request, $response)
     {
         try {
-            $result = $this->sendThroughPipeline([$request,$response],function(){
+            $result = $this->sendThroughPipeline([$request,$response],function () {
                 return $this->router->dispatch(...func_get_args());
             });
         }catch(\Exception $exception) {
@@ -318,7 +318,7 @@ class Application extends Container
 
         if (function_exists("fastcgi_finish_request")) {
             fastcgi_finish_request();
-        }elseif('cli' != PHP_SAPI){
+        } elseif ('cli' != PHP_SAPI) {
             $this->closeOutputBuffers(0,true);
         }
     }
@@ -331,10 +331,10 @@ class Application extends Container
      */
     protected function handleResult($result)
     {
-        if(!empty($result) && !$result instanceof Response){
+        if (!empty($result) && !$result instanceof Response) {
             // 渲染响应结果
             $result = $this['response']->setContent($result)->decorate();
-        }elseif(empty($result)){
+        } elseif (empty($result)) {
             $result = $this['response'];
         }
 
@@ -348,7 +348,7 @@ class Application extends Container
      */
     protected function sendHeader(Response $response)
     {
-        if(!headers_sent()){
+        if (!headers_sent()) {
             header(sprintf(
                 'HTTP/%s %s %s',
                 $response->getProtocolVersion(),
@@ -356,7 +356,7 @@ class Application extends Container
                 $response->getReasonPhrase()
             ));
 
-            foreach($response->getHeaders() as $name => $value){
+            foreach ($response->getHeaders() as $name => $value) {
                 if (is_array($value)) {
                     $value = implode(',', $value);
                 }
@@ -365,8 +365,8 @@ class Application extends Container
                 header("{$name}: {$value}");
             }
 
-            foreach($response->getCookies() as $cookie){
-                if(!is_int($cookie['expires'])){
+            foreach ($response->getCookies() as $cookie) {
+                if (!is_int($cookie['expires'])) {
                     $cookie['expires'] = (new \DateTime($cookie['expires']))->getTimestamp();
                 }
 
@@ -392,7 +392,7 @@ class Application extends Container
      */
     protected function sendContent(Response $response)
     {
-        if(!$response->isEmpty()){
+        if (!$response->isEmpty()) {
             echo (string) $response->getBody();
         }else{
             echo '';

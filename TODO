@@ -1,9 +1,9 @@
 基础功能
 Todo::更灵活的路由,对RESTful支持更完善
-Todo::Config类
+Todo::加载Config
 Todo::日志功能 , psr-3 引入或自己开发
 Todo::验证类
-Todo::字符处理,数组处理类
+Todo::支持JWT功能
 
 重要功能
 Todo::储存 Service ,如mysql,redis,memcache等服务

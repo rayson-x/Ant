@@ -81,25 +81,4 @@ interface RouteInterface
      */
     public function setArguments(array $arguments);
 
-    /**
-     * 获取路由可以响应的类型
-     *
-     * @return array
-     */
-    public function getResponseType();
-
-    /**
-     * 设置路由响应类型
-     *
-     * @param array $responseType
-     */
-    public function setResponseType(array $responseType);
-
-    /**
-     * 添加一个路由响应类型
-     *
-     * @param $type
-     */
-    public function withAddResponseType($type);
-
 }

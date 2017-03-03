@@ -42,15 +42,15 @@ class BaseServiceProvider implements ServiceProviderInterface
         /**
          * 注册 Http Response 类
          */
-        $container->singleton('response',function() {
-            return Response::prepare($this['request']);
+        $container->singleton('response',function($app) {
+            return Response::prepare($app['request']);
         });
 
         /**
          * 注册 Ant Router 类
          */
-        $container->singleton('router',function() {
-            return new Router($this);
+        $container->singleton('router',function($app) {
+            return new Router($app);
         });
 
         /**

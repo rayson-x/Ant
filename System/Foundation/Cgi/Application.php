@@ -57,7 +57,7 @@ class Application extends Container
     {
         $this->basePath = rtrim($path,DIRECTORY_SEPARATOR);
         $this->bootstrapContainer();
-        $this->registerError();
+        $this->registerErrorHandler();
         $this->registerNamespace('App',$this->basePath.DIRECTORY_SEPARATOR.'App');
     }
 
@@ -118,7 +118,7 @@ class Application extends Container
     /**
      * 注册错误信息
      */
-    protected function registerError()
+    public function registerErrorHandler()
     {
         error_reporting(E_ALL);
 
@@ -278,10 +278,10 @@ class Application extends Container
             $result = $this->sendThroughPipeline([$request,$response],function () {
                 return $this->router->dispatch(...func_get_args());
             });
-        }catch(\Exception $exception) {
-            $result = call_user_func($this->getExceptionHandler(),$exception,$request,$response);
-        }catch(\Throwable $error) {
-            $result = call_user_func($this->getExceptionHandler(),$error,$request,$response);
+        } catch(\Exception $exception) {
+            $result = call_user_func($this->getExceptionHandler(), $exception, $request, $response);
+        } catch(\Throwable $error) {
+            $result = call_user_func($this->getExceptionHandler(), $error, $request, $response);
         }
 
         return $result;
@@ -296,7 +296,7 @@ class Application extends Container
      */
     protected function sendThroughPipeline(array $args,\Closure $then)
     {
-        if(count($this->middleware) > 0) {
+        if (count($this->middleware) > 0) {
             return (new Pipeline)
                 ->send(...$args)
                 ->through($this->middleware)
@@ -349,6 +349,11 @@ class Application extends Container
     protected function sendHeader(Response $response)
     {
         if (!headers_sent()) {
+            if (!$response->hasHeader('Content-Len') && $size = $response->getBody()->getSize()) {
+                //设置Body长度
+                $response->withHeader('content-length', $size);
+            }
+
             header(sprintf(
                 'HTTP/%s %s %s',
                 $response->getProtocolVersion(),

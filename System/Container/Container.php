@@ -180,7 +180,7 @@ class Container implements ContainerInterface,ArrayAccess
     {
         $tags = is_array($tags) ? $tags : array_slice(func_get_args(),1);
 
-        foreach($tags as $tag){
+        foreach ($tags as $tag) {
             if (! isset($this->tags[$tag])) {
                 $this->tags[$tag] = [];
             }
@@ -231,17 +231,14 @@ class Container implements ContainerInterface,ArrayAccess
         $serviceName = $this->normalize($serviceName);
         $concrete = $this->normalize($concrete);
 
-        if(is_array($serviceName)){
+        if (is_array($serviceName)) {
             $serviceName = $this->setAliasFromArray($serviceName);
         }
 
         // 如果已经绑定,删除之前所有的服务实例
         $this->removeStaleInstances($serviceName);
 
-        if($concrete instanceof Closure){
-            // 将闭包函数的作用域绑定到服务容器
-            $concrete = $concrete->bindTo($this);
-        }elseif(is_null($concrete)){
+        if (is_null($concrete)) {
             $concrete = $serviceName;
         }
 
@@ -259,7 +256,7 @@ class Container implements ContainerInterface,ArrayAccess
     {
         $key = is_array($serviceName) ? key($serviceName) : $serviceName;
 
-        if(!$this->bound($key)){
+        if (!$this->bound($key)) {
             $this->bind($serviceName,$concrete,$shared);
         }
     }
@@ -285,7 +282,7 @@ class Container implements ContainerInterface,ArrayAccess
     {
         $serviceName = $this->normalize($serviceName);
 
-        if(is_array($serviceName)){
+        if (is_array($serviceName)) {
             $serviceName = $this->setAliasFromArray($serviceName);
         }
 
@@ -304,9 +301,9 @@ class Container implements ContainerInterface,ArrayAccess
     {
         $serviceName = $this->normalize($serviceName);
 
-        if(isset($this->instances[$serviceName])){
+        if (isset($this->instances[$serviceName])) {
             $this->instances[$serviceName] = $closure($this->instances[$serviceName]);
-        }else{
+        } else {
             $this->extenders[$serviceName][] = $closure;
         }
     }
@@ -319,7 +316,7 @@ class Container implements ContainerInterface,ArrayAccess
      */
     protected function getExtenders($serviceName)
     {
-        if(isset($this->extenders[$serviceName])){
+        if (isset($this->extenders[$serviceName])) {
             return $this->extenders[$serviceName];
         }
 
@@ -404,7 +401,7 @@ class Container implements ContainerInterface,ArrayAccess
         //获取服务名称
         $serviceName = $this->getServiceNameFromAlias($serviceName);
 
-        if(isset($this->instances[$serviceName])) {
+        if (isset($this->instances[$serviceName])) {
             return $this->instances[$serviceName];
         }
 
@@ -416,7 +413,7 @@ class Container implements ContainerInterface,ArrayAccess
         //扩展服务
         foreach ($this->getExtenders($serviceName) as $extender) {
             $returnValue = $extender($result, $this);
-            if(!is_null($returnValue)) {
+            if (!is_null($returnValue)) {
                 $result = $returnValue;
             }
         }
@@ -441,8 +438,9 @@ class Container implements ContainerInterface,ArrayAccess
     public function build($concrete, array $parameters = [])
     {
         if ($concrete instanceof Closure) {
-            return $concrete(...$parameters);
+            return $concrete($this, ...$parameters);
         }
+
         //通过反射机制实现实例
         $reflection = new ReflectionClass($concrete);
 
@@ -484,12 +482,12 @@ class Container implements ContainerInterface,ArrayAccess
      */
     protected function getDependencies(\ReflectionFunctionAbstract $callback, array $primitives)
     {
-        if(!$parameters = $callback->getParameters()) {
+        if (!$parameters = $callback->getParameters()) {
             return $primitives;
         }
 
         $primitives = $this->keyParametersByArgument(
-            $parameters,$primitives
+            $parameters, $primitives
         );
 
         $dependencies = [];
@@ -520,7 +518,7 @@ class Container implements ContainerInterface,ArrayAccess
     {
         $count = count($dependencies);
 
-        while($count-- > 0 && list($key,$value) = each($parameters)){
+        while ($count-- > 0 && list($key,$value) = each($parameters)) {
             if (is_numeric($key)) {
                 unset($parameters[$key]);
 
@@ -543,7 +541,7 @@ class Container implements ContainerInterface,ArrayAccess
             return $concrete;
         }
 
-        if($parameter->isDefaultValueAvailable()) {
+        if ($parameter->isDefaultValueAvailable()) {
             return $parameter->getDefaultValue();
         }
 
@@ -563,19 +561,19 @@ class Container implements ContainerInterface,ArrayAccess
     {
         try{
             $dependencyClass = $parameter->getClass()->getName();
-            if(!is_null($object = $this->getContextualConcrete($dependencyClass))) {
+            if (!is_null($object = $this->getContextualConcrete($dependencyClass))) {
                 //优先使用用户提供实例
-                if(is_string($object)) {
+                if (is_string($object)) {
                     $object = $this->makeAndSuppressExceptions($object);
                 }
 
-                if($object instanceof $dependencyClass) {
+                if ($object instanceof $dependencyClass) {
                     return $object;
                 }
             }
             return $this->make($dependencyClass);
-        }catch(ContainerValueNotFoundException $e){
-            if($parameter->isOptional()) {
+        } catch (ContainerValueNotFoundException $e) {
+            if ($parameter->isOptional()) {
                 return $parameter->getDefaultValue();
             }
 
@@ -615,7 +613,7 @@ class Container implements ContainerInterface,ArrayAccess
         // 通过反射获取依赖
         if (is_array($callback)) {
             $func = new ReflectionMethod($callback[0],$callback[1]);
-        }else{
+        } else {
             $func = new ReflectionFunction($callback);
         }
 
@@ -644,11 +642,11 @@ class Container implements ContainerInterface,ArrayAccess
     protected function getCallableReflection($callback)
     {
         // ReflectionMethod构造函数支持 Class::Method 此处为了统一格式进行分割
-        if(is_string($callback) && (strpos($callback,'::') !== false)){
+        if (is_string($callback) && (strpos($callback,'::') !== false)) {
             $callback = explode($callback,"::");
         }
 
-        if(is_array($callback)){
+        if (is_array($callback)) {
             return new ReflectionMethod($callback[0],$callback[1]);
         }
 
@@ -671,11 +669,80 @@ class Container implements ContainerInterface,ArrayAccess
 
         $object = $this->make($segments[0]);
 
-        if(is_null($method) || !method_exists($object,$method)){
+        if (is_null($method) || !method_exists($object,$method)) {
             throw new \BadMethodCallException('Method does not exist');
         }
 
         return $this->call([$object,$method],$parameters);
+    }
+
+    /**
+     * 规范服务名称
+     *
+     * @param  mixed  $serviceName
+     * @return mixed
+     */
+    protected function normalize($serviceName)
+    {
+        return is_string($serviceName)
+            ? ltrim($serviceName, '\\')
+            : $serviceName;
+    }
+
+    /**
+     * 清空实例
+     *
+     * @param $serviceName
+     */
+    protected function removeStaleInstances($serviceName)
+    {
+        //如果服务原名与服务别名重复,会出现无法加载服务的情况
+        unset(
+            $this->instances[$serviceName]
+            ,$this->aliases[$serviceName]
+        );
+    }
+
+    /**
+     * 从容器中移除一个服务
+     *
+     * @param $name
+     */
+    public function forgetService($name)
+    {
+        $name = $this->normalize($name);
+        //获取服务原名
+        $serviceName = $this->getServiceNameFromAlias($name);
+
+        unset(
+            $this->bindings[$serviceName],
+            $this->instances[$serviceName],
+            $this->resolved[$serviceName]
+        );
+    }
+
+    /**
+     * 通过服务提供者注册服务
+     *
+     * @param ServiceProviderInterface $serviceProvider
+     */
+    public function registerService(ServiceProviderInterface $serviceProvider)
+    {
+        $serviceProvider->register($this);
+    }
+
+    /**
+     * 重置容器
+     */
+    public function reset()
+    {
+        $this->aliases = [];
+        $this->resolved = [];
+        $this->bindings = [];
+        $this->instances = [];
+        $this->extenders = [];
+        $this->bindings = [];
+        $this->tags = [];
     }
 
     /**
@@ -684,9 +751,10 @@ class Container implements ContainerInterface,ArrayAccess
      */
     public function offsetSet($offset,$value)
     {
-        if(is_object($value) && !($value instanceof Closure)){
+        // 数组与非闭包对象,全部绑定为全局唯一实例
+        if (is_array($value) || (is_object($value) && !$value instanceof Closure)) {
             $this->instance($offset,$value);
-        }else{
+        } else {
             $this->bind($offset,$value);
         }
     }
@@ -715,66 +783,6 @@ class Container implements ContainerInterface,ArrayAccess
     public function offsetUnset($offset)
     {
         $this->forgetService($offset);
-    }
-
-    /**
-     * 规范服务名称
-     *
-     * @param  mixed  $serviceName
-     * @return mixed
-     */
-    protected function normalize($serviceName)
-    {
-        return is_string($serviceName) ? ltrim($serviceName, '\\') : $serviceName;
-    }
-
-    /**
-     * 清空实例
-     *
-     * @param $serviceName
-     */
-    protected function removeStaleInstances($serviceName)
-    {
-        //如果服务原名与服务别名重复,会出现无法加载服务的情况
-        unset($this->instances[$serviceName],$this->aliases[$serviceName]);
-    }
-
-    /**
-     * 从容器中移除一个服务
-     *
-     * @param $name
-     */
-    public function forgetService($name)
-    {
-        $name = $this->normalize($name);
-        //获取服务原名
-        $serviceName = $this->getServiceNameFromAlias($name);
-
-        unset($this->bindings[$serviceName], $this->instances[$serviceName], $this->resolved[$serviceName]);
-    }
-
-    /**
-     * 通过服务提供者注册服务
-     *
-     * @param ServiceProviderInterface $serviceProvider
-     */
-    public function registerService(ServiceProviderInterface $serviceProvider)
-    {
-        $serviceProvider->register($this);
-    }
-
-    /**
-     * 重置容器
-     */
-    public function reset()
-    {
-        $this->aliases = [];
-        $this->resolved = [];
-        $this->bindings = [];
-        $this->instances = [];
-        $this->extenders = [];
-        $this->bindings = [];
-        $this->tags = [];
     }
 
     /**

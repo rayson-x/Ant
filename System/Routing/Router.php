@@ -139,11 +139,6 @@ class Router implements RouterInterface
 
         list($attributes['prefix'],$attributes['suffix']) = explode('-',$fix);
 
-        //合并父级分组的中间件与响应类型
-        $attributes = $this->mergeMiddlewareGroup(
-            $this->mergeResponseType($attributes)
-        );
-
         //获取父级分组命名空间
         if (isset($this->groupAttributes['namespace'])) {
             $attributes['namespace'] = rtrim($this->groupAttributes['namespace'],'\\').'\\'.trim($attributes['namespace'],'\\');
@@ -290,21 +285,13 @@ class Router implements RouterInterface
         // Todo::选择性加载,针对Cgi模式,Cli模式下默认全部加载
         // Todo::处理Options请求
         // 获取请求的方法,路由,跟返回类型
-        list($method, $uri, $type) = $this->parseIncomingRequest($req);
+        list($method, $uri) = $this->parseIncomingRequest($req);
 
         // 过滤非法Http动词
         $this->filterMethod($method);
-
+        // 匹配路由
         $route = $this->matching($method, $uri);
-
-        // 请求的类型是否能够响应
-        if (!in_array($type,$route->getResponseType())) {
-            throw new NotAcceptableException(
-                sprintf('Response type must be [%s]',implode(',',$route->getResponseType()))
-            );
-        }
-
-        // 调用中间件
+        // 回调路由以及中间件
         return (new Pipeline)->send($req,$res)
             ->through($this->createMiddleware($route))
             ->then($this->callRoute($route));
@@ -318,47 +305,17 @@ class Router implements RouterInterface
      */
     protected function parseIncomingRequest(PsrRequest $request)
     {
-        if($request instanceof \Ant\Http\Interfaces\RequestInterface) {
+        if ($request instanceof \Ant\Http\Request) {
             return [
                 $request->getMethod(),
                 $request->getRequestRouteUri(),
-                $request->getAcceptType()
             ];
         }
 
         return [
             $request->getMethod(),
             $request->getUri()->getPath(),
-            $this->getAccept($request)
         ];
-    }
-
-    /**
-     * 获取客户端接收类型,默认为text
-     *
-     * @param PsrRequest $request
-     * @return string
-     */
-    protected function getAccept(PsrRequest $request)
-    {
-        $acceptTypes = [
-            'text/javascript'       =>  'jsonp',
-            'application/javascript'=>  'jsonp',
-            'application/json'      =>  'json',
-            'text/json'             =>  'json',
-            'text/xml'              =>  'xml',
-            'application/xml'       =>  'xml',
-            'text/html'             =>  'text',
-        ];
-
-        foreach($request->getHeader('accept') as $type){
-            if(array_key_exists($type,$acceptTypes)){
-                return $acceptTypes[$type];
-                break;
-            }
-        }
-
-        return 'text';
     }
 
     /**
@@ -368,7 +325,7 @@ class Router implements RouterInterface
      */
     protected function filterMethod($method)
     {
-        if(!in_array($method,$this->methods)){
+        if (!in_array($method,$this->methods)) {
             throw new MethodNotAllowedException($this->methods,sprintf(
                 'Unsupported HTTP method "%s" provided',
                 $method
@@ -458,7 +415,7 @@ class Router implements RouterInterface
      */
     public function addMiddleware($middleware)
     {
-        if(!is_array($middleware)){
+        if (!is_array($middleware)) {
             $middleware = func_get_args();
         }
 

@@ -47,13 +47,6 @@ class Route implements RouteInterface
     protected $arguments = [];
 
     /**
-     * 响应类型
-     *
-     * @var array
-     */
-    protected $responseType = [];
-
-    /**
      * Route constructor.
      * @param $method
      * @param $uri
@@ -65,14 +58,12 @@ class Route implements RouteInterface
         $action = $this->parseAction($action);
         $this->groupAttributes = $groupAttributes;
 
-        if(isset($groupAttributes)) {
+        if (isset($groupAttributes)) {
             //继承路由组信息
             $uri = $this->mergeGroupPrefixAndSuffix($uri);
 
             $action = $this->mergeGroupNamespace(
-                $this->mergeMiddlewareGroup(
-                    $this->mergeResponseType($action)
-                )
+                $this->mergeMiddlewareGroup($action)
             );
         }
 
@@ -82,7 +73,6 @@ class Route implements RouteInterface
         $this->uri = '/'.trim($uri,'/');
         $this->callback = $action['uses'];
         $this->setMiddleware(isset($action['middleware']) ? $action['middleware'] : []);
-        $this->setResponseType(isset($action['type']) ? $action['type'] : ['html']);
     }
 
     /**
@@ -93,9 +83,9 @@ class Route implements RouteInterface
      */
     protected function parseUses(& $action)
     {
-        if(empty($action['uses'])){
-            foreach($action as $value){
-                if($value instanceof \Closure){
+        if (empty($action['uses'])) {
+            foreach ($action as $value) {
+                if ($value instanceof \Closure) {
                     return $action['uses'] = $value;
                 }
             }
@@ -112,9 +102,9 @@ class Route implements RouteInterface
      */
     protected function parseAction($action)
     {
-        if(is_string($action)){
+        if (is_string($action)) {
             return ['uses' => $action];
-        }elseif(!is_array($action)){
+        } elseif (!is_array($action)) {
             return [$action];
         }
 
@@ -245,39 +235,9 @@ class Route implements RouteInterface
      */
     public function setArguments(array $arguments)
     {
-        foreach($arguments as $name => $value) {
+        foreach ($arguments as $name => $value) {
             $this->arguments[$name] = $value;
         }
-
-        return $this;
-    }
-
-    /**
-     * @return array
-     */
-    public function getResponseType()
-    {
-        return $this->responseType;
-    }
-
-    /**
-     * @param array $responseType
-     * @return $this
-     */
-    public function setResponseType(array $responseType)
-    {
-        $this->responseType = $responseType;
-
-        return $this;
-    }
-
-    /**
-     * @param $type
-     * @return $this
-     */
-    public function withAddResponseType($type)
-    {
-        $this->responseType[] = $type;
 
         return $this;
     }

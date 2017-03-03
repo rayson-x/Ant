@@ -1,6 +1,10 @@
 <?php
 namespace Ant\Routing;
 
+/**
+ * Class ParseGroupAttributes
+ * @package Ant\Routing
+ */
 trait ParseGroupAttributes
 {
     /**
@@ -18,11 +22,11 @@ trait ParseGroupAttributes
      */
     protected function mergeGroupPrefixAndSuffix($uri)
     {
-        if(isset($this->groupAttributes['prefix'])){
+        if (isset($this->groupAttributes['prefix'])) {
             $uri = trim($this->groupAttributes['prefix'],'/').'/'.trim($uri,'/');
         }
 
-        if(isset($this->groupAttributes['suffix'])){
+        if (isset($this->groupAttributes['suffix'])) {
             $uri = trim($uri,'/').'/'.trim($this->groupAttributes['suffix'],'/');
         }
 
@@ -37,7 +41,7 @@ trait ParseGroupAttributes
      */
     protected function mergeGroupNamespace($action)
     {
-        if(isset($action['uses']) && isset($this->groupAttributes['namespace'])){
+        if (isset($action['uses']) && isset($this->groupAttributes['namespace'])) {
             $action['uses'] = rtrim($this->groupAttributes['namespace'],'\\').'\\'.trim($action['uses'],'\\');
         }
 
@@ -57,25 +61,6 @@ trait ParseGroupAttributes
                 $action['middleware'] = array_merge($this->groupAttributes['middleware'], (array)$action['middleware']);
             } else {
                 $action['middleware'] = $this->groupAttributes['middleware'];
-            }
-        }
-
-        return $action;
-    }
-
-    /**
-     * 合并响应类型
-     *
-     * @param $action
-     * @return array
-     */
-    protected function mergeResponseType($action)
-    {
-        if(isset($this->groupAttributes['type'])) {
-            if(isset($action['type'])) {
-                $action['type'] = array_merge($action['type'],$this->groupAttributes['type']);
-            }else{
-                $action['type'] = $this->groupAttributes['type'];
             }
         }
 

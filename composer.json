@@ -8,14 +8,14 @@
         "symfony/debug": "~2.8|~3.0",
         "illuminate/database": "5.4.*",
         "predis/predis" : "^1.1.1",
-        "ant-framework/http":"dev-master",
+        "ant-framework/http":"dev-dev",
         "ant-framework/middleware":"^0.1.0",
-        "sssxxzzz/lib":"dev-master"
+        "ant-framework/support": "^0.2.0",
+        "filp/whoops": "*"
     },
     "autoload": {
         "psr-4": {
             "Ant\\": "System"
-        },
-        "files": ["System/Support/Helper.php"]
+        }
     }
 }

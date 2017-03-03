@@ -36,7 +36,7 @@ class BaseServiceProvider implements ServiceProviderInterface
          * 注册 Http Request 处理类
          */
         $container->singleton('request',function() {
-            return (new ServerRequest)->keepImmutability(false);
+            return new ServerRequest;
         });
 
         /**

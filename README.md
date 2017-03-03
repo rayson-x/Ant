@@ -26,7 +26,7 @@ server {
     listen 80;
     server_name ant.com;
     root /path;
-    index index.php;s
+    index index.php;
 
     location / {
         try_files $uri $uri/ /index.php$is_args$args;

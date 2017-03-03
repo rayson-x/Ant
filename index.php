@@ -37,4 +37,8 @@ $router->get('/',function () {
     return "Ant-Framework";
 });
 
+$router->get('/test',function () {
+    return ['foo' => 'bar'];
+});
+
 $app->run();

@@ -298,20 +298,13 @@ class Router implements RouterInterface
     }
 
     /**
-     * 解析请求,返回客户端请求的方法,资源,以及资源的返回方式
+     * 解析请求
      *
      * @param PsrRequest $request
      * @return array
      */
     protected function parseIncomingRequest(PsrRequest $request)
     {
-        if ($request instanceof \Ant\Http\Request) {
-            return [
-                $request->getMethod(),
-                $request->getRequestRouteUri(),
-            ];
-        }
-
         return [
             $request->getMethod(),
             $request->getUri()->getPath(),

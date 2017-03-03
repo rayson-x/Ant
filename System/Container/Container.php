@@ -408,7 +408,7 @@ class Container implements ContainerInterface,ArrayAccess
         //获取服务实现方式
         $concrete = $this->getConcrete($serviceName);
 
-        $result = $this->build($concrete,$parameters);
+        $result = $this->build($concrete, $parameters);
 
         //扩展服务
         foreach ($this->getExtenders($serviceName) as $extender) {

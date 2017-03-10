@@ -7,6 +7,8 @@ use Ant\Http\Response;
 use Ant\Middleware\Pipeline;
 use Ant\Container\Container;
 use Ant\Support\Traits\Singleton;
+use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\ServerRequestInterface;
 use Ant\Container\Interfaces\ServiceProviderInterface;
 use Symfony\Component\Debug\Exception\FatalThrowableError;
 use Symfony\Component\Debug\Exception\FatalErrorException;
@@ -138,7 +140,7 @@ class Application extends Container
         });
 
         set_exception_handler(function ($e) {
-            $this->send($this->handleUncaughtException($e));
+            $this->end($this->handleUncaughtException($e));
         });
     }
 
@@ -257,12 +259,12 @@ class Application extends Container
      */
     public function run()
     {
-        $request = $this['request'];
-        $response = $this['response'];
+        $req = $this->make(ServerRequestInterface::class);
+        $res = $this->make(ResponseInterface::class);
 
-        $result = $this->process($request,$response);
+        $result = $this->process($req, $res);
 
-        $this->send($result);
+        $this->end($result);
     }
 
     /**
@@ -272,15 +274,22 @@ class Application extends Container
      * @param $response
      * @return \Ant\Http\Response
      */
-    protected function process($request, $response)
+    public function process(ServerRequestInterface $request, ResponseInterface $response)
     {
         try {
-            $result = $this->sendThroughPipeline([$request,$response],function () {
-                return $this->router->dispatch(...func_get_args());
+            // 回调应用程序中间件
+            $result = $this->sendThroughPipeline([$request, $response], function ($req) {
+                $router = $this->make('router');
+                // 设置路由基础路径
+                if (is_callable([$req, 'getRoutePath']) && method_exists($router, 'setRoutePath')) {
+                    $router->setRoutePath($req->getRoutePath());
+                }
+                // 进行路由匹配,并且回调
+                return $router->dispatch(...func_get_args());
             });
-        } catch(\Exception $exception) {
+        } catch (\Exception $exception) {
             $result = call_user_func($this->getExceptionHandler(), $exception, $request, $response);
-        } catch(\Throwable $error) {
+        } catch (\Throwable $error) {
             $result = call_user_func($this->getExceptionHandler(), $error, $request, $response);
         }
 
@@ -294,7 +303,7 @@ class Application extends Container
      * @param \Closure $then
      * @return mixed
      */
-    protected function sendThroughPipeline(array $args,\Closure $then)
+    protected function sendThroughPipeline(array $args, \Closure $then)
     {
         if (count($this->middleware) > 0) {
             return (new Pipeline)
@@ -309,11 +318,14 @@ class Application extends Container
     /**
      * 向客户端发送数据
      *
-     * @param mixed $result
+     * @param mixed $response
      */
-    public function send($result)
+    public function end($response)
     {
-        $response = $this->handleResult($result);
+        if (!$response instanceof ResponseInterface) {
+            $response = $this->make(ResponseInterface::class);
+        }
+
         $this->sendHeader($response)->sendContent($response);
 
         if (function_exists("fastcgi_finish_request")) {
@@ -324,24 +336,6 @@ class Application extends Container
     }
 
     /**
-     * 解析响应结果
-     *
-     * @param $result
-     * @return Response
-     */
-    protected function handleResult($result)
-    {
-        if (!empty($result) && !$result instanceof Response) {
-            // 渲染响应结果
-            $result = $this['response']->setContent($result)->decorate();
-        } elseif (empty($result)) {
-            $result = $this['response'];
-        }
-
-        return $result;
-    }
-
-    /**
      * 发送头信息
      *
      * @return $this
@@ -349,11 +343,6 @@ class Application extends Container
     protected function sendHeader(Response $response)
     {
         if (!headers_sent()) {
-            if (!$response->hasHeader('Content-Len') && $size = $response->getBody()->getSize()) {
-                //设置Body长度
-                $response->withHeader('content-length', $size);
-            }
-
             header(sprintf(
                 'HTTP/%s %s %s',
                 $response->getProtocolVersion(),
@@ -362,14 +351,12 @@ class Application extends Container
             ));
 
             foreach ($response->getHeaders() as $name => $value) {
-                if (is_array($value)) {
-                    $value = implode(',', $value);
-                }
-
                 $name = implode('-',array_map('ucfirst',explode('-',$name)));
-                header("{$name}: {$value}");
+                // 输出Http头
+                header(sprintf("%s: %s", $name, implode(',', $value)));
             }
 
+            // 写入cookie内容
             foreach ($response->getCookies() as $cookie) {
                 if (!is_int($cookie['expires'])) {
                     $cookie['expires'] = (new \DateTime($cookie['expires']))->getTimestamp();

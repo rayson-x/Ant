@@ -5,13 +5,12 @@ use FastRoute\Dispatcher;
 use Ant\Middleware\Pipeline;
 use FastRoute\RouteCollector;
 use InvalidArgumentException;
+use Psr\Http\Message\RequestInterface;
+use Psr\Http\Message\ResponseInterface;
 use Ant\Http\Exception\NotFoundException;
 use Ant\Routing\Interfaces\RouterInterface;
-use Ant\Http\Exception\NotAcceptableException;
 use Ant\Container\Interfaces\ContainerInterface;
 use Ant\Http\Exception\MethodNotAllowedException;
-use Psr\Http\Message\RequestInterface as PsrRequest;
-use Psr\Http\Message\ResponseInterface as PsrResponse;
 
 /**
  * Todo::创建资源
@@ -29,6 +28,13 @@ class Router implements RouterInterface
      * @var ContainerInterface
      */
     protected $container;
+
+    /**
+     * 基础路径
+     *
+     * @var null|string
+     */
+    protected $routePath = null;
 
     /**
      * 路由
@@ -148,87 +154,23 @@ class Router implements RouterInterface
     }
 
     /**
-     * 注册一个“GET”路由
-     *
-     * @param $uri
-     * @param $action
+     * @param $method
+     * @param $args
      * @return Route
      */
-    public function get($uri,$action)
+    public function __call($method, $args)
     {
-        return $this->map('GET',$uri,$action);
-    }
+        if (count($args) < 2) {
+            throw new \RuntimeException;
+        }
 
-    /**
-     * 注册一个“POST”路由
-     *
-     * @param $uri
-     * @param $action
-     * @return Route
-     */
-    public function post($uri,$action)
-    {
-        return $this->map('POST',$uri,$action);
-    }
+        if (in_array($method, $this->methods)) {
+            throw new \RuntimeException;
+        }
 
-    /**
-     * 注册一个“PUT”路由
-     *
-     * @param $uri
-     * @param $action
-     * @return Route
-     */
-    public function put($uri,$action)
-    {
-        return $this->map('PUT',$uri,$action);
-    }
+        list($uri, $action) = $args;
 
-    /**
-     * 注册一个“DELETE”路由
-     *
-     * @param $uri
-     * @param $action
-     * @return Route
-     */
-    public function delete($uri,$action)
-    {
-        return $this->map('DELETE',$uri,$action);
-    }
-
-    /**
-     * 注册一个“HEAD”路由
-     *
-     * @param $uri
-     * @param $action
-     * @return Route
-     */
-    public function head($uri,$action)
-    {
-        return $this->map('HEAD',$uri,$action);
-    }
-
-    /**
-     * 注册一个“PATCH”路由
-     *
-     * @param $uri
-     * @param $action
-     * @return Route
-     */
-    public function patch($uri,$action)
-    {
-        return $this->map('PATCH',$uri,$action);
-    }
-
-    /**
-     * 注册一个“OPTIONS”路由
-     *
-     * @param $uri
-     * @param $action
-     * @return Route
-     */
-    public function options($uri,$action)
-    {
-        return $this->map('OPTIONS',$uri,$action);
+        return $this->map(strtoupper($method), $uri, $action);
     }
 
     /**
@@ -253,7 +195,7 @@ class Router implements RouterInterface
      */
     public function map($methods, $uri, $action)
     {
-        $route = $this->newRoute($methods, $uri, $action);
+        $route = $this->createRoute($methods, $uri, $action);
 
         $this->routes[] = $route;
 
@@ -270,45 +212,62 @@ class Router implements RouterInterface
      * @param $action
      * @return Route
      */
-    public function newRoute($methods, $uri, $action)
+    protected function createRoute($methods, $uri, $action)
     {
         return new Route($methods, $uri, $action, $this->groupAttributes);
     }
 
     /**
-     * @param PsrRequest $req
-     * @param PsrResponse $res
-     * @return mixed|PsrResponse
+     * 设置路由基础路径
+     *
+     * @param $basePath
      */
-    public function dispatch(PsrRequest $req, PsrResponse $res)
+    public function setRoutePath($basePath)
+    {
+        if (!is_string($basePath)) {
+            throw new \RuntimeException;
+        }
+
+        $this->routePath = $basePath;
+    }
+
+    /**
+     * @param RequestInterface $req
+     * @param ResponseInterface $res
+     * @return mixed|ResponseInterface
+     */
+    public function dispatch(RequestInterface $req, ResponseInterface $res)
     {
         // Todo::选择性加载,针对Cgi模式,Cli模式下默认全部加载
         // Todo::处理Options请求
+
         // 获取请求的方法,路由,跟返回类型
-        list($method, $uri) = $this->parseIncomingRequest($req);
+        list($method, $routePath) = $this->parseIncomingRequest($req);
 
         // 过滤非法Http动词
         $this->filterMethod($method);
         // 匹配路由
-        $route = $this->matching($method, $uri);
-        // 回调路由以及中间件
-        return (new Pipeline)->send($req,$res)
+        $route = $this->matching($method, $routePath);
+
+        return (new Pipeline)
+            ->send($req, $res)
             ->through($this->createMiddleware($route))
             ->then($this->callRoute($route));
     }
 
     /**
-     * 解析请求
+     * 解析请求,返回客户端请求的方法,资源,以及资源的返回方式
      *
-     * @param PsrRequest $request
+     * @param RequestInterface $request
      * @return array
      */
-    protected function parseIncomingRequest(PsrRequest $request)
+    protected function parseIncomingRequest(RequestInterface $request)
     {
-        return [
-            $request->getMethod(),
-            $request->getUri()->getPath(),
-        ];
+        $method = $request->getMethod();
+
+        $routePath = $this->routePath ?: $request->getUri()->getPath();
+
+        return [$method, $routePath];
     }
 
     /**
@@ -319,7 +278,7 @@ class Router implements RouterInterface
     protected function filterMethod($method)
     {
         if (!in_array($method,$this->methods)) {
-            throw new MethodNotAllowedException($this->methods,sprintf(
+            throw new MethodNotAllowedException($this->methods, sprintf(
                 'Unsupported HTTP method "%s" provided',
                 $method
             ));
@@ -330,19 +289,19 @@ class Router implements RouterInterface
      * 匹配路由
      *
      * @param string $method
-     * @param string $uri
+     * @param string $routePath
      * @return Route
      */
-    protected function matching($method,$uri)
+    protected function matching($method, $routePath)
     {
-        if (isset($this->fastRoute[$method.$uri])) {
+        if (isset($this->fastRoute[$method.$routePath])) {
             return $this->handleFoundRoute(
-                $this->fastRoute[$method.$uri]
+                $this->fastRoute[$method.$routePath]
             );
         }
 
         return $this->handleDispatcher(
-            $this->createDispatcher()->dispatch($method, $uri)
+            $this->createDispatcher()->dispatch($method, $routePath)
         );
     }
 

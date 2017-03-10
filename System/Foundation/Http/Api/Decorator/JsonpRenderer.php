@@ -1,8 +1,10 @@
 <?php
 namespace Ant\Foundation\Http\Api\Decorator;
 
-use Psr\Http\Message\MessageInterface as PsrMessage;
-
+/**
+ * Class JsonpRenderer
+ * @package Ant\Foundation\Http\Api\Decorator
+ */
 class JsonpRenderer extends JsonRenderer
 {
     public $type = 'application/javascript';
@@ -17,14 +19,17 @@ class JsonpRenderer extends JsonRenderer
      */
     public $callName = 'callback';
 
-    public function decorate(PsrMessage $http)
+    /**
+     * {@inheritDoc}
+     */
+    public function decorate()
     {
         $callName = isset($_GET[$this->getName]) ? $_GET[$this->getName] : $this->callName;
 
-        $http->getBody()->write(
+        $this->response->getBody()->write(
             "{$callName}({$this->toJson()});"
         );
 
-        return $http->withHeader('Content-Type', $this->getType());
+        return $this->response->withHeader('Content-Type', $this->getType());
     }
 }

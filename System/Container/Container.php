@@ -11,8 +11,7 @@ use Ant\Container\Interfaces\ContainerInterface;
 use Ant\Container\Interfaces\ServiceProviderInterface;
 
 /**
- * 这个是参考Laravel的服务容器进行的开发,相当于laravel的服务容器删减版
- * Todo::服务获取一次后立刻销毁
+ * Todo 将call系列方法从容器中溢出,作为一个单独的类存在
  *
  * Class Container
  * @package Ant\Container
@@ -83,8 +82,6 @@ class Container implements ContainerInterface,ArrayAccess
      */
     public function bound($serviceName)
     {
-        $serviceName = $this->normalize($serviceName);
-
         return isset($this->bindings[$serviceName]) || isset($this->instances[$serviceName]);
     }
 
@@ -96,8 +93,6 @@ class Container implements ContainerInterface,ArrayAccess
      */
     public function resolved($serviceName)
     {
-        $serviceName = $this->normalize($serviceName);
-
         return isset($this->resolved[$serviceName]) || isset($this->instances[$serviceName]);
     }
 
@@ -109,8 +104,6 @@ class Container implements ContainerInterface,ArrayAccess
      */
     public function isShared($serviceName)
     {
-        $serviceName = $this->normalize($serviceName);
-
         if (isset($this->instances[$serviceName])) {
             return true;
         }
@@ -130,7 +123,7 @@ class Container implements ContainerInterface,ArrayAccess
      */
     public function alias($serviceName, $alias)
     {
-        $this->aliases[$alias] = $this->normalize($serviceName);
+        $this->aliases[$alias] = $serviceName;
     }
 
     /**
@@ -141,33 +134,7 @@ class Container implements ContainerInterface,ArrayAccess
      */
     public function isAlias($name)
     {
-        return isset($this->aliases[$this->normalize($name)]);
-    }
-
-    /**
-     * 通过数组设置服务别名
-     *
-     * @param array $array
-     * @return mixed
-     */
-    protected function setAliasFromArray(array $array)
-    {
-        list($serviceName,$alias) = [key($array),current($array)];
-
-        $this->alias($serviceName,$alias);
-
-        return $serviceName;
-    }
-
-    /**
-     * 通过服务别名获取服务原名
-     *
-     * @param $name
-     * @return string
-     */
-    protected function getServiceNameFromAlias($name)
-    {
-        return isset($this->aliases[$name]) ? $this->aliases[$name] : $name;
+        return isset($this->aliases[$name]);
     }
 
     /**
@@ -186,7 +153,7 @@ class Container implements ContainerInterface,ArrayAccess
             }
 
             foreach ((array) $serviceGroup as $serviceName) {
-                $this->tags[$tag][] = $this->normalize($serviceName);
+                $this->tags[$tag][] = $serviceName;
             }
         }
     }
@@ -228,13 +195,6 @@ class Container implements ContainerInterface,ArrayAccess
      */
     public function bind($serviceName, $concrete = null, $shared = false)
     {
-        $serviceName = $this->normalize($serviceName);
-        $concrete = $this->normalize($concrete);
-
-        if (is_array($serviceName)) {
-            $serviceName = $this->setAliasFromArray($serviceName);
-        }
-
         // 如果已经绑定,删除之前所有的服务实例
         $this->removeStaleInstances($serviceName);
 
@@ -280,12 +240,6 @@ class Container implements ContainerInterface,ArrayAccess
      */
     public function instance($serviceName, $instance)
     {
-        $serviceName = $this->normalize($serviceName);
-
-        if (is_array($serviceName)) {
-            $serviceName = $this->setAliasFromArray($serviceName);
-        }
-
         unset($this->aliases[$serviceName]);
 
         $this->instances[$serviceName] = $instance;
@@ -299,8 +253,6 @@ class Container implements ContainerInterface,ArrayAccess
      */
     public function extend($serviceName, Closure $closure)
     {
-        $serviceName = $this->normalize($serviceName);
-
         if (isset($this->instances[$serviceName])) {
             $this->instances[$serviceName] = $closure($this->instances[$serviceName]);
         } else {
@@ -338,8 +290,6 @@ class Container implements ContainerInterface,ArrayAccess
      */
     public function when($concrete)
     {
-        $concrete = $this->normalize($concrete);
-
         return new ContextualBindingBuilder($this,$concrete);
     }
 
@@ -353,9 +303,9 @@ class Container implements ContainerInterface,ArrayAccess
      * addContextualBinding(Foo::class,'$array',[1,2,3])
      * addContextualBinding(Foo::class,Bar::class,Bar::class)
      */
-    public function addContextualBinding($concrete,$need,$implementation)
+    public function addContextualBinding($concrete, $need, $implementation)
     {
-        $this->contextual[$this->normalize($concrete)][$this->normalize($need)] = $implementation;
+        $this->contextual[$concrete][$need] = $implementation;
     }
 
     /**
@@ -375,6 +325,65 @@ class Container implements ContainerInterface,ArrayAccess
     }
 
     /**
+     * 通过服务名称获取服务
+     *
+     * @param string $serviceName
+     * @param array $parameters
+     * @return mixed
+     */
+    public function make($serviceName, array $parameters = [])
+    {
+        // 获取服务名称
+        $serviceName = $this->getServiceNameFromAlias($serviceName);
+
+        // 已有实例,返回实例
+        if (array_key_exists($serviceName, $this->instances)) {
+            return $this->instances[$serviceName];
+        }
+
+        // 获取服务实现方式
+        $concrete = $this->getConcrete($serviceName);
+
+        $result = $this->build($concrete, $parameters);
+
+        // 扩展服务
+        foreach ($this->getExtenders($serviceName) as $extender) {
+            $returnValue = $extender($result, $this);
+            if (!is_null($returnValue)) {
+                $result = $returnValue;
+            }
+        }
+
+        // 是否保存为全局唯一实例
+        if ($this->isShared($serviceName)) {
+            $this->instances[$serviceName] = $result;
+        }
+
+        $this->resolved[$serviceName] = true;
+
+        return $result;
+    }
+
+    /**
+     * 通过服务别名获取服务原名
+     *
+     * @param $name
+     * @return string
+     */
+    protected function getServiceNameFromAlias($name)
+    {
+        if (! isset($this->aliases[$name])) {
+            return $name;
+        }
+
+        if ($this->aliases[$name] === $name) {
+            throw new \LogicException("[{$name}] is aliased to itself.");
+        }
+
+        return $this->getServiceNameFromAlias($this->aliases[$name]);
+    }
+
+    /**
      * 获取具体实现方式
      *
      * @param $serviceName
@@ -387,45 +396,6 @@ class Container implements ContainerInterface,ArrayAccess
         }
 
         return $this->bindings[$serviceName]['concrete'];
-    }
-
-    /**
-     * 通过服务名称获取服务
-     *
-     * @param string $serviceName
-     * @param array $parameters
-     * @return mixed
-     */
-    public function make($serviceName, array $parameters = [])
-    {
-        //获取服务名称
-        $serviceName = $this->getServiceNameFromAlias($serviceName);
-
-        if (isset($this->instances[$serviceName])) {
-            return $this->instances[$serviceName];
-        }
-
-        //获取服务实现方式
-        $concrete = $this->getConcrete($serviceName);
-
-        $result = $this->build($concrete, $parameters);
-
-        //扩展服务
-        foreach ($this->getExtenders($serviceName) as $extender) {
-            $returnValue = $extender($result, $this);
-            if (!is_null($returnValue)) {
-                $result = $returnValue;
-            }
-        }
-
-        //是否保存为全局唯一实例
-        if ($this->isShared($serviceName)) {
-            $this->instances[$serviceName] = $result;
-        }
-
-        $this->resolved[$serviceName] = true;
-
-        return $result;
     }
 
     /**
@@ -458,6 +428,7 @@ class Container implements ContainerInterface,ArrayAccess
         }
 
         $construct = $reflection->getConstructor();
+
         if (is_null($construct)) {
             //没有构造函数,直接返回实例
             return $reflection->newInstance();
@@ -466,7 +437,7 @@ class Container implements ContainerInterface,ArrayAccess
         //将生成中的实例入栈
         $this->buildStack[] = $concrete;
         //获取构造函数需要参数
-        $instanceArgs = $this->getDependencies($construct,$parameters);
+        $instanceArgs = $this->resolveDependencies($construct, $parameters);
         //完成,将生成中的实例出栈
         array_pop($this->buildStack);
         //返回实例
@@ -480,7 +451,7 @@ class Container implements ContainerInterface,ArrayAccess
      * @param array $primitives
      * @return mixed
      */
-    protected function getDependencies(\ReflectionFunctionAbstract $callback, array $primitives)
+    protected function resolveDependencies(\ReflectionFunctionAbstract $callback, array $primitives)
     {
         if (!$parameters = $callback->getParameters()) {
             return $primitives;
@@ -519,7 +490,7 @@ class Container implements ContainerInterface,ArrayAccess
         $count = count($dependencies);
 
         while ($count-- > 0 && list($key,$value) = each($parameters)) {
-            if (is_numeric($key)) {
+            if (is_numeric($key) && isset($dependencies[$key])) {
                 unset($parameters[$key]);
 
                 $parameters[$dependencies[$key]->name] = $value;
@@ -559,8 +530,8 @@ class Container implements ContainerInterface,ArrayAccess
      */
     protected function resolveClass(ReflectionParameter $parameter)
     {
-        try{
-            $dependencyClass = $parameter->getClass()->getName();
+        try {
+            $dependencyClass = $parameter->getClass()->name;
             if (!is_null($object = $this->getContextualConcrete($dependencyClass))) {
                 //优先使用用户提供实例
                 if (is_string($object)) {
@@ -571,6 +542,7 @@ class Container implements ContainerInterface,ArrayAccess
                     return $object;
                 }
             }
+
             return $this->make($dependencyClass);
         } catch (ContainerValueNotFoundException $e) {
             if ($parameter->isOptional()) {
@@ -617,7 +589,7 @@ class Container implements ContainerInterface,ArrayAccess
             $func = new ReflectionFunction($callback);
         }
 
-        $parameters = $this->getDependencies($func,$parameters);
+        $parameters = $this->resolveDependencies($func,$parameters);
 
         return call_user_func_array($callback,$parameters);
     }
@@ -677,19 +649,6 @@ class Container implements ContainerInterface,ArrayAccess
     }
 
     /**
-     * 规范服务名称
-     *
-     * @param  mixed  $serviceName
-     * @return mixed
-     */
-    protected function normalize($serviceName)
-    {
-        return is_string($serviceName)
-            ? ltrim($serviceName, '\\')
-            : $serviceName;
-    }
-
-    /**
      * 清空实例
      *
      * @param $serviceName
@@ -698,8 +657,8 @@ class Container implements ContainerInterface,ArrayAccess
     {
         //如果服务原名与服务别名重复,会出现无法加载服务的情况
         unset(
-            $this->instances[$serviceName]
-            ,$this->aliases[$serviceName]
+            $this->instances[$serviceName],
+            $this->aliases[$serviceName]
         );
     }
 
@@ -710,7 +669,6 @@ class Container implements ContainerInterface,ArrayAccess
      */
     public function forgetService($name)
     {
-        $name = $this->normalize($name);
         //获取服务原名
         $serviceName = $this->getServiceNameFromAlias($name);
 

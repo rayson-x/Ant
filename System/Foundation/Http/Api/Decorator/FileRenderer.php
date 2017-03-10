@@ -1,19 +1,26 @@
 <?php
 namespace Ant\Foundation\Http\Api\Decorator;
 
-use Psr\Http\Message\MessageInterface as PsrMessage;
-
+/**
+ * Class FileRenderer
+ * @package Ant\Foundation\Http\Api\Decorator
+ */
 class FileRenderer extends Renderer
 {
     public $type = 'application/octet-stream';
 
     public $fileName = 'example.txt';
 
-    public function decorate(PsrMessage $http)
+    /**
+     * {@inheritDoc}
+     */
+    public function decorate()
     {
         if (!is_string($this->package) && !is_integer($this->package)) {
             throw new \RuntimeException('Response content must be string');
         }
+
+        $response = $this->response;
 
         $headers = [
             'Content-Type' => $this->type,
@@ -22,11 +29,11 @@ class FileRenderer extends Renderer
         ];
 
         foreach ($headers as $name => $value) {
-            $http = $http->withHeader($name,$value);
+            $response = $response->withHeader($name,$value);
         }
 
-        $http->getBody()->write($this->package);
+        $response->getBody()->write($this->package);
 
-        return $http;
+        return $response;
     }
 }

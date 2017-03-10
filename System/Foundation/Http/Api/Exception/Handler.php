@@ -4,7 +4,7 @@ namespace Ant\Foundation\Http\Api\Exception;
 use Exception;
 use Ant\Http\Exception\HttpException;
 use Psr\Http\Message\ResponseInterface;
-use Ant\Foundation\Http\Api\Decorator\Renderer;
+use Ant\Foundation\Http\Api\Decorator\RendererFactory;
 
 /**
  * 异常处理
@@ -17,14 +17,14 @@ class Handler
     /**
      * @param Exception $e
      * @param ResponseInterface $response
-     * @param Renderer $renderer
+     * @param string $rendererType
      * @param bool|true $debug
      * @return \Psr\Http\Message\MessageInterface
      */
     public function render (
         Exception $e,
         ResponseInterface $response,
-        Renderer $renderer,
+        $rendererType,
         $debug = true
     ) {
         $headers  = [];
@@ -36,18 +36,18 @@ class Handler
         }
 
         // 设置响应码
-        $response->withStatus($statusCode);
+        $response = $response->withStatus($statusCode);
 
         // 添加响应头
         $debug && $headers += $this->getExceptionInfo($e);
         foreach ($headers as $name => $value) {
-            $response->withAddedHeader($name,$value);
+            $response = $response->withAddedHeader($name,$value);
         }
 
         // 设置错误信息
-        return $renderer
+        return RendererFactory::create($response, $rendererType)
             ->setPackage($this->getErrorInfo($e, $debug))
-            ->decorate($response);
+            ->decorate();
     }
 
     /**
@@ -61,8 +61,8 @@ class Handler
     {
         return [
             'error'     =>  [
-                'code'      =>  $e->getCode(),
-                'message'   =>  $debug && $e->getMessage() ? $e->getMessage() : 'error'
+                'code'          =>  $e->getCode(),
+                'message'       =>  $debug && $e->getMessage() ? $e->getMessage() : 'error',
             ]
         ];
     }

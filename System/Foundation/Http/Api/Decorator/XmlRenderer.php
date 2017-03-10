@@ -1,17 +1,22 @@
 <?php
 namespace Ant\Foundation\Http\Api\Decorator;
 
-use Psr\Http\Message\MessageInterface as PsrMessage;
-
+/**
+ * Class XmlRenderer
+ * @package Ant\Foundation\Http\Api\Decorator
+ */
 class XmlRenderer extends Renderer
 {
     public $type = 'text/xml';
 
-    public function decorate(PsrMessage $http)
+    /**
+     * {@inheritDoc}
+     */
+    public function decorate()
     {
-        $http->getBody()->write($this->toXml());
+        $this->response->getBody()->write($this->toXml());
 
-        return $http->withHeader('Content-Type', $this->getType());
+        return $this->response->withHeader('Content-Type', $this->getType());
     }
 
     /**

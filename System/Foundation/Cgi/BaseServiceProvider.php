@@ -3,7 +3,9 @@ namespace Ant\Foundation\Cgi;
 
 use Ant\Http\Response;
 use Ant\Routing\Router;
+use Ant\Support\Collection;
 use Ant\Http\ServerRequest;
+use Ant\Foundation\Debug\ExceptionHandle;
 use Ant\Container\Interfaces\ContainerInterface;
 use Ant\Container\Interfaces\ServiceProviderInterface;
 
@@ -25,37 +27,31 @@ class BaseServiceProvider implements ServiceProviderInterface
         /**
          * 注册服务容器
          */
-        $container->instance('app',$container);
+        $container->instance('app', $container);
 
         /**
          * 注册 配置信息信息集
          */
-        $container->singleton('config',\Ant\Support\Collection::class);
+        $container->singleton('config', Collection::class);
 
         /**
          * 注册 Http Request 处理类
          */
-        $container->singleton('request',function() {
-            return new ServerRequest;
-        });
+        $container->singleton('request', ServerRequest::class);
 
         /**
          * 注册 Http Response 类
          */
-        $container->singleton('response',function($app) {
-            return Response::prepare($app['request']);
-        });
+        $container->singleton('response', Response::class);
 
         /**
          * 注册 Ant Router 类
          */
-        $container->singleton('router',function($app) {
-            return new Router($app);
-        });
+        $container->singleton('router', Router::class);
 
         /**
          * 注册 Debug 对象
          */
-        $container->bindIf('debug',\Ant\Foundation\Debug\ExceptionHandle::class);
+        $container->bindIf('debug', ExceptionHandle::class);
     }
 }

@@ -35,7 +35,7 @@ class ExceptionHandle
             : FlattenException::create($exception,$exception->getStatusCode(),$exception->getHeaders());
 
         // 设置响应码
-        $response->withStatus($fe->getStatusCode());
+        $response = $response->withStatus($fe->getStatusCode());
 
         // 处理异常
         $handler = new SymfonyExceptionHandler($debug);

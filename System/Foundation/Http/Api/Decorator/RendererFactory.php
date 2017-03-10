@@ -2,8 +2,13 @@
 namespace Ant\Foundation\Http\Api\Decorator;
 
 use InvalidArgumentException;
+use Psr\Http\Message\ResponseInterface;
 use Ant\Http\Exception\NotAcceptableException;
 
+/**
+ * Class RendererFactory
+ * @package Ant\Foundation\Http\Api\Decorator
+ */
 class RendererFactory
 {
     /**
@@ -26,7 +31,7 @@ class RendererFactory
      * @param $type
      * @return Renderer
      */
-    public static function create($type)
+    public static function create(ResponseInterface $response, $type)
     {
         if (!is_string($type)) {
             throw new InvalidArgumentException('type must be a string');
@@ -38,6 +43,6 @@ class RendererFactory
 
         $renderer = static::$renderer[$type];
 
-        return new $renderer();
+        return new $renderer($response);
     }
 }

@@ -8,7 +8,7 @@ $app->addMiddleware(function (Ant\Http\ServerRequest $request, Ant\Http\Response
     // before
     yield;
     // 设置响应头
-    $response->addHeaderFromIterator([
+    return $response->addHeaderFromIterator([
         // 超时时间
         'Expires' => 0,
         // 程序支持
@@ -27,7 +27,9 @@ $app->addMiddleware(function (Ant\Http\ServerRequest $request, Ant\Http\Response
 });
 
 /* 根据不同的 accept 格式,响应不同格式的数据,目前支持 json,xml,jsonp */
-$app->addMiddleware(new \Ant\Foundation\Http\Api\Middleware());
+$app->addMiddleware(
+    $app[\Ant\Foundation\Http\Api\Middleware::class]
+);
 
 /* 获取路由器 */
 $router = $app['router'];
@@ -35,10 +37,6 @@ $router = $app['router'];
 /* 注册路由 */
 $router->get('/',function () {
     return "Ant-Framework";
-});
-
-$router->get('/test',function () {
-    return ['foo' => 'bar'];
 });
 
 $app->run();

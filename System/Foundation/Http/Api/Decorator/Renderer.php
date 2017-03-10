@@ -1,8 +1,12 @@
 <?php
 namespace Ant\Foundation\Http\Api\Decorator;
 
-use Psr\Http\Message\MessageInterface as PsrMessage;
+use Psr\Http\Message\ResponseInterface as PsrResponse;
 
+/**
+ * Class Renderer
+ * @package Ant\Foundation\Http\Api\Decorator
+ */
 abstract class Renderer
 {
     /**
@@ -20,11 +24,26 @@ abstract class Renderer
     public $charset = 'utf-8';
 
     /**
+     * 待写入的Response
+     *
+     * @var PsrResponse
+     */
+    protected $response;
+
+    /**
      * 待装饰的包裹
      *
      * @var mixed
      */
     protected $package;
+
+    /**
+     * @param PsrResponse $response
+     */
+    public function __construct(PsrResponse $response)
+    {
+        $this->response = $response;
+    }
 
     /**
      * 设置包裹
@@ -50,7 +69,7 @@ abstract class Renderer
     /**
      * 装饰包裹
      *
-     * @return PsrMessage
+     * @return PsrResponse
      */
-    abstract public function decorate(PsrMessage $http);
+    abstract public function decorate();
 }

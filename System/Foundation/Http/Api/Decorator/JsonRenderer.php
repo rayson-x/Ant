@@ -1,16 +1,23 @@
 <?php
 namespace Ant\Foundation\Http\Api\Decorator;
 
-use Psr\Http\Message\MessageInterface as PsrMessage;
-
+/**
+ * Class JsonRenderer
+ * @package Ant\Foundation\Http\Api\Decorator
+ */
 class JsonRenderer extends Renderer
 {
     public $type = 'application/json';
 
-    public function decorate(PsrMessage $http)
+    /**
+     * {@inheritDoc}
+     */
+    public function decorate()
     {
-        $http->getBody()->write($this->toJson());
-        return $http->withHeader('Content-Type', $this->getType());
+        $response = $this->response;
+
+        $response->getBody()->write($this->toJson());
+        return $response->withHeader('Content-Type', $this->getType());
     }
 
     /**

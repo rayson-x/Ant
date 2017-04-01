@@ -51,16 +51,74 @@ class Application extends Container
     protected $basePath = '';
 
     /**
+     * 默认配置信息
+     *
+     * @var array
+     */
+    protected $defaultConfig = [
+        // 响应http头
+        'header'    =>  [
+            // 超时时间
+            'Expires' => [0],
+            // 程序支持
+            'X-Powered-By' => ['Ant-Framework'],
+            // 允许暴露给客户端访问的字段
+            'Access-Control-Expose-Headers' => ['*'],
+            // 设置跨域信息
+            'Access-Control-Allow-Origin' => ['*'],
+            // 是否允许携带认证信息
+            'Access-Control-Allow-Credentials' => ['false'],
+            // 缓存控制
+            'Cache-Control' => ['no-cache'],
+        ]
+    ];
+
+    /**
      * App constructor.
      *
      * @param string $path 项目路径
      */
     public function __construct($path = null)
     {
-        $this->basePath = rtrim($path,DIRECTORY_SEPARATOR);
+        $this->basePath = rtrim($path, DIRECTORY_SEPARATOR);
+        // 初始化容器
         $this->bootstrapContainer();
+        // 注册错误处理
         $this->registerErrorHandler();
-        $this->registerNamespace('App',$this->basePath.DIRECTORY_SEPARATOR.'App');
+        // 加载默认配置
+        $this->make('config')->replace($this->defaultConfig);
+        // 加载应用程序命名空间
+        $this->registerNamespace('App', $this->basePath . DIRECTORY_SEPARATOR . 'App');
+    }
+
+    /**
+     * 加载配置信息
+     *
+     * @param $config
+     */
+    public function loadConfig($config)
+    {
+        if (is_file($config) && file_exists($config)) {
+            $ext = pathinfo($config, PATHINFO_EXTENSION);
+
+            switch (mb_strtolower($ext)) {
+                case "json":
+                    $config = safeJsonDecode(file_get_contents($config), true);
+                    break;
+                case "xml":
+                    $config = get_object_vars(simplexml_load_file($config));
+                    break;
+                case "php":
+                    $config = require_once $config;
+                    break;
+            }
+        }
+
+        if (!is_array($config)) {
+            throw new \RuntimeException("Config load failed");
+        }
+
+        $this['config']->replace($config);
     }
 
     /**
@@ -133,6 +191,7 @@ class Application extends Container
                 !is_null($error = error_get_last())
                 && in_array($error['type'],[E_ERROR, E_CORE_ERROR, E_COMPILE_ERROR, E_PARSE])
             ) {
+                // 如果是错误造成的脚本结束,获取错误信息,并将错误包装为异常进行处理
                 throw new FatalErrorException(
                     $error['message'], $error['type'], 0, $error['file'], $error['line']
                 );
@@ -162,8 +221,8 @@ class Application extends Container
             $exception = new FatalThrowableError($exception);
         }
 
-        $request = $request ?: $this['request'];
-        $response = $response ?: $this['response'];
+        $request = $request ?: $this->make('request');
+        $response = $response ?: $this->make('response');
 
         // 返回异常处理结果
         return $this['debug']->render(
@@ -238,7 +297,7 @@ class Application extends Container
                 return false;
             }
             // 引入文件
-            require $filename;
+            \Composer\Autoload\includeFile($filename);
 
             return class_exists($className, false) || interface_exists($className, false);
         });
@@ -259,10 +318,10 @@ class Application extends Container
      */
     public function run()
     {
-        $req = $this->make(ServerRequestInterface::class);
-        $res = $this->make(ResponseInterface::class);
-
-        $result = $this->process($req, $res);
+        $result = $this->process(
+            $this->make('request'),
+            $this->make('response')
+        );
 
         $this->end($result);
     }
@@ -318,12 +377,20 @@ class Application extends Container
     /**
      * 向客户端发送数据
      *
-     * @param mixed $response
+     * @param mixed $result
      */
-    public function end($response)
+    public function end($result)
     {
+        $response = $result;
+
         if (!$response instanceof ResponseInterface) {
             $response = $this->make(ResponseInterface::class);
+
+            if (!is_string($result) && !is_int($result)) {
+                throw new \RuntimeException("Response content must be string");
+            }
+
+            $response->write($result);
         }
 
         $this->sendHeader($response)->sendContent($response);

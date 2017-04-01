@@ -11,13 +11,47 @@ use Ant\Foundation\Http\Api\Decorator\RendererFactory;
 
 /**
  * Api中间件
+ * Todo 参考dingo api
+ * Todo 实现Json Web Token
+ * Todo 引入Api文档生成器
+ * @see https://github.com/zircote/swagger-php
  *
  * Class Middleware
  * @package Ant\Foundation\Http\Api
  */
 class Middleware
 {
+    /**
+     * 默认响应格式
+     *
+     * @var string
+     */
+    protected $defaultType = 'json';
+
+    /**
+     * 是否启用后缀功能
+     *
+     * @var bool
+     */
+    protected $enabledSuffix = false;
+
+    /**
+     * 支持响应格式
+     *
+     * @var array
+     */
     protected $types = ['text','json','xml','javascript','js'];
+
+    /**
+     * 设置默认响应格式
+     * 在accept为空或者为*启用
+     *
+     * @param $type
+     */
+    public function setDefaultType($type)
+    {
+        $this->defaultType = $type;
+    }
 
     /**
      * 输出装饰与错误处理
@@ -32,7 +66,7 @@ class Middleware
         if (!$type = $this->getAcceptType($req)) {
             // 期望格式无法响应
             throw new NotAcceptableException(
-                sprintf('Response type must be [%s]',implode(',', $this->types))
+                sprintf('Response type must be [%s]', implode(',', $this->types))
             );
         }
 
@@ -65,17 +99,20 @@ class Middleware
      */
     protected function getAcceptType(RequestInterface &$req)
     {
-        $suffix = method_exists($req, "getRouteSuffix")
-            ? $req->getRouteSuffix()
-            : $this->parseRequestPath($req);
+        // 是否启用后缀功能
+        if ($this->enabledSuffix) {
+            $suffix = method_exists($req, "getRouteSuffix")
+                ? $req->getRouteSuffix()
+                : $this->parseRequestPath($req);
 
-        if (in_array($suffix, $this->types)) {
-            return $suffix;
+            if (in_array($suffix, $this->types)) {
+                return $suffix;
+            }
         }
 
-        // 如果客户端没有选择接受类型
-        if (!$req->hasHeader('accept')) {
-            return $this->types[0];
+        // 如果客户端没有选择接受类型,使用默认类型
+        if (!$req->hasHeader('accept') || $req->getHeaderLine('accept') === '*/*') {
+            return $this->defaultType;
         }
 
         // 获取客户端可以接收的数据类型

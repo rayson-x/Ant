@@ -316,12 +316,14 @@ class Container implements ContainerInterface,ArrayAccess
      */
     protected function getContextualConcrete($serviceName)
     {
-        if (isset($this->contextual[end($this->buildStack)][$serviceName])) {
-            $concrete = $this->contextual[end($this->buildStack)][$serviceName];
-            return ($concrete instanceof Closure)
-                ? $concrete($this)
-                : $concrete;
+        if (!isset($this->contextual[end($this->buildStack)][$serviceName])) {
+            return null;
         }
+
+        $concrete = $this->contextual[end($this->buildStack)][$serviceName];
+        return ($concrete instanceof Closure)
+            ? $concrete($this)
+            : $concrete;
     }
 
     /**

@@ -238,6 +238,7 @@ class Router implements RouterInterface
      */
     public function dispatch(RequestInterface $req, ResponseInterface $res)
     {
+        // Todo::psr-7对象传递,使用context对象解决
         // Todo::选择性加载,针对Cgi模式,Cli模式下默认全部加载
         // Todo::处理Options请求
 

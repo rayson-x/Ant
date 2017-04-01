@@ -42,7 +42,10 @@ class BaseServiceProvider implements ServiceProviderInterface
         /**
          * 注册 Http Response 类
          */
-        $container->singleton('response', Response::class);
+        $container->singleton('response', function ($container) {
+            // 传入配置信息中的默认Http头
+            return new Response(200, $container['config']->get("header", []));
+        });
 
         /**
          * 注册 Ant Router 类
